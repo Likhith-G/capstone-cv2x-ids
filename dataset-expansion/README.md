@@ -1,8 +1,6 @@
-# Dataset Expansion — CV2X-IDS-V3
+# Dataset Expansion — CV2X-IDS
 
-**Status: COMPLETE**  
-**Owner:** Likhith Lokesh Gowda + Kanwardeep Singh Gahlot  
-**Research Question:** RQ1 — 5G C-V2X Dataset Generation
+**Status: Complete**
 
 ---
 
@@ -74,7 +72,7 @@ dataset-expansion/
                               # split_distribution, confusion_matrix
 ```
 
-> **Note:** Raw per-packet logs (`packets_S*.csv`, ~837 MB total) are excluded from this repository. Three individual files exceed GitHub's 100 MB file limit. Run `bash pipeline/run_all.sh` to regenerate them (requires NS-3.42 + 5G-LENA, ~2–3 hours).
+> **Note:** Raw per-packet logs (`packets_S*.csv`, ~837 MB total) are excluded from this repository — three individual files exceed GitHub's 100 MB file limit. Run `bash pipeline/run_all.sh` to regenerate them (requires NS-3.42 + 5G-LENA, ~2–3 hours).
 
 ---
 
@@ -91,19 +89,4 @@ Evaluated with Random Forest (200 estimators), `StratifiedGroupKFold(n_splits=5)
 | No speed features | 21 | 0.9718 | 0.9896 |
 | Multiclass (12 classes) | 23 | 1.0000 | 1.0000 |
 
-The perfect F1 is legitimate in simulation: deterministic attack signals (fixed PPS rates, exact position offsets) create clean decision boundaries. The ablation study is the meaningful finding — both feature domains are required for full coverage.
-
----
-
-## Handoff to Feature Engineering
-
-The feature engineering team (Josh + Andrew) receives:
-- `output/dataset_v3.csv` — full dataset for ANOVA F-score and Mutual Information analysis
-- `output/DATASET_CARD.md` — feature schema and zero-variance filter rules
-- `output/figures/feature_importance.png` — RF Gini importance baseline
-
-**Do not include** in analysis: context features (`true_speed_mean`, `true_speed_std`, `distance_to_gnb`, `region_id`) and zero-variance features (`bsm_std_iat`, `heading_change_rate`, `bsm_size_mean`, `bsm_size_std`, `true_speed_std`).
-
-The classification team (Verna + Ken) receives:
-- `output/train.csv`, `output/val.csv`, `output/test.csv` — do not re-shuffle or re-split these files
-- `output/split_metadata.json` — node-to-split mapping
+The perfect F1 is legitimate in this simulation context: deterministic attack signals create clean decision boundaries. The ablation study demonstrates that both feature domains (network and vehicular) are required for full coverage.

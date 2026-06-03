@@ -1,10 +1,10 @@
-# Dataset Card: CV2X-IDS-V3
+# Dataset Card: CV2X-IDS
 
 ## Overview
 
 | Property | Value |
 |---|---|
-| **Name** | CV2X-IDS-V3 |
+| **Name** | CV2X-IDS |
 | **Domain** | 5G C-V2X Intrusion Detection |
 | **Source** | NS-3.42 with 5G-LENA NR module |
 | **Total Rows** | 18,240 time-windowed feature vectors |

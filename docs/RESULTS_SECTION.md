@@ -1,8 +1,8 @@
-# Results: Dataset Generation and Baseline Evaluation
+# Results: 5G C-V2X Dataset Generation and Baseline Evaluation
 
 ## 4.1 Simulation Environment
 
-The v3.0 dataset was generated using NS-3 (v3.42) with the 5G-LENA NR module. The scaled simulation topology models a 5G C-V2X highway corridor with four gNBs positioned sequentially to provide continuous coverage, serving 40 User Equipment (UE) nodes representing connected vehicles. Each UE transmits Basic Safety Messages (BSMs) at 10 Hz (ETSI CAM standard rate) via UDP to a remote MEC edge server through the 5G NR radio access network and Evolved Packet Core (EPC). The NR configuration uses Band n78 (3.5 GHz) with 20 MHz bandwidth in TDD mode. Vehicle mobility follows the `ConstantVelocityMobilityModel` with speeds uniformly distributed between 8--15 m/s (29--54 km/h), representative of urban arterial traffic.
+The dataset was generated using NS-3 (v3.42) with the 5G-LENA NR module. The scaled simulation topology models a 5G C-V2X highway corridor with four gNBs positioned sequentially to provide continuous coverage, serving 40 User Equipment (UE) nodes representing connected vehicles. Each UE transmits Basic Safety Messages (BSMs) at 10 Hz (ETSI CAM standard rate) via UDP to a remote MEC edge server through the 5G NR radio access network and Evolved Packet Core (EPC). The NR configuration uses Band n78 (3.5 GHz) with 20 MHz bandwidth in TDD mode. Vehicle mobility follows the `ConstantVelocityMobilityModel` with speeds uniformly distributed between 8--15 m/s (29--54 km/h), representative of urban arterial traffic.
 
 Each simulation scenario runs for 600 seconds (10 minutes) with dynamic, per-scenario random seeds (43–54). In attack scenarios, 5 out of the 40 UEs (Nodes 0-4) act as attackers while the remaining 35 UEs transmit honest traffic, producing a realistic 1:7 attacker-to-honest ratio.
 
@@ -44,7 +44,7 @@ Five features exhibit zero variance due to the `ConstantVelocityMobilityModel` a
 
 ## 4.4 Dataset Statistics and Separability
 
-The final dataset contains **18,240 rows** and **39 columns** with zero null or infinite values. The class distribution reflects the 30-second windowing across 40 nodes over 12 scenarios:
+The dataset contains **18,240 rows** and **39 columns** with zero null or infinite values. The class distribution reflects the 30-second windowing across 40 nodes over 12 scenarios:
 - **Benign:** 16,150 windows (88.5%)
 - **Attacks:** 190 windows per attack type x 11 types = **2,090 attack windows total (11.46%)**
 
@@ -120,7 +120,7 @@ An automated verification suite was executed against the final dataset, passing 
 
 ## 4.8 Discussion and Known Limitations
 
-The v3 dataset successfully resolves the structural flaws of earlier pipeline iterations by enforcing strict Grouped Cross-Validation, randomising mobility seeds per scenario, and natively parsing packets at the application layer to remove synthetic bounding logic. 
+The dataset successfully resolves the structural flaws of earlier pipeline iterations by enforcing strict Grouped Cross-Validation, randomising mobility seeds per scenario, and natively parsing packets at the application layer to remove synthetic bounding logic. 
 
 However, the following limitations remain documented for transparency:
 1. **Constant Velocity Mobility:** Vehicles travel in straight lines at constant speeds. Consequently, features like `heading_change_rate` exhibit exactly zero variance. Integration with a microscopic traffic simulator (e.g., SUMO) is required for realistic urban mobility.

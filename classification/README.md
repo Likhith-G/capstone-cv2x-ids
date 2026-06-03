@@ -1,39 +1,34 @@
 # Multiclass Classification
 
-**Status: In Progress**  
-**Owner:** Verna Nakhla (s3945172), Ken Navarro (s4005415)  
-**Research Question:** RQ2b — Multiclass classification baseline
+**Status: In Progress**
 
 ---
 
 ## Objective
 
-Train and evaluate multiclass classifiers on the CV2X-IDS-V3 dataset using the feature subset selected by the Feature Engineering team. Report per-class F1, MCC, and false positive rate across all 12 attack classes. The final model architecture is passed to the Federated Learning workstream.
+Train and evaluate multiclass classifiers on the CV2X-IDS dataset using the feature subset from the Feature Engineering workstream. Initial model development was completed on the VeReMi dataset. This workstream now applies those architectures to the custom simulation dataset and reports per-class F1, MCC, and false positive rate across all 12 attack classes.
 
 ---
 
 ## Input
 
-From the Dataset Expansion workstream:
-
 | File | Location | Notes |
 |---|---|---|
-| `train.csv` | `../dataset-expansion/output/train.csv` | 12,350 rows |
-| `val.csv` | `../dataset-expansion/output/val.csv` | 2,736 rows — for hyperparameter tuning only |
-| `test.csv` | `../dataset-expansion/output/test.csv` | 3,154 rows — final evaluation only |
-| `split_metadata.json` | `../dataset-expansion/output/split_metadata.json` | Node-to-split mapping |
+| Training split | `../dataset-expansion/output/train.csv` | 12,350 rows |
+| Validation split | `../dataset-expansion/output/val.csv` | 2,736 rows — tuning only |
+| Test split | `../dataset-expansion/output/test.csv` | 3,154 rows — final evaluation |
+| Split metadata | `../dataset-expansion/output/split_metadata.json` | Node-to-split mapping |
 
-From the Feature Engineering workstream:
-- Final feature subset list (to be provided by Josh + Andrew)
+Feature subset list to be provided by the Feature Engineering workstream.
 
 ---
 
 ## Constraints
 
-- **Do not re-shuffle or re-split the provided CSV files.** The split was engineered to guarantee all 12 attack types appear in every split with zero temporal leakage. Load them directly.
-- Evaluate on `test.csv` only for final reported metrics. Use `val.csv` only for tuning.
-- Class imbalance is 88.5% benign vs 1.04% per attack type — use class weighting, focal loss, or SMOTE in your training loop.
-- Primary metrics per the proposal: Macro F1, MCC (Matthews Correlation Coefficient), per-class precision and recall, and false positive rate.
+- **Do not re-shuffle or re-split the provided CSV files.** The split guarantees all 12 attack types appear in every partition with zero temporal leakage. Load them directly.
+- Use `val.csv` for hyperparameter tuning only. Report final metrics on `test.csv`.
+- Class imbalance is 88.5% benign — use class weighting, focal loss, or SMOTE.
+- Primary metrics: Macro F1, MCC, per-class precision and recall, false positive rate.
 
 ---
 
@@ -48,13 +43,7 @@ From the Feature Engineering workstream:
 
 ## Expected Output
 
-- Trained model (saved as a file in this folder — `.pkl` or `.pth`)
+- Trained model file
 - Per-class classification report (precision, recall, F1, MCC)
 - Confusion matrix
-- Final recommended model architecture for Likhith to use in the FL workstream
-
----
-
-## Place your work here
-
-Add notebooks, scripts, model files, and results to this folder as the workstream progresses.
+- Final model architecture for use in the Federated Learning workstream
