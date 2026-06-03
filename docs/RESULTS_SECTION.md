@@ -33,7 +33,7 @@ The dataset encompasses 12 distinct scenarios covering two attack domains: netwo
 
 ## 4.3 Feature Extraction Pipeline
 
-To overcome the limitations of aggregate FlowMonitor statistics, the v3.0 pipeline implements per-packet logging directly at the application layer. These raw packet logs contain real NS-3 timestamps, true positions from the MobilityModel, claimed positions from payloads, and ground-truth labels. The logs are aggregated into 30-second overlapping time windows (15-second sliding step) per UE.
+To overcome the limitations of aggregate FlowMonitor statistics, the pipeline implements per-packet logging directly at the application layer. These raw packet logs contain real NS-3 timestamps, true positions from the MobilityModel, claimed positions from payloads, and ground-truth labels. The logs are aggregated into 30-second overlapping time windows (15-second sliding step) per UE.
 
 The feature set comprises 23 informative model features spanning two domains:
 
