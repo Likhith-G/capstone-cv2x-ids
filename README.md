@@ -9,7 +9,7 @@
 | Name | Student ID | Workstream |
 |---|---|---|
 | Likhith Lokesh Gowda | s4062973 | Dataset Expansion, Federated Learning |
-| Verna Nakhla | s3945172 | Dataset Expansion (co-lead), Multiclass Classification |
+| Verna Nakhla | s3945172 | Multiclass Classification |
 | Joshua Wong | s3944445 | Feature Engineering |
 | Ken Navarro | s4005415 | Multiclass Classification |
 | Andrew Ng | s4004645 | Feature Engineering |
