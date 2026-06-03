@@ -3,14 +3,14 @@
 #
 # Usage:
 #   cd ~/ns-allinone-3.42/ns-3.42
-#   bash v3_pipeline/run_all.sh
+#   bash pipeline/run_all.sh
 #
 # Expected runtime: ~2-3 hours on MacBook Air M2
-# Output: v3_output/dataset_v3.csv (~18,000 rows)
+# Output: output/dataset.csv (~18,000 rows)
 
 set -e
 
-OUTPUT_DIR="v3_output"
+OUTPUT_DIR="output"
 mkdir -p "$OUTPUT_DIR"
 
 echo "============================================================"
@@ -69,35 +69,35 @@ echo "============================================================"
 echo "All simulations complete. Building dataset..."
 echo "============================================================"
 
-python3 v3_pipeline/build_dataset.py "$OUTPUT_DIR" "$OUTPUT_DIR"
+python3 pipeline/build_dataset.py "$OUTPUT_DIR" "$OUTPUT_DIR"
 
 echo ""
 echo "============================================================"
 echo "Validating dataset..."
 echo "============================================================"
 
-python3 v3_pipeline/validate_dataset.py "$OUTPUT_DIR/dataset_v3.csv"
+python3 pipeline/validate_dataset.py "$OUTPUT_DIR/dataset.csv"
 
 echo ""
 echo "============================================================"
 echo "Running baseline classifier..."
 echo "============================================================"
 
-python3 v3_pipeline/baseline_classifier.py "$OUTPUT_DIR/dataset_v3.csv"
+python3 pipeline/baseline_classifier.py "$OUTPUT_DIR/dataset.csv"
 
 echo ""
 echo "============================================================"
 echo "Splitting dataset (Train/Val/Test)..."
 echo "============================================================"
 
-python3 v3_pipeline/split_dataset.py "$OUTPUT_DIR/dataset_v3.csv"
+python3 pipeline/split_dataset.py "$OUTPUT_DIR/dataset.csv"
 
 echo ""
 echo "============================================================"
 echo "Generating visualisations..."
 echo "============================================================"
 
-python3 v3_pipeline/visualise.py "$OUTPUT_DIR/dataset_v3.csv" "$OUTPUT_DIR/figures"
+python3 pipeline/visualise.py "$OUTPUT_DIR/dataset.csv" "$OUTPUT_DIR/figures"
 
 echo ""
 echo "============================================================"

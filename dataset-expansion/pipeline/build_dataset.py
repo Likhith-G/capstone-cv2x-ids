@@ -11,7 +11,7 @@ Data sources:
   2. meta_S*.json    -- scenario metadata
 
 Output:
-  dataset_v3.csv  -- one row per time window per UE
+  dataset.csv  -- one row per time window per UE
 """
 
 import os
@@ -295,8 +295,8 @@ def assign_attack_labels(df):
 # Main pipeline
 # ---------------------------------------------------------------------------
 def main():
-    input_dir  = sys.argv[1] if len(sys.argv) > 1 else "v3_output"
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "v3_output"
+    input_dir  = sys.argv[1] if len(sys.argv) > 1 else "output"
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "output"
 
     packet_files = sorted(glob.glob(os.path.join(input_dir, "packets_S*.csv")))
     if not packet_files:
@@ -347,7 +347,7 @@ def main():
     ).reset_index(drop=True)
 
     # Save
-    output_path = os.path.join(output_dir, "dataset_v3.csv")
+    output_path = os.path.join(output_dir, "dataset.csv")
     dataset.to_csv(output_path, index=False)
 
     print(f"\n{'='*60}")

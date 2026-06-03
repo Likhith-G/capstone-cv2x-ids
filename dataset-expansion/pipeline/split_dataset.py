@@ -23,7 +23,7 @@ import pandas as pd
 
 
 def main():
-    input_csv = sys.argv[1] if len(sys.argv) > 1 else "v3_output/dataset_v3.csv"
+    input_csv = sys.argv[1] if len(sys.argv) > 1 else "output/dataset.csv"
     out_dir = os.path.dirname(input_csv)
 
     print(f"Loading {input_csv}...")

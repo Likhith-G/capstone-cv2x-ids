@@ -49,10 +49,10 @@ def dirichlet_partition(labels, n_clients, alpha=0.5, seed=42):
 
 
 def main():
-    path       = sys.argv[1] if len(sys.argv) > 1 else "v3_output/dataset_v3.csv"
+    path       = sys.argv[1] if len(sys.argv) > 1 else "output/dataset.csv"
     n_clients  = int(sys.argv[2]) if len(sys.argv) > 2 else 5
     alpha      = float(sys.argv[3]) if len(sys.argv) > 3 else 0.5
-    output_dir = sys.argv[4] if len(sys.argv) > 4 else "v3_output"
+    output_dir = sys.argv[4] if len(sys.argv) > 4 else "output"
 
     print(f"Loading {path}...")
     df = pd.read_csv(path)

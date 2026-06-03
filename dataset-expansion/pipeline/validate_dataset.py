@@ -213,7 +213,7 @@ def run_checks(df):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "v3_output/dataset_v3.csv"
+    path = sys.argv[1] if len(sys.argv) > 1 else "output/dataset.csv"
     print(f"Loading {path}...")
     df = pd.read_csv(path)
     print(f"Loaded {len(df)} rows, {len(df.columns)} columns\n")

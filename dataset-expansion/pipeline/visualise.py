@@ -2,7 +2,7 @@
 """
 visualise.py -- Capstone: Cybersecurity for Connected Cars (v3)
 
-Generates 4 analysis charts from dataset_v3.csv:
+Generates 4 analysis charts from dataset.csv:
 1. Feature correlation heatmap
 2. Class distribution bar chart
 3. Feature importance (from RF)
@@ -52,7 +52,7 @@ def plot_correlation_heatmap(df, output_dir):
     ax.set_xticklabels(available, rotation=45, ha="right", fontsize=7)
     ax.set_yticklabels(available, fontsize=7)
     plt.colorbar(im, ax=ax, shrink=0.8)
-    ax.set_title("Feature Correlation Matrix (dataset_v3)", fontsize=14)
+    ax.set_title("Feature Correlation Matrix", fontsize=14)
     plt.tight_layout()
     plt.savefig(f"{output_dir}/chart_correlation.png", dpi=150)
     plt.close()
@@ -162,8 +162,8 @@ def plot_tsne(df, output_dir):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "v3_output/dataset_v3.csv"
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "v3_output"
+    path = sys.argv[1] if len(sys.argv) > 1 else "output/dataset.csv"
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "output"
 
     print(f"Loading {path}...")
     df = pd.read_csv(path)
