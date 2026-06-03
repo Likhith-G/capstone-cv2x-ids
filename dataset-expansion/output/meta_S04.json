@@ -1,0 +1,10 @@
+{
+  "scenario": "S04",
+  "attackType": "HTTPFlood",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 47,
+  "isNetworkAttack": true,
+  "isVehicularAttack": false
+}

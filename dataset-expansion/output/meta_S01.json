@@ -1,0 +1,10 @@
+{
+  "scenario": "S01",
+  "attackType": "UDPFlood",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 44,
+  "isNetworkAttack": true,
+  "isVehicularAttack": false
+}

@@ -1,0 +1,37 @@
+# Raw NS-3 per-packet logs (regenerable, too large for GitHub)
+packets_S*.csv
+
+# NS-3 build artifacts
+build/
+cmake-cache/
+.lock-ns3_*
+*.lock
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Model checkpoints (FL workstream — add as needed)
+*.pth
+*.ckpt
+*.pkl
+
+# Large output files from FL runs
+partitions/
+checkpoints/
+runs/

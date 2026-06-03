@@ -1,0 +1,10 @@
+{
+  "scenario": "S00",
+  "attackType": "Benign",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 43,
+  "isNetworkAttack": false,
+  "isVehicularAttack": false
+}

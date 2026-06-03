@@ -1,0 +1,10 @@
+{
+  "scenario": "S05",
+  "attackType": "SlowDoS",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 48,
+  "isNetworkAttack": true,
+  "isVehicularAttack": false
+}

@@ -1,0 +1,10 @@
+{
+  "scenario": "S07",
+  "attackType": "RandomPosition",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 50,
+  "isNetworkAttack": false,
+  "isVehicularAttack": true
+}

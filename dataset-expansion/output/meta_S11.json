@@ -1,0 +1,10 @@
+{
+  "scenario": "S11",
+  "attackType": "VehicularDoS",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 54,
+  "isNetworkAttack": false,
+  "isVehicularAttack": true
+}

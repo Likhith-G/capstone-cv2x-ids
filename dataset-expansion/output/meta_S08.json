@@ -1,0 +1,10 @@
+{
+  "scenario": "S08",
+  "attackType": "Replay",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 51,
+  "isNetworkAttack": false,
+  "isVehicularAttack": true
+}

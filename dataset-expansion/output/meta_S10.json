@@ -1,0 +1,10 @@
+{
+  "scenario": "S10",
+  "attackType": "Sybil",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 53,
+  "isNetworkAttack": false,
+  "isVehicularAttack": true
+}

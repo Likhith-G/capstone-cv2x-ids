@@ -1,0 +1,10 @@
+{
+  "scenario": "S03",
+  "attackType": "SYNFlood",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 46,
+  "isNetworkAttack": true,
+  "isVehicularAttack": false
+}

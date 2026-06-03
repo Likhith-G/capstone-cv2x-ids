@@ -1,0 +1,10 @@
+{
+  "scenario": "S09",
+  "attackType": "FalseDataInjection",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 52,
+  "isNetworkAttack": false,
+  "isVehicularAttack": true
+}

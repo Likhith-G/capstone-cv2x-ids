@@ -1,0 +1,10 @@
+{
+  "scenario": "S06",
+  "attackType": "PositionSpoof",
+  "simTime": 600,
+  "numUes": 40,
+  "numAttackers": 5,
+  "seed": 49,
+  "isNetworkAttack": false,
+  "isVehicularAttack": true
+}
