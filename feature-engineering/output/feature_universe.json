@@ -1,0 +1,63 @@
+{
+  "features": [
+    "duration",
+    "n_flood",
+    "flood_ratio",
+    "total_bytes",
+    "pkt_rate",
+    "mean_iat",
+    "min_iat",
+    "max_iat",
+    "bsm_mean_iat",
+    "flood_mean_iat",
+    "mean_pkt_size",
+    "std_pkt_size",
+    "mean_pos_deviation",
+    "max_pos_deviation",
+    "mean_speed_deviation",
+    "seq_anomaly",
+    "unique_vehicle_ids"
+  ],
+  "categories": {
+    "timing": [
+      "duration",
+      "mean_iat",
+      "min_iat",
+      "max_iat",
+      "flood_mean_iat"
+    ],
+    "volume_rate": [
+      "n_flood",
+      "flood_ratio"
+    ],
+    "size": [
+      "mean_pkt_size",
+      "std_pkt_size"
+    ],
+    "vehicular": [
+      "mean_pos_deviation",
+      "max_pos_deviation",
+      "mean_speed_deviation"
+    ],
+    "behavioral": [
+      "seq_anomaly",
+      "unique_vehicle_ids"
+    ]
+  },
+  "dropped_variance": [
+    "bsm_std_iat",
+    "heading_change_rate",
+    "bsm_size_mean",
+    "bsm_size_std"
+  ],
+  "dropped_correlation": [
+    "flood_std_iat",
+    "max_speed_deviation",
+    "std_iat",
+    "n_bsm",
+    "n_pkts",
+    "msg_freq",
+    "byte_rate"
+  ],
+  "n_features": 17
+}

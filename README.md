@@ -61,7 +61,7 @@ The CV2X-IDS dataset is in [`dataset-expansion/output/`](dataset-expansion/outpu
 | Property | Value |
 |---|---|
 | Total rows | 18,240 |
-| Features | 23 informative (39 columns total) |
+| Features | 24 informative (39 columns total) |
 | Scenarios | 12 (1 Benign + 5 Network attacks + 6 Vehicular attacks) |
 | Topology | 40 UEs, 4 gNBs, 600s per scenario |
 | Simulation | NS-3.42 + 5G-LENA NR module |
@@ -83,8 +83,8 @@ cd ~/ns-allinone-3.42/ns-3.42
 cp path/to/dataset-expansion/simulation/simulation.cc scratch/
 
 # Copy pipeline scripts
-cp path/to/dataset-expansion/pipeline/* v3_pipeline/
+cp path/to/dataset-expansion/pipeline/* pipeline/
 
 # Run full pipeline (~2-3 hours on M2)
-bash v3_pipeline/run_all.sh
+bash pipeline/run_all.sh
 ```

@@ -1,37 +1,92 @@
 # Feature Engineering
 
-**Status: In Progress**
+**Status: Complete**
 
 ---
 
 ## Objective
 
-Identify the optimal feature subset from the CV2X-IDS dataset that best discriminates each attack type, using ANOVA F-score and Mutual Information. Initial pipeline development and validation was completed on the VeReMi dataset. This workstream now applies that methodology to the custom simulation dataset.
+Identify optimal feature subsets from the CV2X-IDS dataset for binary and multiclass IDS classification, using ANOVA F-score and Mutual Information ranking with grouped cross-validation evaluation.
 
 ---
 
-## Input
+## Pipeline
 
-| File | Location |
+Run the full pipeline:
+```bash
+python3 feature-engineering/feature_selection.py
+```
+
+Individual steps can be run with `--step {universe,rankings,discriminability,topk,select,shap,report}`.
+
+**Dependencies:** `pandas`, `numpy`, `scikit-learn`, `matplotlib`, `shap`
+
+---
+
+## Key Results
+
+### Feature Universe
+
+Starting from 39 dataset columns, the pipeline removes metadata (5), context (4), labels (2), zero-variance (4), and highly correlated pairs (7), leaving **17 informative features**.
+
+Correlation filter removes perfectly redundant pairs (|r| > 0.99):
+- `n_pkts` / `pkt_rate` (r=1.00) -- kept `pkt_rate`
+- `n_bsm` / `bsm_mean_iat` / `msg_freq` (r=1.00) -- kept `bsm_mean_iat`
+- `total_bytes` / `byte_rate` (r=1.00) -- kept `total_bytes`
+- `mean_speed_deviation` / `max_speed_deviation` (r=0.999) -- kept `mean_speed_deviation`
+- `std_iat` / `flood_mean_iat` / `flood_std_iat` (r>0.99) -- kept `flood_mean_iat`
+
+### Selected Feature Subsets
+
+**Binary IDS (k=13):** `mean_iat`, `min_iat`, `pkt_rate`, `duration`, `total_bytes`, `n_flood`, `flood_ratio`, `max_iat`, `mean_pkt_size`, `flood_mean_iat`, `std_pkt_size`, `mean_speed_deviation`, `max_pos_deviation`
+- Macro F1: 1.0000, MCC: 1.0000
+
+**Multiclass (k=15):** adds `unique_vehicle_ids` and `bsm_mean_iat` to the binary set (reordered by multiclass ranking)
+- Macro F1: 1.0000, MCC: 1.0000, all 12 classes at F1=1.0
+
+### Critical Feature Dependencies
+
+The top-k curves reveal sharp phase transitions:
+- **Binary:** k=11 to k=13 jumps from 0.83 to 1.00 F1 (vehicular features entering)
+- **Multiclass:** k=13 to k=15 jumps from 0.51 to 1.00 F1 (position and speed features entering)
+
+Per-class discriminability analysis shows each attack type depends on specific features:
+
+| Attack | Primary Discriminator |
 |---|---|
-| Full dataset | `../dataset-expansion/output/dataset_v3.csv` |
-| Feature schema | `../dataset-expansion/output/DATASET_CARD.md` |
-| Baseline importance | `../dataset-expansion/output/figures/feature_importance.png` |
+| Network floods (UDP/ICMP/SYN/HTTP) | `flood_ratio`, `n_flood`, `total_bytes`, `mean_pkt_size` |
+| SlowDoS | `flood_mean_iat` (uniquely low-rate flood pattern) |
+| PositionSpoof / RandomPosition | `mean_pos_deviation`, `max_pos_deviation` |
+| FalseDataInjection | `mean_speed_deviation` (sole discriminator) |
+| Sybil | `unique_vehicle_ids` |
+| VehicularDoS | `bsm_mean_iat` / `pkt_rate` |
+| Replay | `seq_anomaly` (weak), `mean_pos_deviation` (primary) |
 
 ---
 
-## Constraints
+## Output Artifacts
 
-- Target columns: `label_binary` (binary) and `label_attack_type` (12-class)
-- Exclude context features: `true_speed_mean`, `true_speed_std`, `distance_to_gnb`, `region_id`
-- Exclude zero-variance features: `bsm_std_iat`, `heading_change_rate`, `bsm_size_mean`, `bsm_size_std`, `true_speed_std`
-- Account for class imbalance (88.5% benign) before computing F-scores
-- Compare both ANOVA F-score and Mutual Information — report whether the two methods agree on the optimal subset
+| File | Description |
+|---|---|
+| `output/feature_universe.json` | Final 17-feature list with categories |
+| `output/rankings_binary.csv` | ANOVA + MI rankings for binary target |
+| `output/rankings_multiclass.csv` | ANOVA + MI rankings for multiclass target |
+| `output/rankings.json` | Combined rankings (both targets) |
+| `output/per_class_discriminability.csv` | One-vs-rest ANOVA for each attack type |
+| `output/topk_binary.csv` | Top-k evaluation results (binary) |
+| `output/topk_multiclass.csv` | Top-k evaluation results (multiclass) |
+| `output/selected_features_binary.json` | Final binary feature subset + metrics |
+| `output/selected_features_multiclass.json` | Final multiclass feature subset + metrics |
+| `output/RESULTS.md` | Human-readable results summary |
+| `output/figures/` | Heatmap, top-k curves, SHAP plots |
 
 ---
 
-## Expected Output
+## Handoff to Classification
 
-- Ranked feature list from ANOVA F-score and Mutual Information
-- Final recommended feature subset with justification
-- Analysis of how the optimal subset changes between binary and 12-class targets
+The classification workstream should:
+1. Load `train.csv`, `val.csv`, `test.csv` directly (do not re-split)
+2. Use the 15 multiclass features from `output/selected_features_multiclass.json`
+3. Use `class_weight='balanced'` to handle 88.5% benign imbalance
+4. Report: Macro F1, MCC, per-class F1, per-class precision/recall, FPR
+5. Evaluate on `val.csv` for tuning, final metrics on `test.csv` only

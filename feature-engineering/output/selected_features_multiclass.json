@@ -1,0 +1,42 @@
+{
+  "target": "multiclass",
+  "k": 15,
+  "features": [
+    "mean_iat",
+    "mean_pkt_size",
+    "total_bytes",
+    "pkt_rate",
+    "min_iat",
+    "flood_ratio",
+    "flood_mean_iat",
+    "duration",
+    "std_pkt_size",
+    "unique_vehicle_ids",
+    "bsm_mean_iat",
+    "n_flood",
+    "max_iat",
+    "max_pos_deviation",
+    "mean_speed_deviation"
+  ],
+  "metrics": {
+    "f1_mean": 1.0,
+    "f1_std": 0.0,
+    "mcc_mean": 1.0,
+    "mcc_std": 0.0,
+    "acc_mean": 1.0
+  },
+  "per_class_f1": {
+    "Benign": 1.0,
+    "FalseDataInjection": 1.0,
+    "HTTPFlood": 1.0,
+    "ICMPFlood": 1.0,
+    "PositionSpoof": 1.0,
+    "RandomPosition": 1.0,
+    "Replay": 1.0,
+    "SYNFlood": 1.0,
+    "SlowDoS": 1.0,
+    "Sybil": 1.0,
+    "UDPFlood": 1.0,
+    "VehicularDoS": 1.0
+  }
+}

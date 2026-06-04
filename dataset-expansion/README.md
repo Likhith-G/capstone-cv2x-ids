@@ -11,7 +11,7 @@ A simulation-based intrusion detection dataset for 5G C-V2X networks, generated 
 | Property | Value |
 |---|---|
 | Total rows | 18,240 time-windowed feature vectors |
-| Columns | 39 (23 informative after zero-variance filter) |
+| Columns | 39 (24 informative after zero-variance and context exclusion) |
 | Scenarios | 12 (S00 Benign, S01–S05 Network, S06–S11 Vehicular) |
 | Topology | 40 UEs, 4 gNBs, 5 attackers per scenario |
 | Simulation time | 600 seconds per scenario |
@@ -37,7 +37,7 @@ A simulation-based intrusion detection dataset for 5G C-V2X networks, generated 
 | S06 | Position Spoof | BSM claims +500m offset from truth |
 | S07 | Random Position | BSM claims random coordinates each cycle |
 | S08 | Replay | Retransmits 5s-old cached BSMs |
-| S09 | False Data Injection | BSM speed field inflated +50% |
+| S09 | False Data Injection | BSM speed field inflated by a factor of 2.5-4.0x |
 | S10 | Sybil | One node cycles through 5 fake vehicle IDs |
 | S11 | Vehicular DoS | BSM rate elevated to 1000 Hz |
 
@@ -61,7 +61,7 @@ dataset-expansion/
 │
 └── output/
     ├── DATASET_CARD.md       # Full schema, baselines, known limitations
-    ├── dataset_v3.csv        # Full dataset (18,240 rows)
+    ├── dataset.csv           # Full dataset (18,240 rows)
     ├── train.csv             # 12,350 rows (67.7%)
     ├── val.csv               # 2,736 rows (15.0%)
     ├── test.csv              # 3,154 rows (17.3%)
@@ -82,11 +82,11 @@ Evaluated with Random Forest (200 estimators), `StratifiedGroupKFold(n_splits=5)
 
 | Configuration | Features | Macro F1 | Accuracy |
 |---|---|---|---|
-| Full (no context) | 23 | 1.0000 | 1.0000 |
+| Full (no context) | 24 | 1.0000 | 1.0000 |
 | Network features only | ~16 | 0.8405 | 0.9479 |
 | Vehicular features only | 7 | 0.8308 | 0.9479 |
 | No position features | 21 | 0.9201 | 0.9688 |
 | No speed features | 21 | 0.9718 | 0.9896 |
-| Multiclass (12 classes) | 23 | 1.0000 | 1.0000 |
+| Multiclass (12 classes) | 24 | 1.0000 | 1.0000 |
 
 The perfect F1 is legitimate in this simulation context: deterministic attack signals create clean decision boundaries. The ablation study demonstrates that both feature domains (network and vehicular) are required for full coverage.

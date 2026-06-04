@@ -27,7 +27,7 @@ The dataset encompasses 12 distinct scenarios covering two attack domains: netwo
 | S06 | Position Spoofing | BSM payload claims a false position fixed at +500m from truth |
 | S07 | Random Position | BSM claims random, highly erratic coordinates each cycle |
 | S08 | Replay | Attacker retransmits previously cached BSMs |
-| S09 | False Data Injection | BSM speed field is artificially inflated by +50% |
+| S09 | False Data Injection | BSM speed field inflated by a factor of 2.5–4.0x (random per packet) |
 | S10 | Sybil | A single physical node cycles through 5 fake vehicle IDs |
 | S11 | Vehicular DoS | BSM transmission rate is elevated to 1000 Hz |
 
@@ -35,12 +35,12 @@ The dataset encompasses 12 distinct scenarios covering two attack domains: netwo
 
 To overcome the limitations of aggregate FlowMonitor statistics, the pipeline implements per-packet logging directly at the application layer. These raw packet logs contain real NS-3 timestamps, true positions from the MobilityModel, claimed positions from payloads, and ground-truth labels. The logs are aggregated into 30-second overlapping time windows (15-second sliding step) per UE.
 
-The feature set comprises 23 informative model features spanning two domains:
+The feature set comprises 24 informative model features spanning two domains:
 
 - **5G Network Features (18):** Packet counts (`n_pkts`, `n_bsm`, `n_flood`), `flood_ratio`, `total_bytes`, `pkt_rate`, `byte_rate`, inter-arrival time statistics (`mean_iat`, `std_iat`, `min_iat`, `max_iat`), separated BSM and flood IAT statistics (`bsm_mean_iat`, `bsm_std_iat`\*, `flood_mean_iat`, `flood_std_iat`), packet size statistics (`mean_pkt_size`, `std_pkt_size`), and `duration`.
 - **Vehicular Context Features (10):** Positional deviation (`mean_pos_deviation`, `max_pos_deviation`), speed deviation (`mean_speed_deviation`, `max_speed_deviation`), sequence number anomalies, unique vehicle ID count, and message frequency (`msg_freq`).
 
-Five features exhibit zero variance due to the `ConstantVelocityMobilityModel` and are dynamically filtered before classification: `bsm_std_iat`, `heading_change_rate`, `bsm_size_mean`, `bsm_size_std`, and `true_speed_std`. This leaves **23 informative features** from the 28 non-metadata, non-label columns.
+Five features exhibit zero variance due to the `ConstantVelocityMobilityModel` and are dynamically filtered before classification: `bsm_std_iat`, `heading_change_rate`, `bsm_size_mean`, `bsm_size_std`, and `true_speed_std`. Four context features (`true_speed_mean`, `true_speed_std`, `distance_to_gnb`, `region_id`) are excluded as they correlate with node identity. After removing metadata, labels, zero-variance, and context columns, this leaves **24 informative features** from the 39 total columns.
 
 ## 4.4 Dataset Statistics and Separability
 
@@ -76,12 +76,12 @@ To mathematically prove the necessity of the dual-layer feature architecture, an
 
 | Configuration | Features Used | Macro F1 | Accuracy |
 |--------------|----------|------------|----------|
-| **Binary (Full Features)** | **23** | **1.0000** | **1.0000** |
-| Binary (Network Features Only) | 15 | 0.8405 | 0.9479 |
+| **Binary (Full Features)** | **24** | **1.0000** | **1.0000** |
+| Binary (Network Features Only) | 17 | 0.8405 | 0.9479 |
 | Binary (Vehicular Features Only) | 7 | 0.8308 | 0.9479 |
-| Binary (No Position Features) | 21 | 0.9201 | 0.9688 |
-| Binary (No Speed Features) | 21 | 0.9718 | 0.9896 |
-| **Multi-class (12 classes)** | **23** | **1.0000** | **1.0000** |
+| Binary (No Position Features) | 23 | 0.9201 | 0.9688 |
+| Binary (No Speed Features) | 23 | 0.9718 | 0.9896 |
+| **Multi-class (12 classes)** | **24** | **1.0000** | **1.0000** |
 
 **Key Findings:**
 1. **Domain Isolation Failure:** When restricted to only Network Features, the model fails to detect vehicular payload anomalies (macro F1 drops to 0.8405). Conversely, Vehicular Features alone cannot detect low-volume network attacks like SlowDoS (macro F1 drops to 0.8308).

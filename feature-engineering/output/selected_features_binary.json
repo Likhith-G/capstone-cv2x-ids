@@ -1,0 +1,26 @@
+{
+  "target": "binary",
+  "k": 13,
+  "features": [
+    "mean_iat",
+    "min_iat",
+    "pkt_rate",
+    "duration",
+    "total_bytes",
+    "n_flood",
+    "flood_ratio",
+    "max_iat",
+    "mean_pkt_size",
+    "flood_mean_iat",
+    "std_pkt_size",
+    "mean_speed_deviation",
+    "max_pos_deviation"
+  ],
+  "metrics": {
+    "f1_mean": 1.0,
+    "f1_std": 0.0,
+    "mcc_mean": 1.0,
+    "mcc_std": 0.0,
+    "acc_mean": 1.0
+  }
+}

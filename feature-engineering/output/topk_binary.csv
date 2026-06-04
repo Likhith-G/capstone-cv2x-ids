@@ -1,0 +1,12 @@
+k,features_used,f1_mean,f1_std,mcc_mean,mcc_std,acc_mean,acc_std
+3,"mean_iat, min_iat, pkt_rate",0.8287805176874041,0.11040256161532216,0.7095200022346007,0.17433542909818525,0.953846153846154,0.025743385431817725
+5,"mean_iat, min_iat, pkt_rate, duration, total_bytes",0.8287805176874041,0.11040256161532216,0.7095200022346007,0.17433542909818525,0.953846153846154,0.025743385431817725
+7,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio",0.8287805176874041,0.11040256161532216,0.7095200022346007,0.17433542909818525,0.953846153846154,0.025743385431817725
+10,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat",0.8287805176874041,0.11040256161532216,0.7095200022346007,0.17433542909818525,0.953846153846154,0.025743385431817725
+11,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size",0.8287805176874041,0.11040256161532216,0.7095200022346007,0.17433542909818525,0.953846153846154,0.025743385431817725
+12,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size, mean_speed_deviation",0.9151796892191424,0.05186533453451729,0.8466503211180548,0.09222162010088747,0.9723076923076924,0.017941390445677833
+13,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size, mean_speed_deviation, max_pos_deviation",1.0,0.0,1.0,0.0,1.0,0.0
+14,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size, mean_speed_deviation, max_pos_deviation, mean_pos_deviation",1.0,0.0,1.0,0.0,1.0,0.0
+15,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size, mean_speed_deviation, max_pos_deviation, mean_pos_deviation, unique_vehicle_ids",1.0,0.0,1.0,0.0,1.0,0.0
+16,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size, mean_speed_deviation, max_pos_deviation, mean_pos_deviation, unique_vehicle_ids, bsm_mean_iat",1.0,0.0,1.0,0.0,1.0,0.0
+17,"mean_iat, min_iat, pkt_rate, duration, total_bytes, n_flood, flood_ratio, max_iat, mean_pkt_size, flood_mean_iat, std_pkt_size, mean_speed_deviation, max_pos_deviation, mean_pos_deviation, unique_vehicle_ids, bsm_mean_iat, seq_anomaly",1.0,0.0,1.0,0.0,1.0,0.0
