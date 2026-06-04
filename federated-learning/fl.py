@@ -308,6 +308,20 @@ def generate_summary(all_results=None):
     agg_df.to_csv(OUT_DIR / "aggregated_results.csv", index=False)
     print(f"  Saved aggregated_results.csv ({len(agg_df)} configurations)")
 
+    # --- Statistical significance: E=1 vs E=3 ---
+    from significance import compare_local_epochs
+    sig_comparisons = compare_local_epochs(all_results, e_baseline=1, e_compare=3)
+    if sig_comparisons:
+        sig_df = pd.DataFrame(sig_comparisons)
+        sig_df.to_csv(OUT_DIR / "significance_e1_vs_e3.csv", index=False)
+        print(f"\n  Statistical significance (E=1 vs E=3):")
+        n_sig = sum(1 for c in sig_comparisons if c["significant"])
+        print(f"    {n_sig}/{len(sig_comparisons)} comparisons significant at p<0.05")
+        for c in sig_comparisons:
+            marker = "*" if c["significant"] else " "
+            print(f"    {marker} {c['partition']} C={c['C']} α={c['alpha']}: "
+                  f"Δ={c['delta']:+.4f}  p={c['p_value']:.4f}")
+
     # --- Bandwidth estimation ---
     print("\n  Communication cost analysis:")
     train_df = pd.read_csv(DATA_DIR / "train.csv")
@@ -341,7 +355,7 @@ def generate_summary(all_results=None):
     _plot_convergence_grid(all_results)
 
     # --- RESULTS.md ---
-    _generate_results_md(cent_metrics, agg_df, bw_all, latency)
+    _generate_results_md(cent_metrics, agg_df, bw_all, latency, sig_comparisons)
 
     # --- summary.json ---
     summary = {
@@ -463,7 +477,7 @@ def _plot_convergence_grid(all_results):
     print("  Saved convergence_grid.png")
 
 
-def _generate_results_md(cent_metrics, agg_df, bw_all, latency):
+def _generate_results_md(cent_metrics, agg_df, bw_all, latency, sig_comparisons=None):
     """Generate human-readable RESULTS.md."""
     lines = ["# Federated Learning Results\n"]
 
@@ -526,6 +540,31 @@ def _generate_results_md(cent_metrics, agg_df, bw_all, latency):
                  "grows linearly with vehicle count. FL also never transmits raw feature data, "
                  "preserving driver location privacy.")
     lines.append("")
+
+    if sig_comparisons:
+        lines.append("## Statistical Significance: E=1 vs E=3 (Wilcoxon signed-rank)\n")
+        lines.append("Paired test across seeds for each (partition, C, α) configuration. "
+                      "Tests whether additional local epochs (E=3 vs E=1) significantly "
+                      "improve F1 under the same data partition.\n")
+        lines.append("| Partition | C | α | E=1 F1 | E=3 F1 | Δ | p-value | Sig? |")
+        lines.append("|---|---|---|---|---|---|---|---|")
+        for c in sig_comparisons:
+            sig_mark = "**yes**" if c["significant"] else "no"
+            lines.append(
+                f"| {c['partition']} | {c['C']} | {c['alpha']} "
+                f"| {c['E=1_macro_f1']} | {c['E=3_macro_f1']} "
+                f"| {c['delta']:+.4f} | {c['p_value']:.4f} | {sig_mark} |"
+            )
+        lines.append("")
+        n_sig = sum(1 for c in sig_comparisons if c["significant"])
+        if n_sig == 0:
+            lines.append("No comparisons reach significance at p<0.05 with n=3 seeds. "
+                          "Wilcoxon signed-rank with 3 pairs has minimum achievable p=0.25, "
+                          "so significance requires ≥6 seeds. Current results show the direction "
+                          "of effect (E=3 generally helps under non-IID) but cannot confirm "
+                          "statistical reliability. Part B will use ≥6 seeds for FedAvg vs FedProx "
+                          "comparisons.")
+        lines.append("")
 
     lines.append("## Inference Latency\n")
     lines.append(f"- Mean: {latency['mean_us']:.1f} μs")

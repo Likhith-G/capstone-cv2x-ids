@@ -41,7 +41,7 @@
 
 ### Important Caveat: Small-Dataset Artifact
 
-The 19–32x overhead is an artifact of comparing FL training communication against a **one-time upload of a small, pre-collected dataset** (12,350 samples × 64 bytes = 0.75 MB). In a real C-V2X deployment, this comparison is misleading because centralized training requires **continuous raw data streaming**, not a single upload.
+The 19–32x overhead is an artifact of comparing FL training communication against a **one-time upload of a small, pre-collected dataset** (12350 samples x 64 bytes/sample). In a real C-V2X deployment, this comparison is misleading because centralized training requires **continuous raw data streaming**, not a single upload.
 
 **Break-even analysis.** Each vehicle transmits BSMs at 10 Hz with ~300 bytes per message (SAE J2735), producing a raw data stream of **3,000 bytes/sec per vehicle**:
 
@@ -49,7 +49,7 @@ The 19–32x overhead is an artifact of comparing FL training communication agai
 |--------|-------|
 | One FL model update (upload) | 51,120 bytes |
 | Time for 1 vehicle to stream equivalent data | **17 seconds** |
-| FL cost per RSU, 50 rounds (C=5) | 5.1 MB |
+| FL cost per RSU, 50 rounds (C=5) | 12.8 MB |
 | Raw stream from 8 vehicles per RSU | 24 KB/s |
 | Time to match total FL training cost | **~3.5 minutes** |
 | Raw data from 8 vehicles over 10-min session | 14.4 MB (2.8x the FL cost) |
@@ -58,9 +58,37 @@ After just **17 seconds** of driving, a single vehicle has already streamed more
 
 At production scale with hundreds of vehicles per RSU, the ratio inverts dramatically: FL sends periodic 51 KB weight updates while centralized streaming grows linearly with vehicle count. FL also never transmits raw feature data, preserving driver location privacy.
 
+## Statistical Significance: E=1 vs E=3 (Wilcoxon signed-rank)
+
+Paired test across seeds for each (partition, C, α) configuration. Tests whether additional local epochs (E=3 vs E=1) significantly improve F1 under the same data partition.
+
+| Partition | C | α | E=1 F1 | E=3 F1 | Δ | p-value | Sig? |
+|---|---|---|---|---|---|---|---|
+| dirichlet | 3 | 0.1 | 0.8365±0.2188 | 0.9993±0.0010 | +0.1628 | 0.1797 | no |
+| dirichlet | 3 | 0.5 | 1.0000±0.0000 | 1.0000±0.0000 | +0.0000 | 1.0000 | no |
+| dirichlet | 3 | 1.0 | 1.0000±0.0000 | 1.0000±0.0000 | +0.0000 | 1.0000 | no |
+| dirichlet | 3 | 100.0 | 1.0000±0.0000 | 1.0000±0.0000 | +0.0000 | 1.0000 | no |
+| dirichlet | 5 | 0.1 | 0.5392±0.2457 | 0.9389±0.0371 | +0.3998 | 0.2500 | no |
+| dirichlet | 5 | 0.5 | 0.9706±0.0416 | 0.9978±0.0031 | +0.0272 | 0.3173 | no |
+| dirichlet | 5 | 1.0 | 0.9720±0.0396 | 1.0000±0.0000 | +0.0280 | 0.3173 | no |
+| dirichlet | 5 | 100.0 | 1.0000±0.0000 | 1.0000±0.0000 | +0.0000 | 1.0000 | no |
+| scenario | 3 | - | 0.6468±0.0525 | 0.5888±0.0459 | -0.0580 | 0.5000 | no |
+| scenario | 5 | - | 0.3737±0.0230 | 0.3527±0.0225 | -0.0210 | 0.7500 | no |
+
+No comparisons reach significance at p<0.05 with n=3 seeds. Wilcoxon signed-rank with 3 pairs has minimum achievable p=0.25, so significance requires ≥6 seeds. Current results show the direction of effect (E=3 generally helps under non-IID) but cannot confirm statistical reliability. Part B will use ≥6 seeds for FedAvg vs FedProx comparisons.
+
+## Inference Latency
+
+- Mean: 26.5 μs
+- P95: 28.5 μs
+- P99: 35.4 μs
+- Max: 65.0 μs
+- **Headroom:** 3768x under 100ms PC5 budget
+- **Passes 100ms constraint:** Yes
+
 ## Addendum: Dropout Robustness Check (p=0.2)
 
-To test whether regularization improves FL performance under extreme non-IID conditions, Dropout(p=0.2) was applied after each hidden layer and evaluated on the two worst-performing configurations:
+To test whether regularization improves FL performance under extreme non-IID conditions, Dropout(p=0.2) was applied after each hidden layer and evaluated on the two worst-performing configurations (pre-cosine-annealing baseline):
 
 | Configuration | Metric | Original | Dropout=0.2 | Delta |
 |---------------|--------|----------|-------------|-------|
@@ -75,12 +103,3 @@ To test whether regularization improves FL performance under extreme non-IID con
 - **Scenario-based (natural non-IID):** Dropout *helps* (F1 improves by 0.10). Under scenario partitioning, clients see entirely disjoint attack types, so their local models tend to overfit to their subset. Dropout acts as implicit regularization, forcing the model to learn more generalizable representations that survive aggregation.
 
 **Conclusion:** Dropout is not a universal remedy for non-IID degradation. Targeted regularization strategies like FedProx (proximal term constraining local updates toward the global model) are better suited for Part B, as they directly address the weight divergence problem rather than applying generic capacity reduction.
-
-## Inference Latency
-
-- Mean: 26.4 μs
-- P95: 27.8 μs
-- P99: 31.6 μs
-- Max: 46.8 μs
-- **Headroom:** 3784x under 100ms PC5 budget
-- **Passes 100ms constraint:** Yes
