@@ -81,7 +81,7 @@ Evaluated with Random Forest (200 estimators), `StratifiedGroupKFold(n_splits=5)
 
 | Deliverable | Location |
 |---|---|
-| Full dataset | `dataset-expansion/output/dataset_v3.csv` (18,240 rows) |
+| Full dataset | `dataset-expansion/output/dataset.csv` (18,240 rows) |
 | Training split | `dataset-expansion/output/train.csv` (12,350 rows) |
 | Validation split | `dataset-expansion/output/val.csv` (2,736 rows) |
 | Test split | `dataset-expansion/output/test.csv` (3,154 rows) |

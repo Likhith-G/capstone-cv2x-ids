@@ -137,7 +137,7 @@ Split at the **group level** (`scenario_id` + `node_id`) with per-scenario strat
 
 | File | Description | Size |
 |---|---|---|
-| `dataset_v3.csv` | Full dataset (all 18,240 windows) | 3.3 MB |
+| `dataset.csv` | Full dataset (all 18,240 windows) | 3.3 MB |
 | `train.csv` | Training split (12,350 rows) | 2.3 MB |
 | `val.csv` | Validation split (2,736 rows) | 494 KB |
 | `test.csv` | Test split (3,154 rows) | 493 KB |
@@ -167,7 +167,7 @@ Split at the **group level** (`scenario_id` + `node_id`) with per-scenario strat
 
 ```bash
 cd ~/ns-allinone-3.42/ns-3.42
-bash v3_pipeline/run_all.sh
+bash pipeline/run_all.sh
 ```
 
 Seeds are deterministic (43-54 per scenario). Output is fully reproducible on the same NS-3 build.
