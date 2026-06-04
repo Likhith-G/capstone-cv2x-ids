@@ -1,49 +1,85 @@
 # Multiclass Classification
 
-**Status: In Progress**
+**Status: Complete**
 
 ---
 
 ## Objective
 
-Train and evaluate multiclass classifiers on the CV2X-IDS dataset using the feature subset from the Feature Engineering workstream. Initial model development was completed on the VeReMi dataset. This workstream now applies those architectures to the custom simulation dataset and reports per-class F1, MCC, and false positive rate across all 12 attack classes.
+Train and evaluate centralized multiclass classifiers on the CV2X-IDS dataset using the 15-feature subset from the Feature Engineering workstream. Produce a model architecture specification for the Federated Learning workstream.
 
 ---
 
-## Input
+## Pipeline
 
-| File | Location | Notes |
+Run the full pipeline:
+```bash
+python3 classification/classify.py
+```
+
+Individual steps: `--step {train,evaluate,compare,report}`.
+
+**Dependencies:** `pandas`, `numpy`, `scikit-learn`, `matplotlib`
+
+---
+
+## Models Evaluated
+
+| Model | Description | Class Imbalance Handling |
 |---|---|---|
-| Training split | `../dataset-expansion/output/train.csv` | 12,350 rows |
-| Validation split | `../dataset-expansion/output/val.csv` | 2,736 rows — tuning only |
-| Test split | `../dataset-expansion/output/test.csv` | 3,154 rows — final evaluation |
-| Split metadata | `../dataset-expansion/output/split_metadata.json` | Node-to-split mapping |
-
-Feature subset list to be provided by the Feature Engineering workstream.
+| Random Forest (RF) | 300 trees, max_depth=25 | `class_weight='balanced'` |
+| Histogram Gradient Boosting (GBC) | 300 iterations, max_depth=8 | Balanced sample weights |
+| Multi-Layer Perceptron (MLP) | [128, 64, 32] hidden layers, ReLU | StandardScaler + early stopping |
 
 ---
 
-## Constraints
+## Key Results
 
-- **Do not re-shuffle or re-split the provided CSV files.** The split guarantees all 12 attack types appear in every partition with zero temporal leakage. Load them directly.
-- Use `val.csv` for hyperparameter tuning only. Report final metrics on `test.csv`.
-- Class imbalance is 88.5% benign — use class weighting, focal loss, or SMOTE.
-- Primary metrics: Macro F1, MCC, per-class precision and recall, false positive rate.
+All three models achieve perfect classification on the held-out test set (3,154 rows):
+
+| Model | Test Macro F1 | Test MCC | Test Accuracy |
+|---|---|---|---|
+| RF | 1.0000 | 1.0000 | 1.0000 |
+| GBC | 1.0000 | 1.0000 | 1.0000 |
+| MLP | 1.0000 | 1.0000 | 1.0000 |
+
+All 12 classes (Benign + 11 attack types) achieve per-class F1 = 1.0 and FPR = 0.0 across all models.
+
+The perfect scores are expected and legitimate: the NS-3 simulation generates deterministic attack signatures (fixed PPS rates, exact position offsets, precise speed multipliers) in a noise-free environment. These produce trivial decision boundaries for any competent classifier given the correct features.
+
+### Feature Importance
+
+RF Gini importance confirms features align with known attack mechanisms:
+
+| Rank | Feature | Importance | Primary Role |
+|---|---|---|---|
+| 1 | max_pos_deviation | 0.2684 | PositionSpoof, RandomPosition, Replay |
+| 2 | mean_speed_deviation | 0.1265 | FalseDataInjection (sole discriminator) |
+| 3 | mean_pkt_size | 0.0767 | Network flood differentiation |
+| 4 | total_bytes | 0.0660 | Network flood volume |
+| 5 | unique_vehicle_ids | 0.0605 | Sybil (sole discriminator) |
 
 ---
 
-## Label Columns
+## Output Artifacts
 
-| Column | Type | Values |
-|---|---|---|
-| `label_binary` | Binary | 0 = Benign, 1 = Attack |
-| `label_attack_type` | 12-class | Benign, UDPFlood, ICMPFlood, SYNFlood, HTTPFlood, SlowDoS, PositionSpoof, RandomPosition, Replay, FalseDataInjection, Sybil, VehicularDoS |
+| File | Description |
+|---|---|
+| `output/metrics_rf.json` | RF val + test metrics, feature importance |
+| `output/metrics_gbc.json` | GBC val + test metrics |
+| `output/metrics_mlp.json` | MLP val + test metrics, permutation importance |
+| `output/comparison.csv` | Side-by-side model comparison |
+| `output/model_spec_fl.json` | FL model architecture + preprocessing spec |
+| `output/RESULTS.md` | Human-readable results summary |
+| `output/figures/` | Confusion matrices, feature importance chart |
 
 ---
 
-## Expected Output
+## Handoff to Federated Learning
 
-- Trained model file
-- Per-class classification report (precision, recall, F1, MCC)
-- Confusion matrix
-- Final model architecture for use in the Federated Learning workstream
+The FL workstream should:
+1. Use the MLP architecture from `output/model_spec_fl.json`
+2. Reimplement in PyTorch: `nn.Linear(15, 128) -> ReLU -> nn.Linear(128, 64) -> ReLU -> nn.Linear(64, 32) -> ReLU -> nn.Linear(32, 12)`
+3. Apply the StandardScaler parameters from the spec (mean + scale vectors)
+4. Use class-weighted cross-entropy loss
+5. The centralized MLP baseline (Macro F1 = 1.0) is the upper bound for FL performance

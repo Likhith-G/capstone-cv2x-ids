@@ -1,0 +1,99 @@
+{
+  "model_type": "MLP",
+  "description": "Feed-forward neural network for FL client-side training",
+  "features": [
+    "mean_iat",
+    "mean_pkt_size",
+    "total_bytes",
+    "pkt_rate",
+    "min_iat",
+    "flood_ratio",
+    "flood_mean_iat",
+    "duration",
+    "std_pkt_size",
+    "unique_vehicle_ids",
+    "bsm_mean_iat",
+    "n_flood",
+    "max_iat",
+    "max_pos_deviation",
+    "mean_speed_deviation"
+  ],
+  "n_features": 15,
+  "preprocessing": {
+    "type": "StandardScaler",
+    "mean": [
+      0.09525859759838058,
+      215.75355627530365,
+      347617.7956275304,
+      31.209528493927124,
+      0.09447076923076925,
+      0.03826892307692308,
+      0.002301377118218623,
+      29.904028502024286,
+      4.563889068825911,
+      1.0369230769230768,
+      0.09908615384615387,
+      360.942024291498,
+      0.09605457489878544,
+      38.38687416194332,
+      0.22247003238866395
+    ],
+    "scale": [
+      0.020482696334038812,
+      139.26613161589484,
+      1766790.352060823,
+      114.56498789024343,
+      0.022834991523314006,
+      0.18353873914522345,
+      0.022457147166863013,
+      0.01876333742593042,
+      28.5127877402631,
+      0.3825297296718782,
+      0.009467610809378987,
+      1984.7222068642736,
+      0.01858238950506835,
+      372.74795672561214,
+      2.0738873132349016
+    ]
+  },
+  "architecture": {
+    "input_dim": 15,
+    "hidden_layers": [
+      128,
+      64,
+      32
+    ],
+    "activation": "relu",
+    "output_dim": 12,
+    "output_activation": "softmax"
+  },
+  "training": {
+    "loss": "cross_entropy_weighted",
+    "optimizer": "adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.001,
+    "batch_size": 64,
+    "max_epochs": 100,
+    "early_stopping_patience": 10,
+    "class_weight": "balanced"
+  },
+  "label_order": [
+    "Benign",
+    "FalseDataInjection",
+    "HTTPFlood",
+    "ICMPFlood",
+    "PositionSpoof",
+    "RandomPosition",
+    "Replay",
+    "SYNFlood",
+    "SlowDoS",
+    "Sybil",
+    "UDPFlood",
+    "VehicularDoS"
+  ],
+  "centralized_baseline": {
+    "best_model": "RF",
+    "test_macro_f1": 1.0,
+    "test_mcc": 1.0
+  }
+}

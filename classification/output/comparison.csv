@@ -1,0 +1,4 @@
+model,val_macro_f1,val_mcc,test_macro_f1,test_mcc,test_accuracy
+RF,1.0,1.0,1.0,1.0,1.0
+GBC,1.0,1.0,1.0,1.0,1.0
+MLP,1.0,1.0,1.0,1.0,1.0
