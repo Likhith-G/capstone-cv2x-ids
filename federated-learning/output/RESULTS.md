@@ -39,7 +39,24 @@
 - FL (C=3, 50 rounds): 14.6255 MB (ratio: 19.40x vs centralized)
 - FL (C=5, 50 rounds): 24.3759 MB (ratio: 32.34x vs centralized)
 
-**Note:** On this small simulation dataset, one-time centralized upload is cheaper in bytes. In a real C-V2X deployment where vehicles continuously stream BSMs at 10 Hz, FL dramatically reduces ongoing communication compared to streaming raw traffic. FL also never transmits raw feature data (privacy).
+### Important Caveat: Small-Dataset Artifact
+
+The 19–32x overhead is an artifact of comparing FL training communication against a **one-time upload of a small, pre-collected dataset** (12,350 samples × 64 bytes = 0.75 MB). In a real C-V2X deployment, this comparison is misleading because centralized training requires **continuous raw data streaming**, not a single upload.
+
+**Break-even analysis.** Each vehicle transmits BSMs at 10 Hz with ~300 bytes per message (SAE J2735), producing a raw data stream of **3,000 bytes/sec per vehicle**:
+
+| Metric | Value |
+|--------|-------|
+| One FL model update (upload) | 51,120 bytes |
+| Time for 1 vehicle to stream equivalent data | **17 seconds** |
+| FL cost per RSU, 50 rounds (C=5) | 5.1 MB |
+| Raw stream from 8 vehicles per RSU | 24 KB/s |
+| Time to match total FL training cost | **~3.5 minutes** |
+| Raw data from 8 vehicles over 10-min session | 14.4 MB (2.8x the FL cost) |
+
+After just **17 seconds** of driving, a single vehicle has already streamed more raw data than one complete model weight upload. An RSU serving 8 vehicles surpasses the **entire 50-round FL training cost** within ~3.5 minutes — less than a single red-light cycle. Over a typical 10-minute urban driving session, raw streaming produces 2.8x more data than the full FL training budget.
+
+At production scale with hundreds of vehicles per RSU, the ratio inverts dramatically: FL sends periodic 51 KB weight updates while centralized streaming grows linearly with vehicle count. FL also never transmits raw feature data, preserving driver location privacy.
 
 ## Inference Latency
 

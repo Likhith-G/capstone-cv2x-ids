@@ -134,3 +134,25 @@ However, the following limitations remain documented for transparency:
    **Real-world implication:** The `mean_pos_deviation`-based detection would fail against **position-coherent replay attacks** where the attacker interpolates or adjusts replayed coordinates to match expected trajectories. More robust approaches for future work include: (a) cryptographic nonce-based freshness checks embedded in BSM payloads (ETSI TS 103 097), (b) timestamp-aware sequence analysis using sliding-window entropy or autocorrelation, and (c) cross-vehicle plausibility checks where neighboring vehicles corroborate each other's claimed positions.
 
 4. **Class Imbalance:** The dataset is naturally skewed towards the benign class (88.5%). Downstream federated learning models must utilize stratified sampling, class weighting, or focal loss mechanisms to prevent collapse.
+
+## 4.9 Federated Learning Communication Overhead
+
+The FedAvg prototype (Section 5.3 of the FL workstream) reports FL training communication costs of 14.6 MB (C=3) and 24.4 MB (C=5) over 50 global rounds, compared to 0.75 MB for a one-time centralized dataset upload — a 19–32x overhead. **This ratio is an artifact of the small simulation dataset** (12,350 training samples × 64 bytes/sample) and does not reflect production communication economics.
+
+In a real C-V2X deployment, centralized training requires **continuous raw data streaming** from vehicles to a central server, not a single static upload. Each vehicle transmits BSMs at 10 Hz with ~300 bytes per message (SAE J2735), producing a raw data stream of 3,000 bytes/sec per vehicle.
+
+**Table 3: Break-Even Analysis — FL vs Centralized Streaming**
+
+| Metric | Value |
+|--------|-------|
+| MLP model size | 12,780 parameters (51,120 bytes) |
+| One FL model update (upload) | 51,120 bytes |
+| Time for 1 vehicle to stream equivalent raw data | **17 seconds** |
+| FL cost per RSU over 50 rounds (C=5, bidirectional) | 5.1 MB |
+| Raw stream from 8 vehicles per RSU | 24 KB/s |
+| Time for raw streaming to match total FL training cost | **~3.5 minutes** |
+| Raw data from 8 vehicles over 10-minute session | 14.4 MB (2.8x the FL cost) |
+
+After just 17 seconds of driving, a single vehicle has already streamed more raw data than one complete model weight upload. An RSU serving 8 vehicles surpasses the entire 50-round FL training budget within approximately 3.5 minutes — less than a single traffic light cycle. Over a typical 10-minute urban driving session, raw streaming generates 2.8x more data than the full FL training cost.
+
+At production scale with hundreds of vehicles per RSU, the ratio inverts dramatically: FL sends periodic 51 KB weight updates while centralized streaming grows linearly with vehicle count. Crucially, FL also never transmits raw BSM feature data to a central server, preserving driver location privacy — a compliance requirement under GDPR and equivalent frameworks governing GPS trajectory data.
