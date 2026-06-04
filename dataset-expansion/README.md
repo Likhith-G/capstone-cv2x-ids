@@ -27,9 +27,9 @@ A simulation-based intrusion detection dataset for 5G C-V2X networks, generated 
 |---|---|---|---|
 | S01 | UDP Flood | 500 pps | 1024 B |
 | S02 | ICMP Flood | 200 pps | 64 B |
-| S03 | SYN Flood | 400 pps | 64 B |
+| S03 | SYN Flood | 400 pps (avg) | 64 B |
 | S04 | HTTP Flood | 200 pps | 1460 B |
-| S05 | Slow DoS | 10 pps | 64 B |
+| S05 | Slow DoS | 4 pps (avg) | 64 B |
 
 ### Vehicular / Application Layer (S06–S11)
 | Scenario | Attack | Mechanism |

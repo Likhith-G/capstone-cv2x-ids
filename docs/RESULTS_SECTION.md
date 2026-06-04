@@ -16,9 +16,9 @@ The dataset encompasses 12 distinct scenarios covering two attack domains: netwo
 |----------|-------------|----------------|----------|-----------------|
 | S01 | UDP Flood | 500 pps | 1024 B | Continuous |
 | S02 | ICMP Flood | 200 pps | 64 B | Continuous |
-| S03 | SYN Flood | 400 pps | 64 B | Continuous |
+| S03 | SYN Flood | 400 pps (avg) | 64 B | Burst (500 Hz for 200ms, 50ms pause) |
 | S04 | HTTP Flood | 200 pps | 1460 B | Continuous |
-| S05 | Slow DoS | 10 pps | 64 B | Intermittent, low-rate |
+| S05 | Slow DoS | 4 pps (avg) | 64 B | Intermittent (20 Hz for 500ms, 2000ms pause) |
 
 **Vehicular-layer attacks (S06–S11)** manipulate the physical kinematics and metadata within the BSM payload while maintaining normal transmission rates (except S11):
 

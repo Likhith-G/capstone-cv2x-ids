@@ -25,9 +25,9 @@
 |---|---|---|
 | UDPFlood | 500 pps flood to MEC server | `n_flood >> 0`, `flood_ratio > 0` |
 | ICMPFlood | 200 pps ICMP echo to MEC server | `n_flood >> 0`, `flood_ratio > 0` |
-| SYNFlood | 400 pps TCP SYN to MEC server | `n_flood >> 0`, `flood_ratio > 0` |
+| SYNFlood | 400 pps avg TCP SYN (500 Hz burst, 200ms on / 50ms off) | `n_flood >> 0`, `flood_ratio > 0` |
 | HTTPFlood | 200 pps HTTP GET to MEC server | `n_flood >> 0`, `flood_ratio > 0` |
-| SlowDoS | 10 pps slow-read connections | `n_flood > 0`, lower `flood_ratio` |
+| SlowDoS | 4 pps avg (20 Hz burst, 500ms on / 2000ms off) | `n_flood > 0`, lower `flood_ratio` |
 
 ### Vehicular / Application Layer (6 types)
 | Type | Mechanism | Key Signal |
