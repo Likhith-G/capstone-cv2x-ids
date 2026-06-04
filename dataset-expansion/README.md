@@ -83,10 +83,10 @@ Evaluated with Random Forest (200 estimators), `StratifiedGroupKFold(n_splits=5)
 | Configuration | Features | Macro F1 | Accuracy |
 |---|---|---|---|
 | Full (no context) | 24 | 1.0000 | 1.0000 |
-| Network features only | ~16 | 0.8405 | 0.9479 |
+| Network features only | 17 | 0.8405 | 0.9479 |
 | Vehicular features only | 7 | 0.8308 | 0.9479 |
-| No position features | 21 | 0.9201 | 0.9688 |
-| No speed features | 21 | 0.9718 | 0.9896 |
+| No position features | 22 | 0.9201 | 0.9688 |
+| No speed features | 22 | 0.9718 | 0.9896 |
 | Multiclass (12 classes) | 24 | 1.0000 | 1.0000 |
 
 The perfect F1 is legitimate in this simulation context: deterministic attack signals create clean decision boundaries. The ablation study demonstrates that both feature domains (network and vehicular) are required for full coverage.

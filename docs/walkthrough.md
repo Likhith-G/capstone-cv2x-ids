@@ -67,11 +67,11 @@ Evaluated with Random Forest (200 estimators), `StratifiedGroupKFold(n_splits=5)
 
 | Config | Features | F1 (macro) | Accuracy |
 |---|---|---|---|
-| **Full (no context)** | **23** | **1.0000** | **1.0000** |
-| Network only | ~16 | 0.8405 | 0.9479 |
+| **Full (no context)** | **24** | **1.0000** | **1.0000** |
+| Network only | 17 | 0.8405 | 0.9479 |
 | Vehicular only | 7 | 0.8308 | 0.9479 |
-| No position features | 21 | 0.9201 | 0.9688 |
-| No speed features | 21 | 0.9718 | 0.9896 |
+| No position features | 22 | 0.9201 | 0.9688 |
+| No speed features | 22 | 0.9718 | 0.9896 |
 
 > The perfect F1 is legitimate — the simulated attacks produce mathematically pristine deviations. The ablation study proves both feature domains (network + vehicular) are needed for full coverage: network-only and vehicular-only each cap at ~0.84 F1.
 

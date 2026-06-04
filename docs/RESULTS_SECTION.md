@@ -79,8 +79,8 @@ To mathematically prove the necessity of the dual-layer feature architecture, an
 | **Binary (Full Features)** | **24** | **1.0000** | **1.0000** |
 | Binary (Network Features Only) | 17 | 0.8405 | 0.9479 |
 | Binary (Vehicular Features Only) | 7 | 0.8308 | 0.9479 |
-| Binary (No Position Features) | 23 | 0.9201 | 0.9688 |
-| Binary (No Speed Features) | 23 | 0.9718 | 0.9896 |
+| Binary (No Position Features) | 22 | 0.9201 | 0.9688 |
+| Binary (No Speed Features) | 22 | 0.9718 | 0.9896 |
 | **Multi-class (12 classes)** | **24** | **1.0000** | **1.0000** |
 
 **Key Findings:**

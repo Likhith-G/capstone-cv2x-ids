@@ -41,7 +41,7 @@
 
 ---
 
-## Feature Set (39 columns total, 23 informative after zero-variance filter)
+## Feature Set (39 columns total, 24 informative after exclusions)
 
 ### Metadata (not used for classification)
 `scenario_id`, `node_id`, `window_id`, `window_start`, `window_end`
@@ -60,7 +60,7 @@
 ### Labels (2)
 `label_binary` (0 = Benign, 1 = Attack), `label_attack_type` (12 classes)
 
-> Features marked with * have zero variance due to `ConstantVelocityMobilityModel` and are automatically filtered before classification. Zero-variance features confirmed: `bsm_std_iat`, `heading_change_rate`, `bsm_size_mean`, `bsm_size_std`, `true_speed_std`.
+> Features marked with * have zero variance due to `ConstantVelocityMobilityModel` and are automatically filtered before classification. Zero-variance features: `bsm_std_iat`, `heading_change_rate`, `bsm_size_mean`, `bsm_size_std`, `true_speed_std`. Context features excluded as node-identity proxies: `true_speed_mean`, `distance_to_gnb`, `region_id` (`true_speed_std` is already zero-variance). After removing 5 metadata, 2 labels, 5 zero-variance, and 3 unique context columns: **24 informative features**. Feature engineering further reduces to 15 via correlation filtering and ANOVA/MI selection.
 
 ---
 
@@ -103,16 +103,16 @@ Split at the **group level** (`scenario_id` + `node_id`) with per-scenario strat
 ### Binary Classification (Benign vs Attack)
 | Config | Features | F1 (macro) | Accuracy |
 |---|---|---|---|
-| Full (no context) | 23 | 1.0000 | 1.0000 |
-| Network only | 15 | 0.8405 | 0.9479 |
+| Full (no context) | 24 | 1.0000 | 1.0000 |
+| Network only | 17 | 0.8405 | 0.9479 |
 | Vehicular only | 7 | 0.8308 | 0.9479 |
-| No position features | 21 | 0.9201 | 0.9688 |
-| No speed features | 21 | 0.9718 | 0.9896 |
+| No position features | 22 | 0.9201 | 0.9688 |
+| No speed features | 22 | 0.9718 | 0.9896 |
 
 ### Multiclass Classification (12-class)
 | Config | Features | F1 (macro) | Accuracy |
 |---|---|---|---|
-| Full (no context) | 23 | 1.0000 | 1.0000 |
+| Full (no context) | 24 | 1.0000 | 1.0000 |
 
 ### Leakage Validation
 | Test | F1 | Expected | Status |
