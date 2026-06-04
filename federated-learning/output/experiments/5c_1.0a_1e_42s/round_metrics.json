@@ -385,18 +385,18 @@
   },
   {
     "round": 49,
-    "val_macro_f1": 1.0,
-    "val_mcc": 1.0,
-    "test_macro_f1": 1.0,
-    "test_mcc": 1.0,
-    "test_accuracy": 1.0
+    "val_macro_f1": 0.915989,
+    "val_mcc": 0.949871,
+    "test_macro_f1": 0.916092,
+    "test_mcc": 0.950382,
+    "test_accuracy": 0.987952
   },
   {
     "round": 50,
-    "val_macro_f1": 1.0,
-    "val_mcc": 1.0,
-    "test_macro_f1": 1.0,
-    "test_mcc": 1.0,
-    "test_accuracy": 1.0
+    "val_macro_f1": 0.915989,
+    "val_mcc": 0.949871,
+    "test_macro_f1": 0.916092,
+    "test_mcc": 0.950382,
+    "test_accuracy": 0.987952
   }
 ]

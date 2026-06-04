@@ -107,9 +107,9 @@
     "round": 14,
     "val_macro_f1": 1.0,
     "val_mcc": 1.0,
-    "test_macro_f1": 1.0,
-    "test_mcc": 1.0,
-    "test_accuracy": 1.0
+    "test_macro_f1": 0.956273,
+    "test_mcc": 0.966191,
+    "test_accuracy": 0.991756
   },
   {
     "round": 15,
@@ -321,8 +321,8 @@
   },
   {
     "round": 41,
-    "val_macro_f1": 0.997807,
-    "val_mcc": 0.998696,
+    "val_macro_f1": 1.0,
+    "val_mcc": 1.0,
     "test_macro_f1": 1.0,
     "test_mcc": 1.0,
     "test_accuracy": 1.0

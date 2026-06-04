@@ -8,9 +8,9 @@
   "global_rounds": 50,
   "comm_bytes": 25560000,
   "final_test": {
-    "macro_f1": 1.0,
-    "mcc": 1.0,
-    "accuracy": 1.0,
+    "macro_f1": 0.993411,
+    "mcc": 0.996136,
+    "accuracy": 0.999049,
     "per_class": {
       "Benign": {
         "precision": 1.0,
@@ -41,16 +41,16 @@
         "support": 38
       },
       "PositionSpoof": {
-        "precision": 1.0,
+        "precision": 0.926829,
         "recall": 1.0,
-        "f1": 1.0,
-        "fpr": 0.0,
+        "f1": 0.962025,
+        "fpr": 0.000963,
         "support": 38
       },
       "RandomPosition": {
         "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "recall": 0.921053,
+        "f1": 0.958904,
         "fpr": 0.0,
         "support": 38
       },
@@ -173,8 +173,8 @@
         0,
         0,
         0,
-        0,
-        38,
+        3,
+        35,
         0,
         0,
         0,

@@ -8,9 +8,9 @@
   "global_rounds": 50,
   "comm_bytes": 15336000,
   "final_test": {
-    "macro_f1": 0.610536,
-    "mcc": 0.797746,
-    "accuracy": 0.951807,
+    "macro_f1": 0.587524,
+    "mcc": 0.799586,
+    "accuracy": 0.952124,
     "per_class": {
       "Benign": {
         "precision": 0.986301,
@@ -20,24 +20,24 @@
         "support": 2736
       },
       "FalseDataInjection": {
-        "precision": 0.0,
-        "recall": 0.0,
-        "f1": 0.0,
-        "fpr": 0.0,
-        "support": 38
-      },
-      "HTTPFlood": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
         "fpr": 0.0,
         "support": 38
       },
-      "ICMPFlood": {
+      "HTTPFlood": {
         "precision": 0.5,
         "recall": 1.0,
         "f1": 0.666667,
         "fpr": 0.012195,
+        "support": 38
+      },
+      "ICMPFlood": {
+        "precision": 0.506667,
+        "recall": 1.0,
+        "f1": 0.672566,
+        "fpr": 0.011874,
         "support": 38
       },
       "PositionSpoof": {
@@ -58,13 +58,13 @@
         "precision": 0.0,
         "recall": 0.0,
         "f1": 0.0,
-        "fpr": 0.012195,
+        "fpr": 0.0,
         "support": 38
       },
       "SYNFlood": {
-        "precision": 0.0,
-        "recall": 0.0,
-        "f1": 0.0,
+        "precision": 1.0,
+        "recall": 0.026316,
+        "f1": 0.051282,
         "fpr": 0.0,
         "support": 38
       },
@@ -83,9 +83,9 @@
         "support": 38
       },
       "UDPFlood": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
         "fpr": 0.0,
         "support": 38
       },
@@ -114,12 +114,12 @@
       ],
       [
         0,
-        0,
-        0,
-        0,
-        0,
-        0,
         38,
+        0,
+        0,
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -200,11 +200,11 @@
         0,
         0,
         0,
-        38,
+        37,
         0,
         0,
         0,
-        0,
+        1,
         0,
         0,
         0,
@@ -241,15 +241,15 @@
       [
         0,
         0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
         38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       [

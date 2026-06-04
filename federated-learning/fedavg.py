@@ -6,6 +6,8 @@ Simulation-mode: all clients run in the same process.
 Aggregation is cleanly separated so FedProx / Krum can be swapped in later.
 """
 
+import math
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -56,7 +58,8 @@ class FedAvgClient:
         self.n_samples = len(y)
         self.class_weights = torch.from_numpy(class_weights)
 
-    def train_round(self, global_weights, local_epochs, lr, batch_size, seed, dropout=DROPOUT):
+    def train_round(self, global_weights, local_epochs, lr, batch_size, seed,
+                    dropout=DROPOUT, round_num=None, total_rounds=None):
         """
         Receive global weights, train locally, return updated weights.
         """
@@ -65,6 +68,9 @@ class FedAvgClient:
         model = CV2XMLP(dropout=dropout)
         set_weights(model, global_weights)
         model.train()
+
+        if round_num is not None and total_rounds is not None:
+            lr = lr * 0.5 * (1 + math.cos(math.pi * (round_num - 1) / total_rounds))
 
         criterion = nn.CrossEntropyLoss(weight=self.class_weights)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=WEIGHT_DECAY)
@@ -148,6 +154,7 @@ class FedAvgServer:
                 w, n = client.train_round(
                     global_weights, local_epochs, lr, batch_size,
                     seed=RANDOM_STATE + r, dropout=self.dropout,
+                    round_num=r, total_rounds=global_rounds,
                 )
                 all_weights.append(w)
                 all_sizes.append(n)

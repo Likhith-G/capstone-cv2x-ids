@@ -100,6 +100,7 @@ def train_centralized(
     model = CV2XMLP()
     criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(class_weights))
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
 
     best_val_f1 = -1.0
     best_weights = None
@@ -118,6 +119,8 @@ def train_centralized(
             optimizer.step()
             epoch_loss += loss.item()
             n_batches += 1
+
+        scheduler.step()
 
         # Validation
         model.eval()

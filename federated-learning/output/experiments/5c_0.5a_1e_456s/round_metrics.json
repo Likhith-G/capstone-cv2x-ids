@@ -9,11 +9,11 @@
   },
   {
     "round": 2,
-    "val_macro_f1": 0.720878,
-    "val_mcc": 0.844049,
-    "test_macro_f1": 0.721081,
-    "test_mcc": 0.8455,
-    "test_accuracy": 0.963855
+    "val_macro_f1": 0.804878,
+    "val_mcc": 0.898736,
+    "test_macro_f1": 0.804981,
+    "test_mcc": 0.899741,
+    "test_accuracy": 0.975904
   },
   {
     "round": 3,
