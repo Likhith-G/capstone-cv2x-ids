@@ -16,9 +16,9 @@ mean_iat, mean_pkt_size, total_bytes, pkt_rate, min_iat, flood_ratio, flood_mean
 | GBC | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
 | MLP | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
 
-## Per-Class Test Metrics (Best Model)
+## Per-Class Test Metrics
 
-**Model: RF**
+**Model: MLP** (FL candidate; RF and GBC achieve identical metrics)
 
 | Class | Precision | Recall | F1 | FPR | Support |
 |---|---|---|---|---|---|
@@ -60,20 +60,20 @@ mean_iat, mean_pkt_size, total_bytes, pkt_rate, min_iat, flood_ratio, flood_mean
 | Rank | Feature | F1 Drop |
 |---|---|---|
 | 1 | max_pos_deviation | 0.2565 |
-| 2 | duration | 0.1471 |
-| 3 | bsm_mean_iat | 0.1379 |
-| 4 | n_flood | 0.1138 |
-| 5 | flood_mean_iat | 0.1117 |
-| 6 | std_pkt_size | 0.1080 |
-| 7 | mean_speed_deviation | 0.0911 |
-| 8 | unique_vehicle_ids | 0.0845 |
-| 9 | min_iat | 0.0623 |
-| 10 | flood_ratio | 0.0615 |
-| 11 | max_iat | 0.0099 |
-| 12 | mean_iat | 0.0066 |
-| 13 | mean_pkt_size | 0.0055 |
-| 14 | total_bytes | 0.0022 |
-| 15 | pkt_rate | 0.0022 |
+| 2 | n_flood | 0.2339 |
+| 3 | duration | 0.1684 |
+| 4 | total_bytes | 0.1337 |
+| 5 | bsm_mean_iat | 0.1131 |
+| 6 | flood_mean_iat | 0.1117 |
+| 7 | mean_pkt_size | 0.1095 |
+| 8 | std_pkt_size | 0.1057 |
+| 9 | flood_ratio | 0.0913 |
+| 10 | mean_speed_deviation | 0.0900 |
+| 11 | unique_vehicle_ids | 0.0845 |
+| 12 | max_iat | 0.0694 |
+| 13 | min_iat | 0.0623 |
+| 14 | pkt_rate | 0.0252 |
+| 15 | mean_iat | 0.0066 |
 
 ## FL Handoff
 

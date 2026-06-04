@@ -9,11 +9,11 @@ Trains and evaluates three model families on the FE-selected feature subset:
   3. Multi-Layer Perceptron (MLP)
 
 Usage:
-  python3 classification/classify.py                    # full pipeline
-  python3 classification/classify.py --step train       # train all models
-  python3 classification/classify.py --step evaluate    # evaluate on test
-  python3 classification/classify.py --step compare     # comparative analysis
-  python3 classification/classify.py --step report      # generate RESULTS.md
+  python3 classification/classify.py                    # full pipeline (recommended)
+  python3 classification/classify.py --step train       # train only (models stay in memory)
+
+Note: individual steps require prior steps to have run in the same process.
+Use --step all (default) for the complete pipeline.
 """
 
 import argparse
@@ -92,6 +92,10 @@ def load_split(name, features):
 
 
 def encode_labels(y_train, y_val, y_test):
+    observed = sorted(set(y_train) | set(y_val) | set(y_test))
+    assert set(observed) == set(CLASS_ORDER), (
+        f"Label mismatch: expected {sorted(CLASS_ORDER)}, got {observed}"
+    )
     le = LabelEncoder()
     le.classes_ = np.array(CLASS_ORDER)
     return (
@@ -219,8 +223,28 @@ def train_models(X_train, y_train, X_val, y_val, le, scaler):
     print("Training MLP...")
     X_train_s = scaler.transform(X_train)
     X_val_s = scaler.transform(X_val)
+
+    # sklearn MLPClassifier does not support sample_weight; balance via
+    # in-memory oversampling of minority classes to match the majority count.
+    unique, counts = np.unique(y_train, return_counts=True)
+    max_count = counts.max()
+    X_balanced, y_balanced = [X_train_s], [y_train]
+    for cls, cnt in zip(unique, counts):
+        if cnt < max_count:
+            mask = y_train == cls
+            n_extra = max_count - cnt
+            rng = np.random.RandomState(RANDOM_STATE)
+            idx = rng.choice(np.where(mask)[0], size=n_extra, replace=True)
+            X_balanced.append(X_train_s[idx])
+            y_balanced.append(y_train[idx])
+    X_train_bal = np.vstack(X_balanced)
+    y_train_bal = np.concatenate(y_balanced)
+    shuffle_idx = np.random.RandomState(RANDOM_STATE).permutation(len(y_train_bal))
+    X_train_bal = X_train_bal[shuffle_idx]
+    y_train_bal = y_train_bal[shuffle_idx]
+
     mlp = build_mlp()
-    mlp.fit(X_train_s, y_train)
+    mlp.fit(X_train_bal, y_train_bal)
     models["mlp"] = mlp
     val_metrics["mlp"] = compute_metrics(y_val, mlp.predict(X_val_s), le)
     print(f"  Val Macro F1: {val_metrics['mlp']['macro_f1']:.4f}  "
@@ -372,10 +396,11 @@ def save_comparison(val_metrics, test_metrics, importances, features):
 # FL model spec
 # ---------------------------------------------------------------------------
 def save_fl_spec(features, scaler, test_metrics):
-    best_name = max(test_metrics, key=lambda k: test_metrics[k]["macro_f1"])
     spec = {
         "model_type": "MLP",
-        "description": "Feed-forward neural network for FL client-side training",
+        "description": "Feed-forward neural network for FL client-side training. "
+                       "MLP chosen over RF/GBC (which match performance) for ease of "
+                       "PyTorch reimplementation and FedAvg weight averaging.",
         "features": features,
         "n_features": len(features),
         "preprocessing": {
@@ -402,9 +427,10 @@ def save_fl_spec(features, scaler, test_metrics):
         },
         "label_order": CLASS_ORDER,
         "centralized_baseline": {
-            "best_model": best_name.upper(),
-            "test_macro_f1": test_metrics[best_name]["macro_f1"],
-            "test_mcc": test_metrics[best_name]["mcc"],
+            "model": "MLP",
+            "note": "All three models (RF, GBC, MLP) achieve identical test performance",
+            "test_macro_f1": test_metrics["mlp"]["macro_f1"],
+            "test_mcc": test_metrics["mlp"]["mcc"],
         },
     }
     with open(OUT_DIR / "model_spec_fl.json", "w") as f:
@@ -435,10 +461,9 @@ def generate_report(features, val_metrics, test_metrics, importances):
             f"| {tm['macro_f1']:.4f} | {tm['mcc']:.4f} | {tm['accuracy']:.4f} |"
         )
 
-    lines.append("\n## Per-Class Test Metrics (Best Model)\n")
-    best_name = max(test_metrics, key=lambda k: test_metrics[k]["macro_f1"])
-    tm = test_metrics[best_name]
-    lines.append(f"**Model: {best_name.upper()}**\n")
+    lines.append("\n## Per-Class Test Metrics\n")
+    tm = test_metrics["mlp"]
+    lines.append("**Model: MLP** (FL candidate; RF and GBC achieve identical metrics)\n")
     lines.append("| Class | Precision | Recall | F1 | FPR | Support |")
     lines.append("|---|---|---|---|---|---|")
     for cls_name in CLASS_ORDER:

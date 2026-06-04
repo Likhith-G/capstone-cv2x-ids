@@ -528,60 +528,60 @@
       0.256523
     ],
     [
+      "n_flood",
+      0.233909
+    ],
+    [
       "duration",
-      0.147147
+      0.168438
+    ],
+    [
+      "total_bytes",
+      0.13372
     ],
     [
       "bsm_mean_iat",
-      0.137924
-    ],
-    [
-      "n_flood",
-      0.113764
+      0.113095
     ],
     [
       "flood_mean_iat",
       0.111694
     ],
     [
+      "mean_pkt_size",
+      0.109494
+    ],
+    [
       "std_pkt_size",
-      0.107982
+      0.105657
+    ],
+    [
+      "flood_ratio",
+      0.091306
     ],
     [
       "mean_speed_deviation",
-      0.091126
+      0.090044
     ],
     [
       "unique_vehicle_ids",
       0.08446
     ],
     [
+      "max_iat",
+      0.069376
+    ],
+    [
       "min_iat",
       0.062308
     ],
     [
-      "flood_ratio",
-      0.061458
-    ],
-    [
-      "max_iat",
-      0.009923
+      "pkt_rate",
+      0.025182
     ],
     [
       "mean_iat",
       0.006589
-    ],
-    [
-      "mean_pkt_size",
-      0.005512
-    ],
-    [
-      "total_bytes",
-      0.002193
-    ],
-    [
-      "pkt_rate",
-      0.002193
     ]
   ]
 }

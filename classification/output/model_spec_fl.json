@@ -1,6 +1,6 @@
 {
   "model_type": "MLP",
-  "description": "Feed-forward neural network for FL client-side training",
+  "description": "Feed-forward neural network for FL client-side training. MLP chosen over RF/GBC (which match performance) for ease of PyTorch reimplementation and FedAvg weight averaging.",
   "features": [
     "mean_iat",
     "mean_pkt_size",
@@ -92,7 +92,8 @@
     "VehicularDoS"
   ],
   "centralized_baseline": {
-    "best_model": "RF",
+    "model": "MLP",
+    "note": "All three models (RF, GBC, MLP) achieve identical test performance",
     "test_macro_f1": 1.0,
     "test_mcc": 1.0
   }

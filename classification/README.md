@@ -29,7 +29,7 @@ Individual steps: `--step {train,evaluate,compare,report}`.
 |---|---|---|
 | Random Forest (RF) | 300 trees, max_depth=25 | `class_weight='balanced'` |
 | Histogram Gradient Boosting (GBC) | 300 iterations, max_depth=8 | Balanced sample weights |
-| Multi-Layer Perceptron (MLP) | [128, 64, 32] hidden layers, ReLU | StandardScaler + early stopping |
+| Multi-Layer Perceptron (MLP) | [128, 64, 32] hidden layers, ReLU | In-memory oversampling to balance classes + StandardScaler + early stopping |
 
 ---
 
