@@ -1,0 +1,271 @@
+{
+  "experiment": "5c_scenario_3e_42s",
+  "partition_type": "scenario",
+  "n_clients": 5,
+  "alpha": null,
+  "local_epochs": 3,
+  "seed": 42,
+  "global_rounds": 50,
+  "comm_bytes": 25560000,
+  "final_test": {
+    "macro_f1": 0.221342,
+    "mcc": 0.578254,
+    "accuracy": 0.903614,
+    "per_class": {
+      "Benign": {
+        "precision": 0.972627,
+        "recall": 1.0,
+        "f1": 0.986124,
+        "fpr": 0.184211,
+        "support": 2736
+      },
+      "FalseDataInjection": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "HTTPFlood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "ICMPFlood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "PositionSpoof": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "RandomPosition": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.666667,
+        "fpr": 0.012195,
+        "support": 38
+      },
+      "Replay": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.012195,
+        "support": 38
+      },
+      "SYNFlood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "SlowDoS": {
+        "precision": 0.333333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "fpr": 0.02439,
+        "support": 38
+      },
+      "Sybil": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "UDPFlood": {
+        "precision": 0.336283,
+        "recall": 1.0,
+        "f1": 0.503311,
+        "fpr": 0.024069,
+        "support": 38
+      },
+      "VehicularDoS": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      }
+    },
+    "confusion_matrix": [
+      [
+        2736,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        37,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0
+      ]
+    ]
+  }
+}

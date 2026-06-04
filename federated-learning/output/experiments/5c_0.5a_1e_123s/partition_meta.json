@@ -1,0 +1,170 @@
+{
+  "n_clients": 5,
+  "clients": [
+    {
+      "client_id": 0,
+      "n_samples": 521,
+      "label_counts": {
+        "Benign": 268,
+        "FalseDataInjection": 9,
+        "HTTPFlood": 1,
+        "ICMPFlood": 55,
+        "PositionSpoof": 1,
+        "RandomPosition": 18,
+        "Replay": 58,
+        "SYNFlood": 75,
+        "SlowDoS": 1,
+        "Sybil": 14,
+        "UDPFlood": 20,
+        "VehicularDoS": 1
+      },
+      "label_proportions": {
+        "Benign": 0.514395,
+        "FalseDataInjection": 0.017274,
+        "HTTPFlood": 0.001919,
+        "ICMPFlood": 0.105566,
+        "PositionSpoof": 0.001919,
+        "RandomPosition": 0.034549,
+        "Replay": 0.111324,
+        "SYNFlood": 0.143954,
+        "SlowDoS": 0.001919,
+        "Sybil": 0.026871,
+        "UDPFlood": 0.038388,
+        "VehicularDoS": 0.001919
+      },
+      "entropy": 2.2498
+    },
+    {
+      "client_id": 1,
+      "n_samples": 423,
+      "label_counts": {
+        "Benign": 127,
+        "FalseDataInjection": 4,
+        "HTTPFlood": 38,
+        "ICMPFlood": 2,
+        "PositionSpoof": 4,
+        "RandomPosition": 24,
+        "Replay": 45,
+        "SYNFlood": 2,
+        "SlowDoS": 100,
+        "Sybil": 53,
+        "UDPFlood": 1,
+        "VehicularDoS": 23
+      },
+      "label_proportions": {
+        "Benign": 0.300236,
+        "FalseDataInjection": 0.009456,
+        "HTTPFlood": 0.089835,
+        "ICMPFlood": 0.004728,
+        "PositionSpoof": 0.009456,
+        "RandomPosition": 0.056738,
+        "Replay": 0.106383,
+        "SYNFlood": 0.004728,
+        "SlowDoS": 0.236407,
+        "Sybil": 0.125296,
+        "UDPFlood": 0.002364,
+        "VehicularDoS": 0.054374
+      },
+      "entropy": 2.7289
+    },
+    {
+      "client_id": 2,
+      "n_samples": 3656,
+      "label_counts": {
+        "Benign": 3505,
+        "FalseDataInjection": 11,
+        "HTTPFlood": 5,
+        "ICMPFlood": 1,
+        "PositionSpoof": 15,
+        "RandomPosition": 54,
+        "Replay": 6,
+        "SYNFlood": 27,
+        "SlowDoS": 8,
+        "Sybil": 9,
+        "UDPFlood": 14,
+        "VehicularDoS": 1
+      },
+      "label_proportions": {
+        "Benign": 0.958698,
+        "FalseDataInjection": 0.003009,
+        "HTTPFlood": 0.001368,
+        "ICMPFlood": 0.000274,
+        "PositionSpoof": 0.004103,
+        "RandomPosition": 0.01477,
+        "Replay": 0.001641,
+        "SYNFlood": 0.007385,
+        "SlowDoS": 0.002188,
+        "Sybil": 0.002462,
+        "UDPFlood": 0.003829,
+        "VehicularDoS": 0.000274
+      },
+      "entropy": 0.3643
+    },
+    {
+      "client_id": 3,
+      "n_samples": 5723,
+      "label_counts": {
+        "Benign": 5548,
+        "FalseDataInjection": 3,
+        "HTTPFlood": 4,
+        "ICMPFlood": 54,
+        "PositionSpoof": 56,
+        "RandomPosition": 1,
+        "Replay": 1,
+        "SYNFlood": 6,
+        "SlowDoS": 1,
+        "Sybil": 6,
+        "UDPFlood": 42,
+        "VehicularDoS": 1
+      },
+      "label_proportions": {
+        "Benign": 0.969422,
+        "FalseDataInjection": 0.000524,
+        "HTTPFlood": 0.000699,
+        "ICMPFlood": 0.009436,
+        "PositionSpoof": 0.009785,
+        "RandomPosition": 0.000175,
+        "Replay": 0.000175,
+        "SYNFlood": 0.001048,
+        "SlowDoS": 0.000175,
+        "Sybil": 0.001048,
+        "UDPFlood": 0.007339,
+        "VehicularDoS": 0.000175
+      },
+      "entropy": 0.2668
+    },
+    {
+      "client_id": 4,
+      "n_samples": 2027,
+      "label_counts": {
+        "Benign": 1648,
+        "FalseDataInjection": 87,
+        "HTTPFlood": 66,
+        "ICMPFlood": 2,
+        "PositionSpoof": 38,
+        "RandomPosition": 17,
+        "Replay": 4,
+        "SYNFlood": 4,
+        "SlowDoS": 4,
+        "Sybil": 32,
+        "UDPFlood": 37,
+        "VehicularDoS": 88
+      },
+      "label_proportions": {
+        "Benign": 0.813024,
+        "FalseDataInjection": 0.042921,
+        "HTTPFlood": 0.03256,
+        "ICMPFlood": 0.000987,
+        "PositionSpoof": 0.018747,
+        "RandomPosition": 0.008387,
+        "Replay": 0.001973,
+        "SYNFlood": 0.001973,
+        "SlowDoS": 0.001973,
+        "Sybil": 0.015787,
+        "UDPFlood": 0.018254,
+        "VehicularDoS": 0.043414
+      },
+      "entropy": 1.2235
+    }
+  ]
+}

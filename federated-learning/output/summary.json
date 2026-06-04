@@ -1,0 +1,559 @@
+{
+  "n_experiments": 60,
+  "centralized_test_f1": 1.0,
+  "bandwidth": {
+    "model_params": 12780,
+    "model_bytes": 51120,
+    "centralized": {
+      "total_bytes": 790400,
+      "total_mb": 0.7538,
+      "description": "12350 samples x 64 bytes/sample"
+    },
+    "federated": {
+      "bytes_per_round": 511200,
+      "total_bytes": 25560000,
+      "total_mb": 24.3759,
+      "description": "50 rounds x 5 clients x 2 x 51120 bytes"
+    },
+    "ratio_fl_over_centralized": 32.3381,
+    "production_projection": {
+      "raw_data_mb_per_min": 20.32,
+      "fl_update_kb_per_round": 499.22,
+      "note": "At production scale (1000 vehicles), FL sends ~50KB/round vs MB/min of raw data"
+    }
+  },
+  "latency": {
+    "n_timed": 2000,
+    "threads": 1,
+    "mean_us": 27.67,
+    "median_us": 28.06,
+    "p95_us": 29.42,
+    "p99_us": 30.75,
+    "max_us": 56.75,
+    "pc5_budget_us": 100000,
+    "headroom_factor": 3614.4,
+    "passes_100ms": true
+  },
+  "best_fl": {
+    "macro_f1": 1.0,
+    "mcc": 1.0,
+    "accuracy": 1.0,
+    "per_class": {
+      "Benign": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 2736
+      },
+      "FalseDataInjection": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "HTTPFlood": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "ICMPFlood": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "PositionSpoof": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "RandomPosition": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "Replay": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "SYNFlood": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "SlowDoS": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "Sybil": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "UDPFlood": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "VehicularDoS": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "support": 38
+      }
+    },
+    "confusion_matrix": [
+      [
+        2736,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38
+      ]
+    ]
+  },
+  "worst_fl": {
+    "macro_f1": 0.221342,
+    "mcc": 0.578254,
+    "accuracy": 0.903614,
+    "per_class": {
+      "Benign": {
+        "precision": 0.972627,
+        "recall": 1.0,
+        "f1": 0.986124,
+        "fpr": 0.184211,
+        "support": 2736
+      },
+      "FalseDataInjection": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "HTTPFlood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "ICMPFlood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "PositionSpoof": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "RandomPosition": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.666667,
+        "fpr": 0.012195,
+        "support": 38
+      },
+      "Replay": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.012195,
+        "support": 38
+      },
+      "SYNFlood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "SlowDoS": {
+        "precision": 0.333333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "fpr": 0.02439,
+        "support": 38
+      },
+      "Sybil": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      },
+      "UDPFlood": {
+        "precision": 0.336283,
+        "recall": 1.0,
+        "f1": 0.503311,
+        "fpr": 0.024069,
+        "support": 38
+      },
+      "VehicularDoS": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "support": 38
+      }
+    },
+    "confusion_matrix": [
+      [
+        2736,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        37,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0,
+        0,
+        0
+      ],
+      [
+        38,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        38,
+        0
+      ]
+    ]
+  }
+}

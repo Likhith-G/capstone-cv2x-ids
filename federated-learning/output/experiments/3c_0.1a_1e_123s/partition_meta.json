@@ -1,0 +1,104 @@
+{
+  "n_clients": 3,
+  "clients": [
+    {
+      "client_id": 0,
+      "n_samples": 420,
+      "label_counts": {
+        "Benign": 1,
+        "FalseDataInjection": 111,
+        "HTTPFlood": 1,
+        "ICMPFlood": 104,
+        "PositionSpoof": 1,
+        "RandomPosition": 111,
+        "Replay": 1,
+        "SYNFlood": 1,
+        "SlowDoS": 39,
+        "Sybil": 1,
+        "UDPFlood": 1,
+        "VehicularDoS": 48
+      },
+      "label_proportions": {
+        "Benign": 0.002381,
+        "FalseDataInjection": 0.264286,
+        "HTTPFlood": 0.002381,
+        "ICMPFlood": 0.247619,
+        "PositionSpoof": 0.002381,
+        "RandomPosition": 0.264286,
+        "Replay": 0.002381,
+        "SYNFlood": 0.002381,
+        "SlowDoS": 0.092857,
+        "Sybil": 0.002381,
+        "UDPFlood": 0.002381,
+        "VehicularDoS": 0.114286
+      },
+      "entropy": 2.3347
+    },
+    {
+      "client_id": 1,
+      "n_samples": 128,
+      "label_counts": {
+        "Benign": 1,
+        "FalseDataInjection": 1,
+        "HTTPFlood": 1,
+        "ICMPFlood": 7,
+        "PositionSpoof": 1,
+        "RandomPosition": 1,
+        "Replay": 1,
+        "SYNFlood": 111,
+        "SlowDoS": 1,
+        "Sybil": 1,
+        "UDPFlood": 1,
+        "VehicularDoS": 1
+      },
+      "label_proportions": {
+        "Benign": 0.007812,
+        "FalseDataInjection": 0.007812,
+        "HTTPFlood": 0.007812,
+        "ICMPFlood": 0.054688,
+        "PositionSpoof": 0.007812,
+        "RandomPosition": 0.007812,
+        "Replay": 0.007812,
+        "SYNFlood": 0.867188,
+        "SlowDoS": 0.007812,
+        "Sybil": 0.007812,
+        "UDPFlood": 0.007812,
+        "VehicularDoS": 0.007812
+      },
+      "entropy": 0.9544
+    },
+    {
+      "client_id": 2,
+      "n_samples": 11802,
+      "label_counts": {
+        "Benign": 11094,
+        "FalseDataInjection": 2,
+        "HTTPFlood": 112,
+        "ICMPFlood": 3,
+        "PositionSpoof": 112,
+        "RandomPosition": 2,
+        "Replay": 112,
+        "SYNFlood": 2,
+        "SlowDoS": 74,
+        "Sybil": 112,
+        "UDPFlood": 112,
+        "VehicularDoS": 65
+      },
+      "label_proportions": {
+        "Benign": 0.94001,
+        "FalseDataInjection": 0.000169,
+        "HTTPFlood": 0.00949,
+        "ICMPFlood": 0.000254,
+        "PositionSpoof": 0.00949,
+        "RandomPosition": 0.000169,
+        "Replay": 0.00949,
+        "SYNFlood": 0.000169,
+        "SlowDoS": 0.00627,
+        "Sybil": 0.00949,
+        "UDPFlood": 0.00949,
+        "VehicularDoS": 0.005508
+      },
+      "entropy": 0.4993
+    }
+  ]
+}
