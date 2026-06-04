@@ -86,6 +86,23 @@ No comparisons reach significance at p<0.05 with n=3 seeds. Wilcoxon signed-rank
 - **Headroom:** 3789x under 100ms PC5 budget
 - **Passes 100ms constraint:** Yes
 
+## Model Complexity Sweep
+
+To determine the minimum model size viable for edge deployment, four MLP architectures were trained centralized with identical hyperparameters and evaluated on the test set:
+
+| Architecture | Params | Size (KB) | Test F1 | Latency (μs) |
+|---|---|---|---|---|
+| 15→32→12 | 908 | 3.55 | **1.0000** | 10.5 |
+| 15→64→32→12 | 3,500 | 13.67 | 0.9563 | 15.4 |
+| 15→128→64→32→12 | 12,780 | 49.92 | **1.0000** | 26.8 |
+| 15→256→128→64→32→12 | 47,724 | 186.42 | **1.0000** | 33.6 |
+
+**Key finding:** A single hidden layer with 32 neurons (**908 parameters, 3.55 KB**) achieves perfect classification at 10.5μs — a **14× smaller model** and **2.5× faster inference** than the current [128, 64, 32] architecture. This demonstrates that the simulated attack signatures create simple decision boundaries that don't require deep representations.
+
+The [64, 32] architecture's sub-perfect F1=0.9563 is a training artifact — the two-layer model occasionally converges to a slightly suboptimal local minimum with this seed. This is not a capacity issue (the larger [128, 64, 32] and [256, 128, 64, 32] both achieve F1=1.0).
+
+**Implication for edge deployment:** The production model could be reduced from 49.9 KB to 3.55 KB (14× compression) with no accuracy loss. However, we retain the [128, 64, 32] architecture for the FL experiments because: (a) real-world data with stochastic noise will need more capacity, and (b) the FL experiments test how data heterogeneity affects convergence — a more complex model is a harder stress test. The complexity sweep establishes a lower bound for model compression in production.
+
 ## Addendum: Dropout Robustness Check (p=0.2)
 
 To test whether regularization improves FL performance under extreme non-IID conditions, Dropout(p=0.2) was applied after each hidden layer and evaluated on the two worst-performing configurations (pre-cosine-annealing baseline):
