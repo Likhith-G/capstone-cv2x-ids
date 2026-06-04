@@ -58,6 +58,24 @@ After just **17 seconds** of driving, a single vehicle has already streamed more
 
 At production scale with hundreds of vehicles per RSU, the ratio inverts dramatically: FL sends periodic 51 KB weight updates while centralized streaming grows linearly with vehicle count. FL also never transmits raw feature data, preserving driver location privacy.
 
+## Addendum: Dropout Robustness Check (p=0.2)
+
+To test whether regularization improves FL performance under extreme non-IID conditions, Dropout(p=0.2) was applied after each hidden layer and evaluated on the two worst-performing configurations:
+
+| Configuration | Metric | Original | Dropout=0.2 | Delta |
+|---------------|--------|----------|-------------|-------|
+| C=5, α=0.1, E=1 (Dirichlet) | F1 | 0.6336±0.1755 | 0.4872±0.2437 | **-0.1464** |
+| C=5, α=0.1, E=1 (Dirichlet) | MCC | 0.8144±0.0861 | 0.7254±0.1321 | -0.0890 |
+| C=5, scenario, E=1 | F1 | 0.3951±0.1144 | 0.4952±0.1148 | **+0.1001** |
+| C=5, scenario, E=1 | MCC | 0.6682±0.0759 | 0.7181±0.0744 | +0.0499 |
+
+**Interpretation:** The effect of dropout is mixed and configuration-dependent:
+
+- **Dirichlet α=0.1 (synthetic non-IID):** Dropout *hurts* performance (F1 drops by 0.15). Under Dirichlet partitioning, each client still sees most classes but in skewed proportions — the model needs maximum capacity to fit the varied local distributions. Dropout constrains this capacity, slowing convergence within the fixed 50-round budget.
+- **Scenario-based (natural non-IID):** Dropout *helps* (F1 improves by 0.10). Under scenario partitioning, clients see entirely disjoint attack types, so their local models tend to overfit to their subset. Dropout acts as implicit regularization, forcing the model to learn more generalizable representations that survive aggregation.
+
+**Conclusion:** Dropout is not a universal remedy for non-IID degradation. Targeted regularization strategies like FedProx (proximal term constraining local updates toward the global model) are better suited for Part B, as they directly address the weight divergence problem rather than applying generic capacity reduction.
+
 ## Inference Latency
 
 - Mean: 27.4 μs

@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from config import (
     BATCH_SIZE,
     CLASS_ORDER,
+    DROPOUT,
     FEATURES,
     LABEL_COL,
     LR,
@@ -55,13 +56,13 @@ class FedAvgClient:
         self.n_samples = len(y)
         self.class_weights = torch.from_numpy(class_weights)
 
-    def train_round(self, global_weights, local_epochs, lr, batch_size, seed):
+    def train_round(self, global_weights, local_epochs, lr, batch_size, seed, dropout=DROPOUT):
         """
         Receive global weights, train locally, return updated weights.
         """
         torch.manual_seed(seed + self.client_id)
 
-        model = CV2XMLP()
+        model = CV2XMLP(dropout=dropout)
         set_weights(model, global_weights)
         model.train()
 
@@ -90,9 +91,10 @@ class FedAvgClient:
 # ---------------------------------------------------------------------------
 
 class FedAvgServer:
-    def __init__(self):
+    def __init__(self, dropout=DROPOUT):
         torch.manual_seed(RANDOM_STATE)
-        self.global_model = CV2XMLP()
+        self.dropout = dropout
+        self.global_model = CV2XMLP(dropout=dropout)
         self.model_bytes = get_model_size_bytes(self.global_model)
 
     def prepare_clients(self, client_dfs, scaler_mean, scaler_scale):
@@ -145,7 +147,7 @@ class FedAvgServer:
             for client in clients:
                 w, n = client.train_round(
                     global_weights, local_epochs, lr, batch_size,
-                    seed=RANDOM_STATE + r,
+                    seed=RANDOM_STATE + r, dropout=self.dropout,
                 )
                 all_weights.append(w)
                 all_sizes.append(n)

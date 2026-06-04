@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from config import HIDDEN_LAYERS, N_CLASSES, N_FEATURES
+from config import DROPOUT, HIDDEN_LAYERS, N_CLASSES, N_FEATURES
 
 
 class CV2XMLP(nn.Module):
@@ -18,6 +18,7 @@ class CV2XMLP(nn.Module):
         input_dim=N_FEATURES,
         hidden_layers=None,
         n_classes=N_CLASSES,
+        dropout=DROPOUT,
     ):
         super().__init__()
         if hidden_layers is None:
@@ -28,6 +29,8 @@ class CV2XMLP(nn.Module):
         for h in hidden_layers:
             layers.append(nn.Linear(prev_dim, h))
             layers.append(nn.ReLU())
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
             prev_dim = h
         layers.append(nn.Linear(prev_dim, n_classes))
         self.net = nn.Sequential(*layers)

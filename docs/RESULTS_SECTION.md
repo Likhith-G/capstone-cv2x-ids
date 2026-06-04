@@ -135,7 +135,20 @@ However, the following limitations remain documented for transparency:
 
 4. **Class Imbalance:** The dataset is naturally skewed towards the benign class (88.5%). Downstream federated learning models must utilize stratified sampling, class weighting, or focal loss mechanisms to prevent collapse.
 
-## 4.9 Federated Learning Communication Overhead
+## 4.9 Dropout Robustness Check Under Non-IID Conditions
+
+To evaluate whether standard regularization mitigates FL performance degradation under extreme data heterogeneity, Dropout(p=0.2) was applied after each hidden layer of the MLP and tested on the two worst-performing FedAvg configurations (C=5, α=0.1, E=1 and C=5, scenario-based, E=1), each averaged across 3 seeds.
+
+**Table 4: Dropout Robustness Check (mean±std across 3 seeds)**
+
+| Configuration | Metric | Original | Dropout=0.2 | Delta |
+|---------------|--------|----------|-------------|-------|
+| C=5, α=0.1, E=1 (Dirichlet) | Macro F1 | 0.6336±0.1755 | 0.4872±0.2437 | -0.1464 |
+| C=5, scenario, E=1 | Macro F1 | 0.3951±0.1144 | 0.4952±0.1148 | +0.1001 |
+
+The effect is configuration-dependent. Under Dirichlet partitioning (skewed but overlapping class distributions), dropout constrains model capacity and slows convergence within the 50-round budget (F1 drops by 0.15). Under scenario-based partitioning (completely disjoint attack types per client), dropout acts as implicit regularization against local overfitting, improving F1 by 0.10. This mixed result confirms that generic regularization is insufficient for non-IID FL — targeted approaches like FedProx, which directly constrains local weight divergence via a proximal term, are better suited and will be evaluated in Part B.
+
+## 4.10 Federated Learning Communication Overhead
 
 The FedAvg prototype (Section 5.3 of the FL workstream) reports FL training communication costs of 14.6 MB (C=3) and 24.4 MB (C=5) over 50 global rounds, compared to 0.75 MB for a one-time centralized dataset upload — a 19–32x overhead. **This ratio is an artifact of the small simulation dataset** (12,350 training samples × 64 bytes/sample) and does not reflect production communication economics.
 

@@ -1,0 +1,170 @@
+{
+  "n_clients": 5,
+  "clients": [
+    {
+      "client_id": 0,
+      "n_samples": 3116,
+      "label_counts": {
+        "Benign": 2888,
+        "FalseDataInjection": 0,
+        "HTTPFlood": 0,
+        "ICMPFlood": 0,
+        "PositionSpoof": 0,
+        "RandomPosition": 0,
+        "Replay": 0,
+        "SYNFlood": 114,
+        "SlowDoS": 0,
+        "Sybil": 0,
+        "UDPFlood": 114,
+        "VehicularDoS": 0
+      },
+      "label_proportions": {
+        "Benign": 0.926829,
+        "FalseDataInjection": 0.0,
+        "HTTPFlood": 0.0,
+        "ICMPFlood": 0.0,
+        "PositionSpoof": 0.0,
+        "RandomPosition": 0.0,
+        "Replay": 0.0,
+        "SYNFlood": 0.036585,
+        "SlowDoS": 0.0,
+        "Sybil": 0.0,
+        "UDPFlood": 0.036585,
+        "VehicularDoS": 0.0
+      },
+      "entropy": 0.4508
+    },
+    {
+      "client_id": 1,
+      "n_samples": 3078,
+      "label_counts": {
+        "Benign": 2736,
+        "FalseDataInjection": 0,
+        "HTTPFlood": 0,
+        "ICMPFlood": 0,
+        "PositionSpoof": 0,
+        "RandomPosition": 114,
+        "Replay": 114,
+        "SYNFlood": 0,
+        "SlowDoS": 114,
+        "Sybil": 0,
+        "UDPFlood": 0,
+        "VehicularDoS": 0
+      },
+      "label_proportions": {
+        "Benign": 0.888889,
+        "FalseDataInjection": 0.0,
+        "HTTPFlood": 0.0,
+        "ICMPFlood": 0.0,
+        "PositionSpoof": 0.0,
+        "RandomPosition": 0.037037,
+        "Replay": 0.037037,
+        "SYNFlood": 0.0,
+        "SlowDoS": 0.037037,
+        "Sybil": 0.0,
+        "UDPFlood": 0.0,
+        "VehicularDoS": 0.0
+      },
+      "entropy": 0.6794
+    },
+    {
+      "client_id": 2,
+      "n_samples": 2052,
+      "label_counts": {
+        "Benign": 1824,
+        "FalseDataInjection": 0,
+        "HTTPFlood": 0,
+        "ICMPFlood": 114,
+        "PositionSpoof": 114,
+        "RandomPosition": 0,
+        "Replay": 0,
+        "SYNFlood": 0,
+        "SlowDoS": 0,
+        "Sybil": 0,
+        "UDPFlood": 0,
+        "VehicularDoS": 0
+      },
+      "label_proportions": {
+        "Benign": 0.888889,
+        "FalseDataInjection": 0.0,
+        "HTTPFlood": 0.0,
+        "ICMPFlood": 0.055556,
+        "PositionSpoof": 0.055556,
+        "RandomPosition": 0.0,
+        "Replay": 0.0,
+        "SYNFlood": 0.0,
+        "SlowDoS": 0.0,
+        "Sybil": 0.0,
+        "UDPFlood": 0.0,
+        "VehicularDoS": 0.0
+      },
+      "entropy": 0.6144
+    },
+    {
+      "client_id": 3,
+      "n_samples": 2052,
+      "label_counts": {
+        "Benign": 1824,
+        "FalseDataInjection": 114,
+        "HTTPFlood": 114,
+        "ICMPFlood": 0,
+        "PositionSpoof": 0,
+        "RandomPosition": 0,
+        "Replay": 0,
+        "SYNFlood": 0,
+        "SlowDoS": 0,
+        "Sybil": 0,
+        "UDPFlood": 0,
+        "VehicularDoS": 0
+      },
+      "label_proportions": {
+        "Benign": 0.888889,
+        "FalseDataInjection": 0.055556,
+        "HTTPFlood": 0.055556,
+        "ICMPFlood": 0.0,
+        "PositionSpoof": 0.0,
+        "RandomPosition": 0.0,
+        "Replay": 0.0,
+        "SYNFlood": 0.0,
+        "SlowDoS": 0.0,
+        "Sybil": 0.0,
+        "UDPFlood": 0.0,
+        "VehicularDoS": 0.0
+      },
+      "entropy": 0.6144
+    },
+    {
+      "client_id": 4,
+      "n_samples": 2052,
+      "label_counts": {
+        "Benign": 1824,
+        "FalseDataInjection": 0,
+        "HTTPFlood": 0,
+        "ICMPFlood": 0,
+        "PositionSpoof": 0,
+        "RandomPosition": 0,
+        "Replay": 0,
+        "SYNFlood": 0,
+        "SlowDoS": 0,
+        "Sybil": 114,
+        "UDPFlood": 0,
+        "VehicularDoS": 114
+      },
+      "label_proportions": {
+        "Benign": 0.888889,
+        "FalseDataInjection": 0.0,
+        "HTTPFlood": 0.0,
+        "ICMPFlood": 0.0,
+        "PositionSpoof": 0.0,
+        "RandomPosition": 0.0,
+        "Replay": 0.0,
+        "SYNFlood": 0.0,
+        "SlowDoS": 0.0,
+        "Sybil": 0.055556,
+        "UDPFlood": 0.0,
+        "VehicularDoS": 0.055556
+      },
+      "entropy": 0.6144
+    }
+  ]
+}
