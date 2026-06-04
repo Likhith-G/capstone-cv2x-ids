@@ -341,8 +341,9 @@ def generate_summary(all_results=None):
     # --- Latency profiling ---
     print("\n  Inference latency profiling:")
     latency = profile_inference()
+    latency_json = {k: v for k, v in latency.items() if k != "raw_us"}
     with open(OUT_DIR / "latency.json", "w") as f:
-        json.dump(latency, f, indent=2)
+        json.dump(latency_json, f, indent=2)
     print(f"    Mean: {latency['mean_us']:.1f} μs  "
           f"P95: {latency['p95_us']:.1f} μs  "
           f"P99: {latency['p99_us']:.1f} μs  "
@@ -353,6 +354,7 @@ def generate_summary(all_results=None):
     # --- Key figures ---
     _plot_noniid_degradation(agg_rows, cent_metrics)
     _plot_convergence_grid(all_results)
+    _plot_latency_histogram(latency)
 
     # --- RESULTS.md ---
     _generate_results_md(cent_metrics, agg_df, bw_all, latency, sig_comparisons)
@@ -362,7 +364,7 @@ def generate_summary(all_results=None):
         "n_experiments": len(all_results),
         "centralized_test_f1": cent_metrics["test"]["macro_f1"] if cent_metrics else None,
         "bandwidth": bw,
-        "latency": latency,
+        "latency": latency_json,
         "best_fl": max(all_results, key=lambda r: r["final_test"]["macro_f1"])["final_test"],
         "worst_fl": min(all_results, key=lambda r: r["final_test"]["macro_f1"])["final_test"],
     }
@@ -373,64 +375,68 @@ def generate_summary(all_results=None):
 
 
 def _plot_noniid_degradation(agg_rows, cent_metrics):
-    """Plot F1 vs alpha for each C (the money plot)."""
-    import matplotlib
-    matplotlib.use("Agg")
+    """Plot F1 vs alpha with shaded error bands (the money plot)."""
+    from plot_style import apply_style, COLORS, FULL_WIDTH
     import matplotlib.pyplot as plt
 
+    apply_style()
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
     dirichlet_rows = [r for r in agg_rows if r["partition"] == "dirichlet"]
     if not dirichlet_rows:
         return
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(FULL_WIDTH, 4.0))
+
+    style_map = {
+        (3, 1): {"color": COLORS["fedavg_c3"], "marker": "o", "ls": "-",  "label": "C=3, E=1"},
+        (3, 3): {"color": COLORS["fedavg_c3"], "marker": "o", "ls": "--", "label": "C=3, E=3"},
+        (5, 1): {"color": COLORS["fedavg_c5"], "marker": "s", "ls": "-",  "label": "C=5, E=1"},
+        (5, 3): {"color": COLORS["fedavg_c5"], "marker": "s", "ls": "--", "label": "C=5, E=3"},
+    }
 
     for c in sorted(set(r["C"] for r in dirichlet_rows)):
-        subset = [r for r in dirichlet_rows if r["C"] == c]
-        # Average across local_epochs for this plot
-        alpha_vals = sorted(set(r["alpha"] for r in subset))
-        f1_means = []
-        f1_stds = []
-        for a in alpha_vals:
-            group = [r for r in subset if r["alpha"] == a]
-            f1s = [r["f1_mean"] for r in group]
-            f1_means.append(np.mean(f1s))
-            f1_stds.append(np.mean([r["f1_std"] for r in group]))
+        for e in sorted(set(r["E"] for r in dirichlet_rows)):
+            subset = [r for r in dirichlet_rows if r["C"] == c and r["E"] == e]
+            if not subset:
+                continue
+            alpha_vals = sorted(set(r["alpha"] for r in subset))
+            f1_means = np.array([next(r["f1_mean"] for r in subset if r["alpha"] == a) for a in alpha_vals])
+            f1_stds = np.array([next(r["f1_std"] for r in subset if r["alpha"] == a) for a in alpha_vals])
 
-        ax.errorbar(
-            alpha_vals, f1_means, yerr=f1_stds,
-            marker="o", label=f"C={c}", capsize=3,
-        )
+            s = style_map.get((c, e), {"color": COLORS["muted"], "marker": "^", "ls": "-", "label": f"C={c},E={e}"})
+            ax.plot(alpha_vals, f1_means, marker=s["marker"], color=s["color"],
+                    linestyle=s["ls"], label=s["label"], zorder=3)
+            ax.fill_between(alpha_vals, np.maximum(f1_means - f1_stds, 0),
+                             np.minimum(f1_means + f1_stds, 1.0),
+                             alpha=0.1, color=s["color"], zorder=2)
 
     if cent_metrics:
-        ax.axhline(
-            y=cent_metrics["test"]["macro_f1"],
-            color="k", linestyle="--", alpha=0.7, label="Centralized",
-        )
+        ax.axhline(y=cent_metrics["test"]["macro_f1"], color=COLORS["centralized"],
+                    linestyle="--", linewidth=1.0, alpha=0.7, label="Centralized", zorder=1)
 
     ax.set_xscale("log")
-    ax.set_xlabel("Dirichlet α (log scale)")
+    ax.set_xlabel(r"Dirichlet $\alpha$ (log scale, higher = more IID)")
     ax.set_ylabel("Test Macro F1")
-    ax.set_title("FL Performance vs Non-IID Strength")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.set_ylim(-0.05, 1.05)
-    fig.tight_layout()
-    fig.savefig(FIG_DIR / "noniid_degradation.png", dpi=150)
+    ax.set_title("FedAvg Performance vs Data Heterogeneity")
+    ax.legend(loc="lower right")
+    all_f1 = [r["f1_mean"] for r in dirichlet_rows]
+    y_min = max(0, min(all_f1) - 0.1)
+    ax.set_ylim(y_min, 1.05)
+    ax.set_xlim(0.08, 150)
+    fig.savefig(FIG_DIR / "noniid_degradation.png")
     plt.close(fig)
     print("  Saved noniid_degradation.png")
 
 
 def _plot_convergence_grid(all_results):
     """Subplot grid: convergence curves for key configurations."""
-    import matplotlib
-    matplotlib.use("Agg")
+    from plot_style import apply_style, COLORS, FULL_WIDTH
     import matplotlib.pyplot as plt
 
+    apply_style()
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Pick seed=42, E=1 for the grid
     dirichlet = [r for r in all_results
                  if r["partition_type"] == "dirichlet"
                  and r["seed"] == 42 and r["local_epochs"] == 1]
@@ -443,9 +449,11 @@ def _plot_convergence_grid(all_results):
 
     fig, axes = plt.subplots(
         len(alphas), len(clients_list),
-        figsize=(5 * len(clients_list), 3.5 * len(alphas)),
+        figsize=(FULL_WIDTH, 2.2 * len(alphas)),
         squeeze=False,
     )
+
+    color_map = {3: COLORS["fedavg_c3"], 5: COLORS["fedavg_c5"]}
 
     for i, alpha in enumerate(alphas):
         for j, c in enumerate(clients_list):
@@ -460,21 +468,67 @@ def _plot_convergence_grid(all_results):
                         rm = json.load(f)
                     rounds = [m["round"] for m in rm]
                     f1s = [m["test_macro_f1"] for m in rm]
-                    ax.plot(rounds, f1s, "b-", linewidth=1.5)
+                    ax.plot(rounds, f1s, color=color_map.get(c, COLORS["muted"]))
 
             ax.set_ylim(-0.05, 1.05)
-            ax.set_title(f"C={c}, α={alpha}", fontsize=10)
-            ax.grid(True, alpha=0.3)
+            ax.set_title(f"C={c}, α={alpha}")
             if i == len(alphas) - 1:
                 ax.set_xlabel("Round")
             if j == 0:
                 ax.set_ylabel("Test F1")
 
-    fig.suptitle("FedAvg Convergence (E=1, seed=42)", fontsize=13)
+    fig.suptitle("FedAvg Convergence (E=1, seed=42)", y=1.01)
     fig.tight_layout()
-    fig.savefig(FIG_DIR / "convergence_grid.png", dpi=150)
+    fig.savefig(FIG_DIR / "convergence_grid.png")
     plt.close(fig)
     print("  Saved convergence_grid.png")
+
+
+def _plot_latency_histogram(latency):
+    """Histogram of inference latency measurements with percentile markers."""
+    from plot_style import apply_style, COLORS, COL_WIDTH
+    import matplotlib.pyplot as plt
+
+    apply_style()
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
+
+    raw = latency.get("raw_us")
+    if not raw:
+        return
+
+    raw = np.array(raw)
+    fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.8))
+
+    ax.hist(raw, bins=60, color=COLORS["fedavg_c3"], edgecolor="white",
+            linewidth=0.3, alpha=0.85, zorder=2)
+
+    mean_us = latency["mean_us"]
+    p95_us = latency["p95_us"]
+    p99_us = latency["p99_us"]
+
+    ax.axvline(mean_us, color=COLORS["centralized"], linestyle="-", linewidth=1.0,
+               label=f"Mean = {mean_us:.1f} μs", zorder=3)
+    ax.axvline(p95_us, color=COLORS["fedavg_c5"], linestyle="--", linewidth=1.0,
+               label=f"P95 = {p95_us:.1f} μs", zorder=3)
+    ax.axvline(p99_us, color=COLORS["highlight"], linestyle=":", linewidth=1.0,
+               label=f"P99 = {p99_us:.1f} μs", zorder=3)
+
+    ax.set_xlabel("Inference Latency (μs)")
+    ax.set_ylabel("Count")
+    ax.set_title("Single-Sample Inference Latency (n=2000)")
+    ax.legend(loc="upper right")
+
+    ymax = ax.get_ylim()[1]
+    ax.annotate(
+        f"PC5 budget: 100,000 μs\n({latency['headroom_factor']:.0f}× headroom)",
+        xy=(raw.max() * 1.05, ymax * 0.7),
+        fontsize=7, color=COLORS["muted"], style="italic",
+        ha="left",
+    )
+
+    fig.savefig(FIG_DIR / "latency_histogram.png")
+    plt.close(fig)
+    print("  Saved latency_histogram.png")
 
 
 def _generate_results_md(cent_metrics, agg_df, bw_all, latency, sig_comparisons=None):

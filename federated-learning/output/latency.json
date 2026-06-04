@@ -1,12 +1,12 @@
 {
   "n_timed": 2000,
   "threads": 1,
-  "mean_us": 26.54,
-  "median_us": 27.35,
-  "p95_us": 28.54,
-  "p99_us": 35.38,
-  "max_us": 64.96,
+  "mean_us": 26.39,
+  "median_us": 27.75,
+  "p95_us": 28.67,
+  "p99_us": 29.26,
+  "max_us": 41.58,
   "pc5_budget_us": 100000,
-  "headroom_factor": 3767.6,
+  "headroom_factor": 3789.1,
   "passes_100ms": true
 }

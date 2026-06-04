@@ -61,5 +61,6 @@ def profile_inference(model=None, n_warmup=200, n_timed=2000):
         "pc5_budget_us": pc5_budget_us,
         "headroom_factor": round(pc5_budget_us / latencies.mean(), 1),
         "passes_100ms": bool(latencies.max() < pc5_budget_us),
+        "raw_us": latencies.tolist(),
     }
     return results

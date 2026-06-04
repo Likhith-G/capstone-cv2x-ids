@@ -79,11 +79,11 @@ No comparisons reach significance at p<0.05 with n=3 seeds. Wilcoxon signed-rank
 
 ## Inference Latency
 
-- Mean: 26.5 μs
-- P95: 28.5 μs
-- P99: 35.4 μs
-- Max: 65.0 μs
-- **Headroom:** 3768x under 100ms PC5 budget
+- Mean: 26.4 μs
+- P95: 28.7 μs
+- P99: 29.3 μs
+- Max: 41.6 μs
+- **Headroom:** 3789x under 100ms PC5 budget
 - **Passes 100ms constraint:** Yes
 
 ## Addendum: Dropout Robustness Check (p=0.2)

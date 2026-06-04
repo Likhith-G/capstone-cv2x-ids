@@ -123,9 +123,12 @@ def partition_report(client_dfs, output_path=None):
 
 def plot_partition_heatmap(meta, output_path):
     """Plot a heatmap of label proportions across clients."""
-    import matplotlib
-    matplotlib.use("Agg")
+    from plot_style import apply_style, FULL_WIDTH
     import matplotlib.pyplot as plt
+
+    apply_style()
+    plt.rcParams["axes.spines.top"] = True
+    plt.rcParams["axes.spines.right"] = True
 
     n_clients = meta["n_clients"]
     matrix = np.zeros((n_clients, len(CLASS_ORDER)))
@@ -133,10 +136,10 @@ def plot_partition_heatmap(meta, output_path):
         for j, cls in enumerate(CLASS_ORDER):
             matrix[i, j] = c["label_proportions"][cls]
 
-    fig, ax = plt.subplots(figsize=(12, max(3, n_clients * 0.8)))
+    fig, ax = plt.subplots(figsize=(FULL_WIDTH, max(2.0, n_clients * 0.6)))
     im = ax.imshow(matrix, aspect="auto", cmap="YlOrRd")
     ax.set_xticks(range(len(CLASS_ORDER)))
-    ax.set_xticklabels([c[:10] for c in CLASS_ORDER], rotation=45, ha="right", fontsize=8)
+    ax.set_xticklabels([c[:10] for c in CLASS_ORDER], rotation=45, ha="right")
     ax.set_yticks(range(n_clients))
     ax.set_yticklabels([f"Client {i}" for i in range(n_clients)])
     ax.set_xlabel("Class")
@@ -149,8 +152,8 @@ def plot_partition_heatmap(meta, output_path):
                 ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=6,
                         color="white" if v > 0.4 else "black")
 
-    fig.colorbar(im, ax=ax, label="Proportion")
+    fig.colorbar(im, ax=ax, label="Proportion", shrink=0.8)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=150)
+    fig.savefig(output_path)
     plt.close(fig)
