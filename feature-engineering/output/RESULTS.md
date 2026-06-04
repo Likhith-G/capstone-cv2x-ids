@@ -125,3 +125,20 @@ Macro F1: 1.0000, MCC: 1.0000
 15. `mean_speed_deviation`
 
 Macro F1: 1.0000, MCC: 1.0000
+
+## Discussion: Replay Attack Detection Mechanism
+
+The feature selection pipeline did not select `seq_anomaly` — it ranked below the k=15 cutoff in both binary and multiclass evaluations. Replay attacks (S08) are instead detected via `mean_pos_deviation`: when an attacker retransmits cached BSMs from 5 seconds ago, the claimed coordinates lag behind the vehicle's true trajectory by the distance traveled in that interval. At vehicle speeds of 8–15 m/s, this produces 40–75m of positional deviation per window, which `mean_pos_deviation` captures cleanly.
+
+### Why `seq_anomaly` Is Weak
+
+The naive detection threshold (`seq_jump < 0` or `seq_jump > 100`) only triggers on **2.6% of replay windows**. This is because the attacker reuses cached BSMs that retain monotonically increasing sequence numbers from the original cache period — these replayed sequences do not violate the jump threshold. The feature is structurally unable to detect replay attacks where the sequence gap falls within the normal range.
+
+### Real-World Implications
+
+The `mean_pos_deviation`-based detection mechanism has an important limitation: it would fail against **position-coherent replay attacks** where the attacker interpolates or adjusts replayed coordinates to match expected trajectories. In a real C-V2X deployment, a sophisticated attacker could replay BSMs while correcting the position fields, rendering the positional deviation signal invisible.
+
+More robust approaches for future work include:
+- **Cryptographic nonce-based freshness checks** embedded in BSM payloads (ETSI TS 103 097)
+- **Timestamp-aware sequence analysis** using sliding-window entropy or autocorrelation to detect temporal inconsistencies in BSM arrival patterns
+- **Cross-vehicle plausibility checks** where neighboring vehicles corroborate each other's claimed positions
