@@ -18,7 +18,12 @@ def profile_inference(model=None, n_warmup=200, n_timed=2000):
     Returns dict with timing statistics in microseconds.
     """
     if model is None:
+        from config import OUT_DIR
+        weights_path = OUT_DIR / "centralized" / "model.pt"
         model = CV2XMLP()
+        if weights_path.exists():
+            model.load_state_dict(torch.load(weights_path, weights_only=True))
+        # Falls back to random weights if no checkpoint exists
 
     model.eval()
     torch.set_num_threads(1)  # Simulate single-core edge device

@@ -1,21 +1,46 @@
 {
-  "model_params": 12780,
-  "model_bytes": 51120,
-  "centralized": {
-    "total_bytes": 790400,
-    "total_mb": 0.7538,
-    "description": "12350 samples x 64 bytes/sample"
-  },
-  "federated": {
-    "bytes_per_round": 511200,
-    "total_bytes": 25560000,
-    "total_mb": 24.3759,
-    "description": "50 rounds x 5 clients x 2 x 51120 bytes"
-  },
-  "ratio_fl_over_centralized": 32.3381,
-  "production_projection": {
-    "raw_data_mb_per_min": 20.32,
-    "fl_update_kb_per_round": 499.22,
-    "note": "At production scale (1000 vehicles), FL sends ~50KB/round vs MB/min of raw data"
+  "configurations": {
+    "3": {
+      "model_params": 12780,
+      "model_bytes": 51120,
+      "centralized": {
+        "total_bytes": 790400,
+        "total_mb": 0.7538,
+        "description": "12350 samples x 64 bytes/sample"
+      },
+      "federated": {
+        "bytes_per_round": 306720,
+        "total_bytes": 15336000,
+        "total_mb": 14.6255,
+        "description": "50 rounds x 3 clients x 2 x 51120 bytes"
+      },
+      "ratio_fl_over_centralized": 19.4028,
+      "production_projection": {
+        "raw_data_mb_per_min": 20.32,
+        "fl_update_kb_per_round": 299.53,
+        "note": "At production scale (1000 vehicles), FL sends ~50KB/round vs MB/min of raw data"
+      }
+    },
+    "5": {
+      "model_params": 12780,
+      "model_bytes": 51120,
+      "centralized": {
+        "total_bytes": 790400,
+        "total_mb": 0.7538,
+        "description": "12350 samples x 64 bytes/sample"
+      },
+      "federated": {
+        "bytes_per_round": 511200,
+        "total_bytes": 25560000,
+        "total_mb": 24.3759,
+        "description": "50 rounds x 5 clients x 2 x 51120 bytes"
+      },
+      "ratio_fl_over_centralized": 32.3381,
+      "production_projection": {
+        "raw_data_mb_per_min": 20.32,
+        "fl_update_kb_per_round": 499.22,
+        "note": "At production scale (1000 vehicles), FL sends ~50KB/round vs MB/min of raw data"
+      }
+    }
   }
 }

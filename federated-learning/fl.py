@@ -310,15 +310,19 @@ def generate_summary(all_results=None):
 
     # --- Bandwidth estimation ---
     print("\n  Communication cost analysis:")
-    train_size = sum(r["n_clients"] for r in all_results[:1])  # placeholder
     train_df = pd.read_csv(DATA_DIR / "train.csv")
-    bw = estimate_comm_cost(5, GLOBAL_ROUNDS, len(train_df))
+    train_size = len(train_df)
+    bw_all = {}
+    for c in sorted(set(r["n_clients"] for r in all_results)):
+        bw_all[c] = estimate_comm_cost(c, GLOBAL_ROUNDS, train_size)
+    bw = bw_all[max(bw_all)]  # Use largest C for headline numbers
     with open(OUT_DIR / "bandwidth.json", "w") as f:
-        json.dump(bw, f, indent=2)
+        json.dump({"configurations": {str(k): v for k, v in bw_all.items()}}, f, indent=2)
     print(f"    Model: {bw['model_params']} params = {bw['model_bytes']} bytes")
     print(f"    Centralized: {bw['centralized']['total_mb']:.4f} MB (raw data upload)")
-    print(f"    FL (5 clients, {GLOBAL_ROUNDS} rounds): {bw['federated']['total_mb']:.4f} MB")
-    print(f"    Ratio: {bw['ratio_fl_over_centralized']:.2f}x")
+    for c, b in sorted(bw_all.items()):
+        print(f"    FL (C={c}, {GLOBAL_ROUNDS} rounds): {b['federated']['total_mb']:.4f} MB  "
+              f"(ratio: {b['ratio_fl_over_centralized']:.2f}x)")
 
     # --- Latency profiling ---
     print("\n  Inference latency profiling:")
@@ -337,7 +341,7 @@ def generate_summary(all_results=None):
     _plot_convergence_grid(all_results)
 
     # --- RESULTS.md ---
-    _generate_results_md(cent_metrics, agg_df, bw, latency)
+    _generate_results_md(cent_metrics, agg_df, bw_all, latency)
 
     # --- summary.json ---
     summary = {
@@ -459,7 +463,7 @@ def _plot_convergence_grid(all_results):
     print("  Saved convergence_grid.png")
 
 
-def _generate_results_md(cent_metrics, agg_df, bw, latency):
+def _generate_results_md(cent_metrics, agg_df, bw_all, latency):
     """Generate human-readable RESULTS.md."""
     lines = ["# Federated Learning Results\n"]
 
@@ -483,12 +487,20 @@ def _generate_results_md(cent_metrics, agg_df, bw, latency):
         )
     lines.append("")
 
+    bw = bw_all[max(bw_all)]
     lines.append("## Communication Cost\n")
     lines.append(f"- Model: {bw['model_params']} parameters ({bw['model_bytes']} bytes)")
-    lines.append(f"- Centralized (raw data): {bw['centralized']['total_mb']:.4f} MB")
-    lines.append(f"- FL (5 clients, {GLOBAL_ROUNDS} rounds): {bw['federated']['total_mb']:.4f} MB")
-    lines.append(f"- FL/Centralized ratio: {bw['ratio_fl_over_centralized']:.2f}x")
-    lines.append(f"- **Privacy benefit:** FL never transmits raw feature data")
+    lines.append(f"- Centralized (one-time raw data upload): {bw['centralized']['total_mb']:.4f} MB")
+    for c in sorted(bw_all):
+        b = bw_all[c]
+        lines.append(f"- FL (C={c}, {GLOBAL_ROUNDS} rounds): "
+                      f"{b['federated']['total_mb']:.4f} MB "
+                      f"(ratio: {b['ratio_fl_over_centralized']:.2f}x vs centralized)")
+    lines.append("")
+    lines.append("**Note:** On this small simulation dataset, one-time centralized upload "
+                 "is cheaper in bytes. In a real C-V2X deployment where vehicles continuously "
+                 "stream BSMs at 10 Hz, FL dramatically reduces ongoing communication compared "
+                 "to streaming raw traffic. FL also never transmits raw feature data (privacy).")
     lines.append("")
 
     lines.append("## Inference Latency\n")

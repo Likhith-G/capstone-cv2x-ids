@@ -86,13 +86,14 @@ All experiments: 50 global rounds, FedAvg aggregation, all clients participate e
 | 5 | 1 | 0.3951±0.1144 | 0.6682±0.0759 |
 | 5 | 3 | 0.3430±0.1016 | 0.6362±0.0438 |
 
-**Finding:** Scenario-based partitioning creates extreme non-IID where clients never see certain attack types. FedAvg cannot overcome this — motivates FedProx for Part B.
+**Finding:** Scenario-based partitioning creates extreme non-IID where clients never see certain attack types. This is more severe than most practical deployments and is used to stress-test FedAvg. FedAvg cannot overcome it — motivates FedProx for Part B.
 
 ### Communication Cost
 - Model: 12,780 params = 51 KB per exchange
-- Centralized (raw data): 0.75 MB
-- FL (5 clients, 50 rounds): 24.38 MB
-- **Privacy benefit:** FL never transmits raw feature data
+- Centralized (one-time raw data upload): 0.75 MB
+- FL (C=3, 50 rounds): 14.63 MB | FL (C=5, 50 rounds): 24.38 MB
+
+On this small simulation dataset, one-time centralized upload is cheaper in bytes. In a real C-V2X deployment where vehicles continuously stream BSMs at 10 Hz, FL dramatically reduces ongoing communication compared to streaming raw traffic. FL also never transmits raw feature data (**privacy**).
 
 ### Inference Latency
 - Mean: 27.7 μs per sample (single-core CPU)
