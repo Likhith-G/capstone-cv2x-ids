@@ -101,7 +101,15 @@ python3 pipeline/visualise.py "$OUTPUT_DIR/dataset.csv" "$OUTPUT_DIR/figures"
 
 echo ""
 echo "============================================================"
+echo "Generating FL partitions (Dirichlet, 5 clients, α=0.5)..."
+echo "============================================================"
+
+python3 pipeline/partition_fl.py "$OUTPUT_DIR/dataset.csv" 5 0.5 "$OUTPUT_DIR/partitions"
+
+echo ""
+echo "============================================================"
 echo "BATCH COMPLETE"
 echo "  Outputs in: $OUTPUT_DIR/"
 echo "  Figures in: $OUTPUT_DIR/figures/"
+echo "  Partitions in: $OUTPUT_DIR/partitions/"
 echo "============================================================"

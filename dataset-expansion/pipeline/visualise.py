@@ -9,8 +9,11 @@ Generates 4 analysis charts from dataset.csv:
 4. t-SNE 2D projection by attack type
 """
 
+import json
 import sys
 import warnings
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -22,27 +25,34 @@ from sklearn.manifold import TSNE
 
 warnings.filterwarnings("ignore")
 
+METADATA_COLS = {"scenario_id", "node_id", "window_id", "window_start", "window_end"}
+CONTEXT_COLS = {"true_speed_mean", "true_speed_std", "distance_to_gnb", "region_id"}
+LABEL_COLS = {"label_binary", "label_attack_type"}
+EXCLUDED_COLS = METADATA_COLS | CONTEXT_COLS | LABEL_COLS
 
-# Model features only (no context / no zero-variance features)
-# Context features (true_speed_mean, true_speed_std, distance_to_gnb, region_id)
-# are intentionally excluded -- they act as node identity proxies in simulation.
-FEATURES = [
-    # Network features
-    "n_pkts", "n_bsm", "n_flood",
-    "pkt_rate", "byte_rate", "total_bytes", "duration",
-    "mean_iat", "std_iat", "min_iat", "max_iat",
-    "bsm_mean_iat", "flood_mean_iat", "flood_std_iat",
-    "mean_pkt_size", "std_pkt_size", "flood_ratio",
-    # Vehicular features
-    "mean_pos_deviation", "max_pos_deviation",
-    "mean_speed_deviation", "max_speed_deviation",
-    "seq_anomaly", "unique_vehicle_ids", "msg_freq",
-]
+
+def _load_features():
+    """Load feature list from feature_universe.json if available, else derive from dataset columns."""
+    fe_universe = Path(__file__).resolve().parent.parent.parent / "feature-engineering" / "output" / "feature_universe.json"
+    if fe_universe.exists():
+        with open(fe_universe) as f:
+            return json.load(f)["features"]
+    return None
+
+
+FEATURES = _load_features()
+
+
+def _get_features(df):
+    """Return model features available in the dataframe."""
+    if FEATURES is not None:
+        return [f for f in FEATURES if f in df.columns]
+    return [c for c in df.columns if c not in EXCLUDED_COLS]
 
 
 def plot_correlation_heatmap(df, output_dir):
     """Feature correlation heatmap."""
-    available = [f for f in FEATURES if f in df.columns]
+    available = _get_features(df)
     corr = df[available].corr()
 
     fig, ax = plt.subplots(figsize=(14, 12))
@@ -93,7 +103,7 @@ def plot_class_distribution(df, output_dir):
 
 def plot_feature_importance(df, output_dir):
     """Random Forest feature importance."""
-    available = [f for f in FEATURES if f in df.columns]
+    available = _get_features(df)
     X = df[available].values.astype(np.float64)
     X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
 
@@ -123,7 +133,7 @@ def plot_feature_importance(df, output_dir):
 
 def plot_tsne(df, output_dir):
     """t-SNE 2D projection colored by attack type."""
-    available = [f for f in FEATURES if f in df.columns]
+    available = _get_features(df)
     X = df[available].values.astype(np.float64)
     X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
 

@@ -51,18 +51,19 @@ VARIANCE_THRESHOLD = 1e-10
 CORRELATION_THRESHOLD = 0.99
 
 FEATURE_CATEGORIES = {
-    "volume_rate": ["n_pkts", "n_bsm", "n_flood", "byte_rate", "flood_ratio"],
+    "volume_rate": ["n_pkts", "n_bsm", "n_flood", "byte_rate", "total_bytes", "pkt_rate", "flood_ratio"],
     "timing": [
         "duration", "mean_iat", "std_iat", "min_iat", "max_iat",
-        "flood_mean_iat", "flood_std_iat",
+        "bsm_mean_iat", "flood_mean_iat", "flood_std_iat",
     ],
     "size": ["mean_pkt_size", "std_pkt_size"],
     "vehicular": [
         "mean_pos_deviation", "max_pos_deviation",
         "mean_speed_deviation", "max_speed_deviation",
     ],
-    "behavioral": ["seq_anomaly", "unique_vehicle_ids"],
+    "behavioral": ["seq_anomaly", "unique_vehicle_ids", "msg_freq"],
 }
+ANOVA_F_CAP = 1e6
 
 K_VALUES = [3, 5, 7, 10, 11, 12, 13, 14, 15, 16]
 
@@ -192,10 +193,9 @@ def compute_rankings(features):
         print(f"\n--- Ranking: {target_name} ---")
 
         f_scores, _ = f_classif(X, y)
-        # Handle inf/nan from zero within-class variance
-        finite_max = np.nanmax(f_scores[np.isfinite(f_scores)])
-        f_scores = np.where(np.isfinite(f_scores), f_scores, finite_max * 10)
+        f_scores = np.where(np.isfinite(f_scores), f_scores, 0.0)
         f_scores = np.where(np.isnan(f_scores), 0.0, f_scores)
+        f_scores = np.minimum(f_scores, ANOVA_F_CAP)
 
         mi_scores = mutual_info_classif(
             X, y, discrete_features=False, random_state=42, n_neighbors=5
@@ -258,9 +258,9 @@ def per_class_analysis(features):
     for attack in attack_types:
         y_ovr = (train["label_attack_type"] == attack).astype(int).values
         f_scores, _ = f_classif(X, y_ovr)
-        finite_max = np.nanmax(f_scores[np.isfinite(f_scores)])
-        f_scores = np.where(np.isfinite(f_scores), f_scores, finite_max * 10)
+        f_scores = np.where(np.isfinite(f_scores), f_scores, 0.0)
         f_scores = np.where(np.isnan(f_scores), 0.0, f_scores)
+        f_scores = np.minimum(f_scores, ANOVA_F_CAP)
         rows.append(dict(zip(features, f_scores)))
 
     df_disc = pd.DataFrame(rows, index=attack_types)
@@ -623,8 +623,9 @@ def generate_report(config, rankings, discriminability, topk_results, selected):
         lines.append("| Rank | Feature | ANOVA F | MI Score |")
         lines.append("|---|---|---|---|")
         for _, row in df_rank.iterrows():
+            anova_display = f"{min(row['anova_f'], ANOVA_F_CAP):.1f}"
             lines.append(f"| {row['combined_rank']:.1f} | {row['feature']} | "
-                         f"{row['anova_f']:.1f} | {row['mi_score']:.4f} |")
+                         f"{anova_display} | {row['mi_score']:.4f} |")
         lines.append("")
 
     for target_name in ["binary", "multiclass"]:
