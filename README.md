@@ -37,19 +37,23 @@ See [`docs/Project_Proposal_Assessment1.pdf`](docs/Project_Proposal_Assessment1.
 ```
 capstone-cv2x-ids/
 ├── docs/                        # Documentation and results
-│   ├── RESULTS_SECTION.md       # Dataset generation results (for Progress Report)
-│   ├── walkthrough.md           # Verified deliverables and test results
-│   ├── Project_Proposal_Assessment1.pdf
-│   └── figures/                 # Publication-ready charts
+│   ├── RESULTS_SECTION.md       # Full results write-up (for Progress Report)
+│   ├── walkthrough.md           # Project walkthrough and verified deliverables
+│   └── Project_Proposal_Assessment1.pdf
 │
 ├── dataset-expansion/           # RQ1 — Dataset Generation
 │   ├── simulation/              # NS-3 C++ source
 │   ├── pipeline/                # Python scripts and shell orchestration
-│   └── output/                  # Generated dataset and figures
+│   └── output/                  # Generated dataset, figures, and metadata
 │
 ├── feature-engineering/         # RQ2a — Feature Selection
+│   └── output/                  # Rankings, SHAP plots, selected features
+│
 ├── classification/              # RQ2b — Multiclass Classification
-└── federated-learning/          # RQ3 — Federated Learning
+│   └── output/                  # Metrics, confusion matrices, model spec
+│
+└── federated-learning/          # RQ3 + RQ4 — Federated Learning + Edge Deployment
+    └── output/                  # 60 experiments, aggregated results, figures
 ```
 
 ---

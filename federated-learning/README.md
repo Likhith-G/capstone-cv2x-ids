@@ -115,6 +115,10 @@ On this small simulation dataset, one-time centralized upload is cheaper in byte
 | `evaluate.py` | Metrics computation + plotting |
 | `bandwidth.py` | Communication cost estimation |
 | `latency.py` | Inference latency profiling |
+| `complexity.py` | Model size sweep (params vs F1) |
+| `significance.py` | Wilcoxon signed-rank tests (E=1 vs E=3) |
+| `plot_style.py` | Consistent figure styling across all plots |
+| `run_dropout_check.py` | Dropout regularisation experiments |
 
 ---
 
@@ -129,10 +133,15 @@ On this small simulation dataset, one-time centralized upload is cheaper in byte
 | `output/aggregated_results.csv` | Mean±std across seeds (20 configs) |
 | `output/bandwidth.json` | Communication cost analysis |
 | `output/latency.json` | Inference latency profiling |
+| `output/complexity.csv` | Model size sweep results |
+| `output/complexity.json` | Complexity analysis summary |
+| `output/significance_e1_vs_e3.csv` | Statistical significance tests |
+| `output/dropout_check/` | Dropout regularisation experiment results |
 | `output/summary.json` | Machine-readable summary |
 | `output/RESULTS.md` | Human-readable results |
-| `output/figures/noniid_degradation.png` | F1 vs α (money plot) |
+| `output/figures/noniid_degradation.png` | F1 vs non-IID severity |
 | `output/figures/convergence_grid.png` | Convergence subplot grid |
+| `output/figures/latency_histogram.png` | Inference latency distribution |
 
 ---
 
