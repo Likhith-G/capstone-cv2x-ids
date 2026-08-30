@@ -60,6 +60,14 @@ invalidate every grouped fold.
 | `a1_victim_effect.py` | does sensing manipulation damage its neighbours |
 | `check_campaign.py` | is one seed of a campaign configured correctly, before hours are spent on the rest |
 | `verify_results.py` | every reported number still matches the log that produced it |
+| `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
+
+Once a campaign has finished, `regenerate.sh` runs the whole sequence in one
+pass and writes each stage to its own log, so a single stage can be repeated
+after a fix without redoing the work before it.
+
+    ./analysis/regenerate.sh <run-dir> <max-time-ms> seed1 seed2 ... seed8
+    WINDOW_STUDY=1 ./analysis/regenerate.sh ...   # also rebuild the window comparison
 
 Run `check_campaign.py` on the first seed of any new campaign before letting
 the rest of it generate. It reads only the small transmit table, so it costs

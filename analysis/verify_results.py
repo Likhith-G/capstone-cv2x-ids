@@ -188,6 +188,35 @@ def check_references(bad):
     return bad
 
 
+def check_readme(bad):
+    """Every script in analysis/ must appear in its README, and vice versa.
+
+    A script that nobody documents is a script nobody finds, and a README row
+    for something that has been renamed sends a reader looking for a file that
+    is not there.
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    readme = here / "README.md"
+    if not readme.exists():
+        return bad
+    text = readme.read_text()
+    problems = []
+    for f in sorted(list(here.glob("*.py")) + list(here.glob("*.sh"))):
+        if f"`{f.name}`" not in text:
+            problems.append(f"{f.name} is not documented in analysis/README.md")
+    import re
+    for name in sorted(set(re.findall(r"`([a-z_]+\.(?:py|sh))`", text))):
+        if not (here / name).exists():
+            problems.append(f"analysis/README.md documents {name}, which does not exist")
+    bad += len(problems)
+    if problems:
+        for pr in problems:
+            print(f"FAIL {pr}")
+    else:
+        print("ok   readme: every script documented, every documented script present")
+    return bad
+
+
 def check_claims(bad):
     """The claims summary must not drift from the results it summarises."""
     claims = DOC.parent / "PAPER_CLAIMS.md"
@@ -231,6 +260,7 @@ def main():
     bad = check_style(bad)
     bad = check_claims(bad)
     bad = check_references(bad)
+    bad = check_readme(bad)
     for log_name, artefact in FRESHNESS:
         lg, ar = RUNS / log_name, RUNS / artefact
         if lg.exists() and ar.exists():
@@ -259,7 +289,7 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 1)   # +1 for the reference check
+             + len(CLAIMS_CONSISTENCY) + 2)   # reference and readme checks
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
 
