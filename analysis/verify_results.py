@@ -160,6 +160,34 @@ STYLE_FILES = ["RESULTS.md", "MASTER_INDEX.md", "BUILD_LOG_V2.md",
                "PAPER_CLAIMS.md"]
 
 
+def check_references(bad):
+    """Every run log, data artefact and script the documents cite must exist.
+
+    Documents accumulate references faster than the things they point at get
+    kept, and a citation to a log that was overwritten or a script that was
+    renamed is invisible until someone tries to follow it.
+    """
+    import re
+    docs = [f for f in DOC.parent.glob("*.md")]
+    text = "\n".join(f.read_text() for f in docs)
+    repo = DOC.parent.parent
+    bad_refs = []
+    for m in sorted(set(re.findall(r"runs/[a-z0-9_]+(?:/[a-z0-9_]+)?\.(?:log|pkl)", text))):
+        if not (RUNS.parent / m).exists():
+            bad_refs.append(m)
+    for m in sorted(set(re.findall(r"analysis/[a-z_]+\.(?:py|sh)", text))):
+        if not (repo / m).exists():
+            bad_refs.append(m)
+    ok = not bad_refs
+    bad += len(bad_refs)
+    if ok:
+        print("ok   references: every cited log, artefact and script exists")
+    else:
+        for r in bad_refs:
+            print(f"FAIL reference does not exist: {r}")
+    return bad
+
+
 def check_claims(bad):
     """The claims summary must not drift from the results it summarises."""
     claims = DOC.parent / "PAPER_CLAIMS.md"
@@ -202,6 +230,7 @@ def main():
     cache, bad = {}, 0
     bad = check_style(bad)
     bad = check_claims(bad)
+    bad = check_references(bad)
     for log_name, artefact in FRESHNESS:
         lg, ar = RUNS / log_name, RUNS / artefact
         if lg.exists() and ar.exists():
@@ -230,7 +259,7 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY))
+             + len(CLAIMS_CONSISTENCY) + 1)   # +1 for the reference check
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
 
