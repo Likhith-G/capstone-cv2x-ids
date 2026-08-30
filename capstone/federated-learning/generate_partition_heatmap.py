@@ -2,7 +2,7 @@
 Generate Figure 11: Dirichlet non-IID partition heatmap.
 Shows class distribution across FL clients under alpha = 100, 1.0, 0.5, 0.1
 and scenario-based partitioning (C=5 clients in all panels).
-Saved to: federated-learning/output/figures/partition_heatmap.png
+Saved to: output/figures/partition_heatmap.png
 """
 
 import matplotlib
@@ -111,7 +111,7 @@ fig.suptitle(
     fontsize=8, y=-0.02, ha='center',
 )
 
-out_path = 'federated-learning/output/figures/partition_heatmap.png'
+out_path = 'output/figures/partition_heatmap.png'
 plt.savefig(out_path, dpi=180, bbox_inches='tight', facecolor='white')
 plt.close()
 print(f'Saved: {out_path}')

@@ -120,6 +120,7 @@ On this small simulation dataset, one-time centralized upload is cheaper in byte
 | `significance.py` | Wilcoxon signed-rank tests (E=1 vs E=3) |
 | `plot_style.py` | Consistent figure styling across all plots |
 | `run_dropout_check.py` | Dropout regularisation experiments |
+| `generate_partition_heatmap.py` | Dirichlet partition heatmap figure |
 
 ---
 
