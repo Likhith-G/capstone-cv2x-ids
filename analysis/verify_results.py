@@ -142,8 +142,38 @@ CHECKS = [
 FRESHNESS = [("pool_separation.log", "campaign/pooled_geo.pkl")]
 
 
+# Numbers that appear in BOTH the claims summary and the results file. The
+# claims file is the one that gets read while writing, so it is the one most
+# likely to be edited in isolation and left quietly disagreeing with the
+# evidence it summarises. Each entry is a string that must appear in both.
+CLAIMS_CONSISTENCY = [
+    "0.281",          # single receiver, class 1
+    "0.810",          # pooled consensus, class 1
+    "7.29",           # permutation control, benign given a false claim
+    "0.468",          # single receiver AUC under targeted power control
+    "0.905",          # pooled AUC, unchanged under every adversary
+    "0.0132",         # FedLC over FedAvg
+    "0.583",          # attackers found at the deployable operating point
+]
+
 STYLE_FILES = ["RESULTS.md", "MASTER_INDEX.md", "BUILD_LOG_V2.md",
                "PAPER_CLAIMS.md"]
+
+
+def check_claims(bad):
+    """The claims summary must not drift from the results it summarises."""
+    claims = DOC.parent / "PAPER_CLAIMS.md"
+    if not claims.exists():
+        return bad
+    ctext, rtext = claims.read_text(), DOC.read_text()
+    for token in CLAIMS_CONSISTENCY:
+        ok = token in ctext and token in rtext
+        bad += not ok
+        where = ("missing from PAPER_CLAIMS.md" if token not in ctext
+                 else "missing from RESULTS.md")
+        print(f"{'ok  ' if ok else 'FAIL'} claims agree on {token:8s}"
+              f"{'' if ok else '  <- ' + where}")
+    return bad
 
 
 def check_style(bad):
@@ -171,6 +201,7 @@ def main():
     doc = DOC.read_text()
     cache, bad = {}, 0
     bad = check_style(bad)
+    bad = check_claims(bad)
     for log_name, artefact in FRESHNESS:
         lg, ar = RUNS / log_name, RUNS / artefact
         if lg.exists() and ar.exists():
@@ -198,7 +229,8 @@ def main():
                              if log is not None else
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
-    total = len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
+    total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
+             + len(CLAIMS_CONSISTENCY))
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
 
