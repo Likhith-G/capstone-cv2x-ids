@@ -143,10 +143,12 @@ A custom FedAvg implementation (no framework dependency) with 60 experiments acr
 
 ---
 
-## What Part B actually did
+## Where the Part A priorities went
 
-The three priorities listed here at the end of Part A were all revised once the
-v2 pipeline existed. Recording the change rather than the plan:
+This section originally closed with three priorities for Part B. All three were
+revised once the v2 pipeline existed, so what stands here is the correction to
+that plan rather than a report on current work. Current work is in
+[`analysis/`](../analysis/).
 
 1. **FedProx was run and does nothing.** It is one of five aggregation rules in
    the v2 panel, alongside FedAvg, FedNova, FedLC and FedProto, plus DP-FedAvg
