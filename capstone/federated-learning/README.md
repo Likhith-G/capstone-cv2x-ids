@@ -1,29 +1,5 @@
 # Federated Learning
 
-> **Superseded.** This describes the v1 pipeline, submitted for OENG1167 and
-> kept as the record of what was handed in. It is not the current state of the
-> project, and the scores in it should not be read as deployment performance.
->
-> Two measured reasons. Compared at measurement precision rather than float
-> precision, the v1 dataset holds 97.8 percent duplicate feature vectors and
-> 96.4 percent verbatim overlap between the training and test splits, so much
-> of the test set is a copy of what the model was trained on. Duplicate and
-> overlap tests run at float precision return zero on any continuous feature
-> set whether or not the data is degenerate, which is why this went unseen.
-> Separately, several of the selected features compare a claimed value against
-> simulator ground truth, and a deployed roadside unit has only the claim.
-> Together these account for the perfect scores reported below.
->
-> The current pipeline is v2, in [`simulation/`](../simulation/) and
-> [`analysis/`](../analysis/). It fixes both structurally rather than by
-> patching: ground truth never travels over the air and the feature builder
-> cannot open the transmit log, so an unobservable feature cannot enter the
-> corpus by accident. Every corpus is put through eight adversarial integrity
-> gates before a model is trained, which is
-> [`analysis/validate_dataset.py`](../analysis/validate_dataset.py).
-
----
-
 **Status: Complete**
 
 ---
@@ -173,9 +149,9 @@ On this small simulation dataset, one-time centralized upload is cheaper in byte
 ## Where this went next
 
 The extensions planned here were superseded rather than added to this codebase.
-The v2 federated work is a separate implementation in
-[`analysis/federated.py`](../analysis/federated.py), and it differs in three
-ways that matter:
+The federated work now lives in
+[`analysis/federated.py`](../../analysis/federated.py) and differs in three ways
+that matter:
 
 **Five aggregation rules, not two.** FedAvg, FedProx, FedNova, FedLC and
 FedProto, compared by paired Wilcoxon across eight seeds, plus DP-FedAvg to
@@ -189,8 +165,8 @@ preferable. That is why none of the tests in this workstream reach
 significance, and it is a property of the test rather than of the effects.
 
 **Skew from geography, not from a Dirichlet parameter.** Clients are roadside
-units at fixed points on a 6 km road, so the label skew is a consequence of
-which vehicles pass which unit. Run
-[`analysis/check_partition_skew.py`](../analysis/check_partition_skew.py)
+units at fixed points on a 6 km road, so label skew is a consequence of which
+vehicles pass which unit. Run
+[`analysis/check_partition_skew.py`](../../analysis/check_partition_skew.py)
 before any panel: on a short road every observer hears every vehicle, the
 partition is near uniform, and an aggregation comparison on it means nothing.
