@@ -1,5 +1,29 @@
 # Federated Learning
 
+> **Superseded.** This describes the v1 pipeline, submitted for OENG1167 and
+> kept as the record of what was handed in. It is not the current state of the
+> project, and the scores in it should not be read as deployment performance.
+>
+> Two measured reasons. Compared at measurement precision rather than float
+> precision, the v1 dataset holds 97.8 percent duplicate feature vectors and
+> 96.4 percent verbatim overlap between the training and test splits, so much
+> of the test set is a copy of what the model was trained on. Duplicate and
+> overlap tests run at float precision return zero on any continuous feature
+> set whether or not the data is degenerate, which is why this went unseen.
+> Separately, several of the selected features compare a claimed value against
+> simulator ground truth, and a deployed roadside unit has only the claim.
+> Together these account for the perfect scores reported below.
+>
+> The current pipeline is v2, in [`simulation/`](../simulation/) and
+> [`analysis/`](../analysis/). It fixes both structurally rather than by
+> patching: ground truth never travels over the air and the feature builder
+> cannot open the transmit log, so an unobservable feature cannot enter the
+> corpus by accident. Every corpus is put through eight adversarial integrity
+> gates before a model is trained, which is
+> [`analysis/validate_dataset.py`](../analysis/validate_dataset.py).
+
+---
+
 **Status: Complete**
 
 ---
@@ -69,11 +93,11 @@ All experiments: 50 global rounds, FedAvg aggregation, all clients participate e
 | C | α | E | Macro F1 | MCC |
 |---|---|---|----------|-----|
 | 3 | 100.0 (IID) | 1 | 1.0000±0.0000 | 1.0000±0.0000 |
-| 3 | 0.1 (strong) | 1 | 0.8165±0.1796 | 0.9176±0.0806 |
-| 3 | 0.1 (strong) | 3 | 1.0000±0.0000 | 1.0000±0.0000 |
+| 3 | 0.1 (strong) | 1 | 0.8365±0.2188 | 0.9134±0.1153 |
+| 3 | 0.1 (strong) | 3 | 0.9993±0.0010 | 0.9996±0.0006 |
 | 5 | 100.0 (IID) | 1 | 1.0000±0.0000 | 1.0000±0.0000 |
-| 5 | 0.1 (strong) | 1 | 0.6336±0.1755 | 0.8144±0.0861 |
-| 5 | 0.1 (strong) | 3 | 0.9063±0.0808 | 0.9496±0.0415 |
+| 5 | 0.1 (strong) | 1 | 0.5392±0.2457 | 0.7572±0.1328 |
+| 5 | 0.1 (strong) | 3 | 0.9389±0.0371 | 0.9639±0.0220 |
 
 **Finding:** FedAvg is robust to Dirichlet non-IID for α ≥ 0.5. Strong non-IID (α=0.1) degrades performance, especially with more clients and fewer local epochs. More local epochs (E=3) partially compensates.
 
@@ -81,10 +105,10 @@ All experiments: 50 global rounds, FedAvg aggregation, all clients participate e
 
 | C | E | Macro F1 | MCC |
 |---|---|----------|-----|
-| 3 | 1 | 0.5578±0.0929 | 0.7562±0.0535 |
-| 3 | 3 | 0.5073±0.0709 | 0.7294±0.0464 |
-| 5 | 1 | 0.3951±0.1144 | 0.6682±0.0759 |
-| 5 | 3 | 0.3430±0.1016 | 0.6362±0.0438 |
+| 3 | 1 | 0.6468±0.0525 | 0.8119±0.0233 |
+| 3 | 3 | 0.5888±0.0459 | 0.7777±0.0221 |
+| 5 | 1 | 0.3737±0.0230 | 0.6747±0.0303 |
+| 5 | 3 | 0.3527±0.0225 | 0.6405±0.0065 |
 
 **Finding:** Scenario-based partitioning creates extreme non-IID where clients never see certain attack types. This is more severe than most practical deployments and is used to stress-test FedAvg. FedAvg cannot overcome it — motivates FedProx for Part B.
 
@@ -96,9 +120,10 @@ All experiments: 50 global rounds, FedAvg aggregation, all clients participate e
 On this small simulation dataset, one-time centralized upload is cheaper in bytes. In a real C-V2X deployment where vehicles continuously stream BSMs at 10 Hz, FL dramatically reduces ongoing communication compared to streaming raw traffic. FL also never transmits raw feature data (**privacy**).
 
 ### Inference Latency
-- Mean: 27.7 μs per sample (single-core CPU)
-- P99: 30.8 μs
-- **3,614x headroom** under the 100ms PC5 constraint
+- Mean: 26.4 μs per sample (single-core CPU)
+- P99: 29.3 μs
+- Max: 41.6 μs
+- **3,789x headroom** under the 100ms PC5 constraint
 
 ---
 
@@ -145,10 +170,27 @@ On this small simulation dataset, one-time centralized upload is cheaper in byte
 
 ---
 
-## Extension Points for Part B
+## Where this went next
 
-**FedProx:** Change `FedAvgClient.train_round` to add proximal term `μ/2 * ||w - w_global||²` to the loss. Aggregation stays identical.
+The extensions planned here were superseded rather than added to this codebase.
+The v2 federated work is a separate implementation in
+[`analysis/federated.py`](../analysis/federated.py), and it differs in three
+ways that matter:
 
-**Krum:** Swap `fedavg_aggregate` for a selection-based scheme in `FedAvgServer.run(aggregate_fn=krum_aggregate)`.
+**Five aggregation rules, not two.** FedAvg, FedProx, FedNova, FedLC and
+FedProto, compared by paired Wilcoxon across eight seeds, plus DP-FedAvg to
+price the privacy guarantee. FedProx is in the panel and its difference from
+FedAvg is within noise, so the head-to-head planned here has an answer.
 
-Both require only localized changes — the modular design keeps training, aggregation, and evaluation cleanly separated.
+**Eight seeds, not three.** A two-sided Wilcoxon signed-rank test floors at
+2/2^n, so with three seeds the smallest reachable p-value is 0.25 and no result
+can be significant whatever the numbers. Six is the minimum and eight is
+preferable. That is why none of the tests in this workstream reach
+significance, and it is a property of the test rather than of the effects.
+
+**Skew from geography, not from a Dirichlet parameter.** Clients are roadside
+units at fixed points on a 6 km road, so the label skew is a consequence of
+which vehicles pass which unit. Run
+[`analysis/check_partition_skew.py`](../analysis/check_partition_skew.py)
+before any panel: on a short road every observer hears every vehicle, the
+partition is near uniform, and an aggregation comparison on it means nothing.

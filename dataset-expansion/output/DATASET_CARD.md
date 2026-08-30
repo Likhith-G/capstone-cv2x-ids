@@ -1,5 +1,29 @@
 # Dataset Card: CV2X-IDS
 
+> **Superseded.** This describes the v1 pipeline, submitted for OENG1167 and
+> kept as the record of what was handed in. It is not the current state of the
+> project, and the scores in it should not be read as deployment performance.
+>
+> Two measured reasons. Compared at measurement precision rather than float
+> precision, the v1 dataset holds 97.8 percent duplicate feature vectors and
+> 96.4 percent verbatim overlap between the training and test splits, so much
+> of the test set is a copy of what the model was trained on. Duplicate and
+> overlap tests run at float precision return zero on any continuous feature
+> set whether or not the data is degenerate, which is why this went unseen.
+> Separately, several of the selected features compare a claimed value against
+> simulator ground truth, and a deployed roadside unit has only the claim.
+> Together these account for the perfect scores reported below.
+>
+> The current pipeline is v2, in [`simulation/`](../../simulation/) and
+> [`analysis/`](../../analysis/). It fixes both structurally rather than by
+> patching: ground truth never travels over the air and the feature builder
+> cannot open the transmit log, so an unobservable feature cannot enter the
+> corpus by accident. Every corpus is put through eight adversarial integrity
+> gates before a model is trained, which is
+> [`analysis/validate_dataset.py`](../../analysis/validate_dataset.py).
+
+---
+
 ## Overview
 
 | Property | Value |
@@ -35,9 +59,21 @@
 | PositionSpoof | BSM claims position +500m from truth | `mean_pos_deviation = 500` |
 | RandomPosition | BSM claims random position each tx | `mean_pos_deviation >> 0` (variable) |
 | Replay | Retransmits cached stale BSMs | `mean_pos_deviation > 0` (stale coords) |
-| FalseDataInjection | BSM speed falsified by +50% | `mean_speed_deviation >> 0` |
+| FalseDataInjection | BSM speed falsified by a factor of 2.5 to 4.0x | `mean_speed_deviation >> 0` |
 | Sybil | One node sends BSMs with 5 fake IDs | `unique_vehicle_ids = 5` |
 | VehicularDoS | BSM rate increased to 1000 Hz | `n_bsm = 30,000` vs normal `300` |
+
+> **The Key Signal column is not a detection recipe.** `mean_pos_deviation` and
+> `mean_speed_deviation` are computed by differencing a claimed value against
+> the simulator's true position and speed, which a deployed roadside unit does
+> not have. They identify the attack in this dataset and would not be available
+> to a real detector. `n_flood` and `flood_ratio` are computable in deployment,
+> but no benign window in this dataset contains a single non-BSM packet, so
+> `n_flood > 0` separates the five flood classes perfectly here and would not
+> transfer to a roadside unit that also sees ordinary non-V2X traffic. The v2
+> pipeline removes the first case by construction and the second by generating
+> a realistic benign message mix.
+
 
 ---
 

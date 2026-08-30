@@ -1,5 +1,29 @@
 # Project Walkthrough — CV2X-IDS
 
+> **Superseded.** This describes the v1 pipeline, submitted for OENG1167 and
+> kept as the record of what was handed in. It is not the current state of the
+> project, and the scores in it should not be read as deployment performance.
+>
+> Two measured reasons. Compared at measurement precision rather than float
+> precision, the v1 dataset holds 97.8 percent duplicate feature vectors and
+> 96.4 percent verbatim overlap between the training and test splits, so much
+> of the test set is a copy of what the model was trained on. Duplicate and
+> overlap tests run at float precision return zero on any continuous feature
+> set whether or not the data is degenerate, which is why this went unseen.
+> Separately, several of the selected features compare a claimed value against
+> simulator ground truth, and a deployed roadside unit has only the claim.
+> Together these account for the perfect scores reported below.
+>
+> The current pipeline is v2, in [`simulation/`](../simulation/) and
+> [`analysis/`](../analysis/). It fixes both structurally rather than by
+> patching: ground truth never travels over the air and the feature builder
+> cannot open the transmit log, so an unobservable feature cannot enter the
+> corpus by accident. Every corpus is put through eight adversarial integrity
+> gates before a model is trained, which is
+> [`analysis/validate_dataset.py`](../analysis/validate_dataset.py).
+
+---
+
 ## Overview
 
 This document walks through all four workstreams of the CV2X-IDS project, summarising what was built, the key outputs, and verified results for each.
@@ -87,12 +111,12 @@ A custom FedAvg implementation (no framework dependency) with 60 experiments acr
 
 ### Verification — Dirichlet Partitioning
 - IID (α=100): F1 = 1.00 — matches centralized baseline perfectly
-- Mild non-IID (α≥0.5): F1 = 1.00 — FedAvg is robust
+- Mild non-IID (α≥0.5): F1 = 0.97 to 1.00 depending on client count, so FedAvg holds up
 - Strong non-IID (α=0.1, C=5, E=1): F1 = 0.54 — significant degradation
 - Strong non-IID (α=0.1, C=5, E=3): F1 = 0.94 — extra local epochs partially recover
 
 ### Verification — Scenario-Based Partitioning
-- F1 ranges from 0.34 to 0.56 across all configurations
+- F1 ranges from 0.35 to 0.65 across all configurations
 - More local epochs make it worse (clients overfit to their own scenarios)
 - FedAvg fundamentally cannot overcome complete class gaps — motivates FedProx for Part B
 
@@ -119,8 +143,27 @@ A custom FedAvg implementation (no framework dependency) with 60 experiments acr
 
 ---
 
-## Part B Priorities
+## What Part B actually did
 
-1. **FedProx** — Add proximal term to local loss, head-to-head comparison across all 20 configurations
-2. **Krum aggregation** — Byzantine-resilient aggregation as alternative to FedAvg
-3. **FPGA profiling** — Validate latency on actual edge hardware (if available)
+The three priorities listed here at the end of Part A were all revised once the
+v2 pipeline existed. Recording the change rather than the plan:
+
+1. **FedProx was run and does nothing.** It is one of five aggregation rules in
+   the v2 panel, alongside FedAvg, FedNova, FedLC and FedProto, plus DP-FedAvg
+   for the privacy cost. On geometric label skew its difference from FedAvg is
+   within noise. The panel is in [`analysis/federated.py`](../analysis/federated.py).
+2. **Krum was not run.** The v2 threat model is misbehaving vehicles observed
+   over the air rather than malicious federated clients, so Byzantine-resilient
+   aggregation answers a question the data does not pose. It stays open for
+   future work.
+3. **Hardware profiling was dropped deliberately.** Measured end to end, the
+   time a detection window takes to fill dominates the forward pass by three
+   orders of magnitude, so accelerating inference optimises a fraction of a
+   percent of total detection latency. The argument does not need a board.
+
+The partitioning strategy changed too. Part A used a Dirichlet parameter to
+manufacture non-IID data. In v2 the skew is a property of the deployment:
+roadside units along a 6 km road see different vehicles, so most observers never
+see at least one attack class. [`analysis/check_partition_skew.py`](../analysis/check_partition_skew.py)
+measures it, and it should be run before any aggregation panel, because on a
+short road every observer hears every vehicle and the comparison is meaningless.
