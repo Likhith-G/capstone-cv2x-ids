@@ -55,6 +55,9 @@ def main():
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--tags", nargs="+", required=True)
     ap.add_argument("--units", type=int, default=2000)
+    ap.add_argument("--inference-ms", type=float, default=3.020,
+                    help="single-window inference cost to compare against, "
+                         "from measure_latency.py on the same corpus")
     a = ap.parse_args()
     rng = np.random.default_rng(0)
 
@@ -96,11 +99,11 @@ def main():
     print(f"{'claimed-position regression, closed form':44s} {t_closed:12.4f}")
     print(f'{"free position fit, nonlinear least squares":44s} {t_free:12.4f}')
     print(f"{'both':44s} {t_closed + t_free:12.4f}")
-    print(f"\nfor comparison, section 7 measures single-window inference at "
-          f"2.145 ms.")
-    print(f"the free fit alone is {t_free / 2.145:.1f} times the inference cost, "
-          f"and {(t_closed + t_free) / 1000.0 * 100:.3f} percent of a 1000 ms "
-          f"window.")
+    print(f"\nfor comparison, section 7 of the results measures single-window "
+          f"inference at {a.inference_ms} ms.")
+    print(f"the free fit alone is {t_free / a.inference_ms:.2f} times the "
+          f"inference cost, and the whole block is "
+          f"{(t_closed + t_free) / 1000.0 * 100:.3f} percent of a 1000 ms window.")
     print("\nThe closed-form regression carries most of the separation, so a "
           "deployment\nthat cannot afford the nonlinear fit can drop it and "
           "keep the cheaper half.")

@@ -77,6 +77,8 @@ CHECKS = [
      "campaign_v3/logs/persistence", "2/3                     0                    0            0.528"),
     ("persistence per class class 1", "| 1 pos_const_offset | 30 | **0.300** | **0.100** |",
      "campaign_v3/logs/persistence", "     1       30    0.300"),
+    ("pooling cost", "| both | **0.4076** |",
+     "campaign_v3/logs/pooling_cost", "both                                               0.4076"),
     ("federated FedAvg", "| FedAvg | 0.2106 +/- 0.0398 | | |",
      "campaign_v3/logs/federated", "fedavg    macro F1 0.2106 +/- 0.0398"),
     ("federated FedLC not significant",
