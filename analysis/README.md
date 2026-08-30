@@ -58,7 +58,15 @@ invalidate every grouped fold.
 | `calibration.py` | PRR, BLER and channel occupancy against TR 37.885 |
 | `measure_latency.py` | end to end detection latency, window fill included |
 | `a1_victim_effect.py` | does sensing manipulation damage its neighbours |
+| `check_campaign.py` | is one seed of a campaign configured correctly, before hours are spent on the rest |
 | `verify_results.py` | every reported number still matches the log that produced it |
+
+Run `check_campaign.py` on the first seed of any new campaign before letting
+the rest of it generate. It reads only the small transmit table, so it costs
+seconds, and it catches the misconfigurations that are expensive to find
+afterwards: a road with no roadside units, an attack class that drew no
+stations, a message mix where CPM has overtaken CAM, congestion control that is
+not responding, and injected position errors of the wrong size.
 
 ## Methodology notes that are easy to get wrong
 
