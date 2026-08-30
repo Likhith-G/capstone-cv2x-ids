@@ -26,7 +26,7 @@ env/
 .AppleDouble
 .LSOverride
 
-# Model checkpoints (FL workstream — add as needed)
+# Model checkpoints (FL workstream - add as needed)
 *.pth
 *.ckpt
 *.pkl
@@ -35,3 +35,16 @@ env/
 partitions/
 checkpoints/
 runs/
+
+# Internal working documents. These carry the full defect analysis of the
+# Part A pipeline, the running build log with every wrong turn, and the
+# planning notes. They are working material for the rewrite rather than
+# deliverables, and they are deliberately not published to the shared repo.
+docs/BUILD_LOG_V2.md
+docs/DEFECT_SCOPE.md
+docs/MASTER_INDEX.md
+docs/PAPER_CLAIMS.md
+docs/PLAN_V2.md
+docs/REBUILD_PLAN.md
+docs/RESULTS.md
+docs/research/

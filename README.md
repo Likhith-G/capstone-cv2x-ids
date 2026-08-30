@@ -1,6 +1,6 @@
 # Cybersecurity for Connected Cars: Edge-Based Federated Intrusion Detection
 
-**Course:** OENG1167 Engineering Capstone Project — RMIT University
+**Course:** OENG1167 Engineering Capstone Project, RMIT University
 **Supervisor:** A/Prof Ke (Desmond) Wang
 **Research Mentor:** Mr. Kanwardeep Singh Gahlot
 
@@ -20,7 +20,7 @@
 
 Connected vehicles broadcast Basic Safety Messages (BSMs) at 10 Hz carrying position, speed, and heading data. These messages are unauthenticated by design to meet 100ms latency requirements, making them vulnerable to position spoofing, replay attacks, false data injection, Sybil attacks, and DoS flooding.
 
-This project builds a Federated Learning Intrusion Detection System (FL-IDS) where each roadside edge node trains a local detection model and shares only model weight updates — never raw GPS data — with a central aggregation server.
+This project builds a Federated Learning Intrusion Detection System (FL-IDS) where each roadside edge node trains a local detection model and shares only model weight updates, never raw GPS data, with a central aggregation server.
 
 **Key research questions:**
 - RQ1: How to generate a labelled 5G C-V2X dataset through NS-3 simulation
@@ -41,20 +41,61 @@ capstone-cv2x-ids/
 │   ├── walkthrough.md           # Project walkthrough and verified deliverables
 │   └── Project_Proposal_Assessment1.pdf
 │
-├── dataset-expansion/           # RQ1 — Dataset Generation
+├── dataset-expansion/           # RQ1: Dataset Generation
 │   ├── simulation/              # NS-3 C++ source
 │   ├── pipeline/                # Python scripts and shell orchestration
 │   └── output/                  # Generated dataset, figures, and metadata
 │
-├── feature-engineering/         # RQ2a — Feature Selection
+├── feature-engineering/         # RQ2a: Feature Selection
 │   └── output/                  # Rankings, SHAP plots, selected features
 │
-├── classification/              # RQ2b — Multiclass Classification
+├── classification/              # RQ2b: Multiclass Classification
 │   └── output/                  # Metrics, confusion matrices, model spec
 │
-└── federated-learning/          # RQ3 + RQ4 — Federated Learning + Edge Deployment
-    └── output/                  # 60 experiments, aggregated results, figures
+├── federated-learning/          # RQ3 + RQ4: Federated Learning + Edge Deployment
+│   └── output/                  # 60 experiments, aggregated results, figures
+│
+├── simulation/                  # NS-3 sidelink simulation module
+│   └── cv2xids/                 # ITS messaging, DCC, mobility, attacks, traces
+│
+└── analysis/                    # Cross-layer detection pipeline
+    └── *.py                     # features, validation, benchmarks, federation
 ```
+
+---
+
+## Cross-layer sidelink pipeline
+
+A second generation of the dataset and detection pipeline moves the radio link
+from a 5G Uu uplink to a direct PC5 sidelink and adds physical and MAC layer
+features alongside the application layer ones.
+
+**What changed in the simulation.** Vehicles now talk to each other directly
+over an NR V2X Mode 2 sidelink rather than uplinking to a MEC server. Benign
+traffic is a real ETSI ITS message mix, with CAM, DENM, CPM and VAM generated
+from their own triggering conditions to EN 302 637-2, EN 302 637-3,
+TS 103 324 and TS 103 300-3, and gated by TS 102 687 reactive congestion
+control. Mobility is Intelligent Driver Model car following with three vehicle
+classes, which removes the fixed message period that constant velocity produces
+and removes the external traffic simulator dependency. Roadside units give the
+federated work a partition based on real geography.
+
+**What changed in the data.** Ground truth never travels over the air. The
+transmitter logs it, the receiver logs only what it received, and the two are
+joined offline on a message identifier, so a feature that a real receiver could
+not compute cannot enter the dataset. Each record is one observer's view of one
+claimed station over one time window, with 22 application layer features and 28
+physical and MAC layer features.
+
+**What changed in the evaluation.** Every split is grouped by transmitting
+station, the dataset is put through eight adversarial integrity gates before any
+model is trained, false positive rate is reported at true prevalence rather than
+on a balanced set, and detection latency counts the time the window takes to
+fill rather than the forward pass alone.
+
+See [`simulation/README.md`](simulation/README.md) for building and running the
+NS-3 module, and [`analysis/README.md`](analysis/README.md) for the pipeline
+and the methodology constraints it enforces.
 
 ---
 

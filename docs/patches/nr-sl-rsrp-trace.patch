@@ -1,0 +1,44 @@
+diff --git a/model/nr-sl-phy-mac-common.h b/model/nr-sl-phy-mac-common.h
+index cb07ff0f..ef0dcf72 100644
+--- a/model/nr-sl-phy-mac-common.h
++++ b/model/nr-sl-phy-mac-common.h
+@@ -428,6 +428,7 @@ struct SlRxCtrlPacketTraceParams : public RxPacketTraceParams
+         std::numeric_limits<uint8_t>::max()}; //!< The total number of subchannel assigned
+     uint8_t m_maxNumPerReserve{std::numeric_limits<uint8_t>::max()}; //!< The MaxNumPerReserved
+     uint32_t m_dstL2Id{0};                                           //!< The destination layer 2 id
++    double m_slRsrp{0.0}; //!< Measured SL-RSRP in dBm over the PSCCH PSD (CV2X-IDS extension)
+ 
+     /**
+      * \ingroup utils
+diff --git a/model/nr-spectrum-phy.cc b/model/nr-spectrum-phy.cc
+index d5d45551..049537c5 100644
+--- a/model/nr-spectrum-phy.cc
++++ b/model/nr-spectrum-phy.cc
+@@ -2438,6 +2438,11 @@ NrSpectrumPhy::RxSlPscch(std::vector<uint32_t> paramIndexes)
+         traceParams.m_slResourceReservePeriod = sciHeader.GetSlResourceReservePeriod();
+         traceParams.m_maxNumPerReserve = sciHeader.GetSlMaxNumPerReserve();
+         traceParams.m_dstL2Id = tag.GetDstL2Id();
++        // CV2X-IDS extension: expose the per-SCI SL-RSRP so cross-layer
++        // detection features can be derived from the received power.
++        traceParams.m_slRsrp = ueRx->GetPhy(GetBwpId())
++                                   ->GetSidelinkRsrp(m_slSigPerceived.at(paramIndex))
++                                   .second;
+         uint32_t rbBitmapSize =
+             static_cast<uint32_t>(m_slRxSigParamInfo.at(paramIndex).rbBitmap.size());
+         traceParams.m_rbStart = m_slRxSigParamInfo.at(paramIndex).rbBitmap.at(0);
+diff --git a/model/nr-ue-phy.h b/model/nr-ue-phy.h
+index 8d216923..f1a7e439 100644
+--- a/model/nr-ue-phy.h
++++ b/model/nr-ue-phy.h
+@@ -1114,8 +1114,11 @@ class NrUePhy : public NrPhy
+      * \param psd the power spectral density per each RB
+      * \return a pair of Sidelink RSRP values in Watt and in dBm
+      */
++  public:
+     std::pair<double, double> GetSidelinkRsrp(SpectrumValue psd);
+ 
++  private:
++
+     /**
+      * \brief Save the future Sidelink RX grants indicated by SCI 1-A
+      * \param sciF1a SCI 1-A header
