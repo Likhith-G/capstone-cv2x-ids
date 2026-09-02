@@ -113,6 +113,18 @@ CHECKS = [
      "campaign_v3/logs/deployment", "0.90   0.0002   0.4833"),
     ("latency", "single-window inference    3.020 ms",
      "campaign_v3/logs/latency", "single-window inference      3.020 ms"),
+    ("floor pooled crosses at 50 to 80 m",
+     "| 50 to 80 m | 21 | 0.00 | **0.90** |",
+     "campaign_gnss/logs/offset_floor",
+     "          50 to 80 m        21     1,197      0.838     0.90"),
+    ("floor single observer never crosses",
+     "| over 150 m | 8 | 0.12 | **1.00** |",
+     "campaign_gnss/logs/offset_floor",
+     "          over 150 m         8     4,119      0.264     0.12"),
+    ("floor below 30 m nothing works",
+     "| 15 to 30 m | 10 | 0.00 | 0.00 |",
+     "campaign_gnss/logs/offset_floor",
+     "          15 to 30 m        10       568      0.058     0.00"),
     # Drift. These live under runs/drift/logs because drift.py reads several
     # corpora at once and has no single run directory to write into.
     ("drift fused into light traffic",
@@ -214,12 +226,12 @@ FRESHNESS = [("campaign_v3/logs/pool_separation.log", "campaign_v3/pooled.pkl")]
 # likely to be edited in isolation and left quietly disagreeing with the
 # evidence it summarises. Each entry is a string that must appear in both.
 CLAIMS_CONSISTENCY = [
-    "0.137",          # single receiver, class 1
-    "0.592",          # pooled consensus, class 1
-    "7.18",           # permutation control, benign given a false claim
-    "0.882",          # pooled AUC, unchanged under every power adversary
-    "0.0212",         # FedLC over FedAvg, no longer significant
-    "0.0547",         # and its p-value, which must be stated
+    "0.131",          # single receiver, class 1
+    "0.590",          # pooled consensus, class 1
+    "0.412",          # pooled consensus, class 13, the band that decides
+    "0.019",          # and the same class to one receiver
+    "18.2",           # localisation error, which sets the detection floor
+    "0.0547",         # FedLC over FedAvg, still not significant
 ]
 
 # Prose files the dash ban is enforced over, as repository relative paths.
