@@ -144,6 +144,29 @@ def main():
                       f"95th percentile")
                 bands[cls] = (per_att.min(), per_att.max())
 
+        # A sporadic attacker that never entered an attacking burst carries the
+        # label and no misbehaviour. That is intended, and it is also invisible
+        # to the ladder check above, because a station that never lied does not
+        # appear in any displacement band. It matters because the persistence
+        # analysis counts attacker episodes, and attackers with no episodes at
+        # all reduce the support it rests on without reducing the class count.
+        pos = tx[tx.attackId.isin([1, 11, 13])]
+        if len(pos):
+            realised = pos.groupby("txNodeId").err.max()
+            silent = int((realised < p95).sum())
+            print(f"  position attackers that never exceeded the benign 95th "
+                  f"percentile: {silent} of {len(realised)}")
+            if silent:
+                print(f"  NOTE: consistent with sporadic misbehaviour, where a "
+                      f"station can spend a short run entirely in its quiet "
+                      f"phase. If this run is NOT sporadic it is a defect, "
+                      f"because a continuous position attacker always lies.")
+            if silent > len(realised) / 2:
+                print("  WARNING: more than half the position attackers never "
+                      "lied, so per class support is much smaller than the "
+                      "station count suggests")
+                problems.append("most position attackers never actually lied")
+
         # The ladder has to separate or it is not a ladder. Overlapping bands
         # mean a magnitude comparison is comparing two mixtures of the same
         # distances, which is the defect that cost one restart of this

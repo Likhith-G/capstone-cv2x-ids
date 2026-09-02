@@ -137,6 +137,7 @@ capstone-cv2x-ids/
 │   ├── offset_floor.py          # detection against displacement, and the floor
 │   ├── drift.py                 # transfer to an unseen density or period
 │   ├── power_evasion.py         # the adversary that knows how the detector works
+│   ├── veremi_bridge.py         # the same detector on an independent dataset
 │   ├── federated.py             # FedAvg, FedProx, FedNova, FedLC, FedProto, DP
 │   ├── persistence_filter.py    # alert episodes and K-of-M operating points
 │   └── regenerate.sh            # whole chain, one stage per log
