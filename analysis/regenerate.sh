@@ -51,6 +51,19 @@ $PY -u $A/pooled_consensus.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     --folds 5 --repeats 2 --trees 100 --obs-cap 60000 --jobs 4 \
     --class-weight none --validate --out $DIR/pooled.pkl > $L/pooled.log 2>&1
 $PY -u $A/pool_separation.py $DIR/pooled.pkl > $L/pool_separation.log 2>&1
+
+# The same pooling with the position fit bounded to the carriageway. Measured
+# on the corpus this replaces, that constraint cuts localisation error from
+# 62.6 m to 17.5 m and lifts detection of the best-response attacker at 50 m
+# from 0.282 to 0.398. Whether it also helps CLASSIFICATION is a different
+# question and is not assumed: both tables are built so the comparison is
+# measured rather than argued, and the unconstrained one stays the default so
+# that a result already written up does not move underneath it.
+$PY -u $A/pooled_consensus.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
+    --folds 5 --repeats 2 --trees 100 --obs-cap 60000 --jobs 4 \
+    --class-weight none --validate --road-halfwidth \
+    --out $DIR/pooled_road.pkl > $L/pooled_road.log 2>&1
+$PY -u $A/pool_separation.py $DIR/pooled_road.pkl > $L/pool_separation_road.log 2>&1
 $PY -u $A/claim_permutation.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     > $L/claim_permutation.log 2>&1
 $PY -u $A/power_evasion.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
