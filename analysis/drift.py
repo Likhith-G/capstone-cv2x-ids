@@ -150,7 +150,8 @@ def cross_scenario(a):
           f"held-out corpus,\ntwo models are scored on the SAME test rows: one "
           f"trained on the rest of that\ncorpus, one trained on the other "
           f"scenarios. The training sets are drawn to the\nsame size, so the "
-          f"only difference between the arms is where the rows came from.\n")
+          f"only difference between the arms is where the rows came from.")
+    print(f"in-distribution folds are grouped on {a.group}\n")
     print(f"{'held out':16s} {'block':10s} {'transfer F1':>18s} "
           f"{'in-dist F1':>18s} {'drop':>8s} {'transfer MCC':>18s} "
           f"{'in-dist MCC':>18s}")
@@ -161,7 +162,16 @@ def cross_scenario(a):
         union = pd.concat([frames[k] for k in frames if k != held],
                           ignore_index=True)
         yte = te.label_attackId.values
-        gte = te.label_txNodeId.values
+        # What the in-distribution folds are grouped on decides how strict the
+        # reference is. Station identifiers are namespaced per seed, so grouping
+        # on station separates stations and leaves the same seed, and therefore
+        # the same topology and channel realisation, on both sides of a fold.
+        # Grouping on seed is leave-one-seed-out and is the stricter reference.
+        # It matters most where a corpus has few seeds: with three seeds behind
+        # it, a station-grouped score shares far more with its own folds than an
+        # eight-seed one does, and the two are then not comparable.
+        gte = (te.key_seed.values if a.group == "seed"
+               else te.label_txNodeId.values)
         yun = union.label_attackId.values
         sg = StratifiedGroupKFold(n_splits=a.folds, shuffle=True, random_state=0)
         splits = list(sg.split(te, yte, gte))
@@ -306,6 +316,11 @@ def main():
     ap.add_argument("--cut", type=float, default=0.5,
                     help="fraction of the run used for training, temporal mode")
     ap.add_argument("--bins", type=int, default=6)
+    ap.add_argument("--group", choices=["station", "seed"], default="station",
+                    help="what the in-distribution folds are grouped on. "
+                         "station is the protocol used everywhere else in this "
+                         "project; seed is leave-one-seed-out and is stricter, "
+                         "which matters when corpora differ in seed count")
     ap.add_argument("--observer-role", choices=["vehicle", "rsu"], default=None,
                     help="restrict to one observer type. Use vehicle when "
                          "comparing corpora that do not all deploy roadside "

@@ -119,6 +119,16 @@ CHECKS = [
     ("drift sybil reverses",
      "| sybil | **0.882 / 0.962** | **0.217 / 0.886** |",
      "drift/logs/density", "0.217/0.886"),
+    ("drift control with roadside units",
+     "| light | **fused** | **0.3605 +/- 0.0083** | **0.5577 +/- 0.0137** | "
+     "**-0.1972** | -0.1941 |",
+     "drift/logs/scenario",
+     "campaign_v3      fused         0.3605 +/- 0.0083    0.5577 +/- 0.0137  -0.1972"),
+    ("drift control congested",
+     "| congested | **fused** | **0.4187 +/- 0.0004** | **0.5843 +/- 0.0098** | "
+     "**-0.1656** | -0.1613 |",
+     "drift/logs/scenario",
+     "campaign_dense   fused         0.4187 +/- 0.0004    0.5843 +/- 0.0098  -0.1656"),
     # cross-checks kept from the other corpora
     ("dense blocks", "| **fused** | 50 | **0.5859** | **0.8312** |",
      "benchmark_dense3", "fused            50  0.5859"),
