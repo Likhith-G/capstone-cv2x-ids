@@ -129,6 +129,13 @@ CHECKS = [
      "**-0.1656** | -0.1613 |",
      "drift/logs/scenario",
      "campaign_dense   fused         0.4187 +/- 0.0004    0.5843 +/- 0.0098  -0.1656"),
+    ("drift none within one run",
+     "| **fused** | **0.5913** | **0.5930** | **-0.0017** | **0.7365** | **0.7219** |",
+     "drift/logs/temporal",
+     "fused         0.5913    0.5930    -0.0017    0.7365     0.7219"),
+    ("drift prequential rises across the cut",
+     "| 30 to 40 s | 11,814 | **0.5935** | **0.7378** |",
+     "drift/logs/temporal", "30-40s    11,814    0.5935    0.7378"),
     # cross-checks kept from the other corpora
     ("dense blocks", "| **fused** | 50 | **0.5859** | **0.8312** |",
      "benchmark_dense3", "fused            50  0.5859"),
