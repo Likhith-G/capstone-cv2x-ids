@@ -39,7 +39,8 @@ from sklearn.metrics import f1_score, matthews_corrcoef
 
 NAMES = {0: "benign", 1: "pos_const_offset", 3: "pos_offset_random",
          4: "pos_replay", 5: "speed_falsify", 6: "sybil", 7: "dos_rate",
-         8: "sps_manipulation", 11: "pos_small_offset", 12: "dos_low_rate"}
+         8: "sps_manipulation", 11: "pos_small_offset", 12: "dos_low_rate",
+         13: "pos_medium_offset"}
 
 
 def load(spec, sample, seed=0, role=None):

@@ -54,7 +54,7 @@ $PY -u $A/pool_separation.py $DIR/pooled.pkl > $L/pool_separation.log 2>&1
 $PY -u $A/claim_permutation.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     > $L/claim_permutation.log 2>&1
 $PY -u $A/power_evasion.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
-    --classes 1 3 4 6 > $L/power_evasion.log 2>&1
+    --classes 1 3 4 6 13 > $L/power_evasion.log 2>&1
 
 echo "[7/8] federated"
 $PY -u $A/check_partition_skew.py $DIR/corpus.pkl > $L/skew.log 2>&1

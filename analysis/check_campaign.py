@@ -81,10 +81,56 @@ def main():
         n=("gap", "size"), median_ms=("gap", "median")).to_string())
 
     tx["err"] = np.hypot(tx.claimedX - tx.trueX, tx.claimedY - tx.trueY)
-    pos = tx[tx.attackId.isin([1, 2, 3, 4, 11])]
+    pos = tx[tx.attackId.isin([1, 2, 3, 4, 11, 13])]
     if len(pos):
         print("\nposition error by class (m):")
         print(pos.groupby("attackId").err.median().round(1).to_string())
+
+    # Benign positioning error. This is the noise floor every position attack
+    # has to clear, so it is checked on the first seed rather than discovered
+    # after eight. The target is a median near 3 to 5 m with rare excursions to
+    # 10 to 15 m, and no message at exactly zero.
+    ben = tx[tx.attackId == 0]
+    if len(ben):
+        e = ben.err
+        print(f"\nbenign positioning error over {len(ben):,} messages from "
+              f"{ben.txNodeId.nunique()} stations:")
+        print(f"  median {e.median():.2f} m   p95 {e.quantile(.95):.2f} m   "
+              f"max {e.max():.2f} m   exactly zero: {(e < 1e-9).sum()}")
+        if (e < 1e-9).all():
+            print("  WARNING: every benign claim is exact. The GnssError "
+                  "attribute is off and the corpus will overstate detection")
+        # Per station, because the error is a quasi-constant bias. A station
+        # that drew an initial error near zero keeps a near-zero error for the
+        # whole run, which is faithful to the model and worth seeing: if a
+        # small-offset result turns out to rest on a handful of unusually well
+        # positioned benign stations, this is where that shows up.
+        per = ben.groupby("txNodeId").err.mean()
+        print(f"  per station mean error: min {per.min():.2f} "
+              f"p25 {per.quantile(.25):.2f} median {per.median():.2f} "
+              f"max {per.max():.2f} m")
+        print(f"  stations under 1 m of mean error: "
+              f"{(per < 1.0).sum()} of {len(per)}")
+        sp = (ben.claimedSpeed - ben.trueSpeed).abs()
+        hd = np.degrees((ben.claimedHeading - ben.trueHeading).abs())
+        print(f"  speed error median {sp.median():.4f} m/s p95 "
+              f"{sp.quantile(.95):.4f}")
+        print(f"  heading error median {hd.median():.3f} deg max {hd.max():.2f}")
+
+        # The magnitude ladder, stated against the noise floor rather than in
+        # absolute metres, because a displacement only means something relative
+        # to the error a benign receiver already has.
+        p95 = e.quantile(.95)
+        for cls, label in [(11, "pos_small_offset"), (13, "pos_medium_offset"),
+                           (1, "pos_const_offset")]:
+            d = tx[tx.attackId == cls]
+            if len(d):
+                per_att = d.groupby("txNodeId").err.median()
+                below = (per_att < p95).sum()
+                print(f"  {label:18s} per station median offset "
+                      f"{per_att.min():6.1f} to {per_att.max():6.1f} m, "
+                      f"{below} of {len(per_att)} stations inside the benign "
+                      f"95th percentile")
 
 
 if __name__ == "__main__":
