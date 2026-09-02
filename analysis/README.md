@@ -64,7 +64,7 @@ invalidate every grouped fold.
 | `pooled_consensus.py` | does pooling observations across receivers resolve position falsification |
 | `pool_separation.py` | what the cross-receiver statistics know, per class, without a classifier |
 | `claim_permutation.py` | independence control: does a benign station given a false claim look like an attacker |
-| `power_evasion.py` | can transmit power control defeat the received-power check |
+| `power_evasion.py` | can transmit power control, or a chosen claim, defeat the received-power check |
 | `pooled_regions.py` | pooled units per roadside unit region, the federated deployment version |
 | `measure_pooling_cost.py` | what forming the cross-receiver statistics costs |
 | `check_partition_skew.py` | is the federated partition actually skewed, or is the panel meaningless |
