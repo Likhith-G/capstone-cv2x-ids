@@ -324,25 +324,36 @@ ItsStationApp::StartApplication()
     m_drawnOffsetY = m_offsetY->GetValue();
     m_drawnSpeedFactor = m_speedFactor->GetValue();
 
-    if (m_attack == ItsAttack::POS_MEDIUM_OFFSET)
+    if (m_attack == ItsAttack::POS_MEDIUM_OFFSET ||
+        m_attack == ItsAttack::POS_SMALL_OFFSET)
     {
-        // Same mechanism as the small offset, drawn from a band an order of
-        // magnitude larger. The lateral flattening is kept so the claim still
-        // lands on the road rather than in a field beside it.
-        double mag = m_uniform->GetValue(m_mediumOffsetMin, m_mediumOffsetMax);
+        // Two rungs of the same ladder, drawn from different bands. The small
+        // offset is a displacement a driver could plausibly be wrong about,
+        // enough to claim the next lane or a car length of gap. The medium
+        // offset is the band where detection is actually decided, above the
+        // benign receiver error and below the point where received power
+        // resolves the lie on its own.
+        bool small = m_attack == ItsAttack::POS_SMALL_OFFSET;
+        double mag = m_uniform->GetValue(small ? m_smallOffsetMin : m_mediumOffsetMin,
+                                         small ? m_smallOffsetMax : m_mediumOffsetMax);
         double ang = m_uniform->GetValue(0.0, 2.0 * M_PI);
-        m_drawnOffsetX = mag * std::cos(ang);
-        m_drawnOffsetY = mag * std::sin(ang) * 0.4;
-    }
-    else if (m_attack == ItsAttack::POS_SMALL_OFFSET)
-    {
-        // A displacement a driver could plausibly be wrong about: enough to
-        // claim the next lane or a car length of gap, not enough to move the
-        // received power measurably.
-        double mag = m_uniform->GetValue(m_smallOffsetMin, m_smallOffsetMax);
-        double ang = m_uniform->GetValue(0.0, 2.0 * M_PI);
-        m_drawnOffsetX = mag * std::cos(ang);
-        m_drawnOffsetY = mag * std::sin(ang) * 0.4;
+
+        // The direction is flattened across the road, because a claim
+        // displaced sideways by tens of metres is in a field rather than in a
+        // lane and no detector needs radio evidence to reject it. The
+        // flattened direction is then NORMALISED, so the displacement is
+        // exactly `mag` whichever way it points.
+        //
+        // Without the normalisation the realised displacement runs from
+        // 0.4 * mag to mag depending on the drawn angle, which is not a
+        // detail: it turns a 50 to 80 m band into a 20 to 80 m band that
+        // overlaps the small offset class it is supposed to sit above, and the
+        // magnitude ladder stops bracketing the detection threshold.
+        double dx = std::cos(ang);
+        double dy = std::sin(ang) * 0.4;
+        double norm = std::sqrt(dx * dx + dy * dy);
+        m_drawnOffsetX = mag * dx / norm;
+        m_drawnOffsetY = mag * dy / norm;
     }
     else if (m_attack == ItsAttack::DOS_LOW_RATE)
     {
