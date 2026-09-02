@@ -86,6 +86,7 @@ AttackName(ItsAttack a)
     case ItsAttack::JAMMING: return "jamming";
     case ItsAttack::POS_SMALL_OFFSET: return "pos_small_offset";
     case ItsAttack::DOS_LOW_RATE: return "dos_low_rate";
+    case ItsAttack::POS_MEDIUM_OFFSET: return "pos_medium_offset";
     }
     return "unknown";
 }

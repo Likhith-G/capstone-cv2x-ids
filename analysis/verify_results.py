@@ -136,6 +136,10 @@ CHECKS = [
     ("drift prequential rises across the cut",
      "| 30 to 40 s | 11,814 | **0.5935** | **0.7378** |",
      "drift/logs/temporal", "30-40s    11,814    0.5935    0.7378"),
+    ("drift baseline holds under seed grouping",
+     "**0.5767 +/- 0.0181 on the congested corpus against 0.5843\nstation-grouped**",
+     "drift/logs/density_seedgrouped",
+     "campaign_dense   fused         0.4132 +/- 0.0265    0.5767 +/- 0.0181  -0.1634"),
     # cross-checks kept from the other corpora
     ("dense blocks", "| **fused** | 50 | **0.5859** | **0.8312** |",
      "benchmark_dense3", "fused            50  0.5859"),

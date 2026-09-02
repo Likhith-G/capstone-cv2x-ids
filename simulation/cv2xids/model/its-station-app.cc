@@ -133,6 +133,21 @@ ItsStationApp::GetTypeId()
                           DoubleValue(25.0),
                           MakeDoubleAccessor(&ItsStationApp::m_smallOffsetMax),
                           MakeDoubleChecker<double>())
+            .AddAttribute("MediumOffsetMin",
+                          "Smallest displacement the mid-magnitude position "
+                          "attack uses, in metres. The band is chosen to sit "
+                          "above the benign positioning error and below the "
+                          "VeReMi-scale offsets, which is where received power "
+                          "starts to carry information",
+                          DoubleValue(50.0),
+                          MakeDoubleAccessor(&ItsStationApp::m_mediumOffsetMin),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("MediumOffsetMax",
+                          "Largest displacement the mid-magnitude position "
+                          "attack uses, in metres",
+                          DoubleValue(80.0),
+                          MakeDoubleAccessor(&ItsStationApp::m_mediumOffsetMax),
+                          MakeDoubleChecker<double>())
             .AddAttribute("LowRateIntervalMin",
                           "Shortest inter-message time the stealthy rate attack uses",
                           TimeValue(MilliSeconds(40)),
@@ -148,6 +163,55 @@ ItsStationApp::GetTypeId()
                           TimeValue(MilliSeconds(10)),
                           MakeTimeAccessor(&ItsStationApp::m_dosInterval),
                           MakeTimeChecker())
+            .AddAttribute("GnssError",
+                          "Apply benign receiver positioning error to every "
+                          "broadcast. Off reproduces the earlier behaviour in "
+                          "which a benign vehicle claimed its exact true "
+                          "position, which no positioning system produces",
+                          BooleanValue(true),
+                          MakeBooleanAccessor(&ItsStationApp::m_gnssError),
+                          MakeBooleanChecker())
+            .AddAttribute("GnssMaxInitial",
+                          "Bound A on the per-vehicle initial position error, "
+                          "in metres. 5 is the VeReMi Extension highway value",
+                          DoubleValue(5.0),
+                          MakeDoubleAccessor(&ItsStationApp::m_gnssMaxInitial),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("GnssJitter",
+                          "Coefficient c relating the per-fix noise to the "
+                          "vehicle's own initial error. 0.03 is the VeReMi "
+                          "Extension highway value",
+                          DoubleValue(0.03),
+                          MakeDoubleAccessor(&ItsStationApp::m_gnssJitter),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("GnssSpikeSigma",
+                          "Standard deviation of a multipath spike, in metres",
+                          DoubleValue(5.0),
+                          MakeDoubleAccessor(&ItsStationApp::m_gnssSpikeSigma),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("GnssSpikeRate",
+                          "Multipath spikes per second",
+                          DoubleValue(0.005),
+                          MakeDoubleAccessor(&ItsStationApp::m_gnssSpikeRate),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("SpeedErrorSigma",
+                          "Standard deviation of the RELATIVE speed error, so "
+                          "the absolute error scales with speed. Note that the "
+                          "VeReMi Extension value of 0.00016 gives roughly "
+                          "0.005 m/s at highway speed, an order of magnitude "
+                          "below the 0.05 m/s its own text quotes. The literal "
+                          "value is kept as the default and the achieved error "
+                          "is measured rather than assumed",
+                          DoubleValue(0.00016),
+                          MakeDoubleAccessor(&ItsStationApp::m_speedErrSigma),
+                          MakeDoubleChecker<double>())
+            .AddAttribute("HeadingErrorMaxDeg",
+                          "Bound on the per-vehicle heading error at rest, in "
+                          "degrees. It decays as exp(-0.1 v), so a moving "
+                          "vehicle's heading is nearly exact",
+                          DoubleValue(20.0),
+                          MakeDoubleAccessor(&ItsStationApp::m_headingErrMaxDeg),
+                          MakeDoubleChecker<double>())
             .AddAttribute("OffsetX",
                           "Distribution the constant position offset in x is drawn from",
                           StringValue("ns3::UniformRandomVariable[Min=-250.0|Max=250.0]"),
@@ -179,6 +243,7 @@ ItsStationApp::GetTypeId()
 ItsStationApp::ItsStationApp()
 {
     m_uniform = CreateObject<UniformRandomVariable>();
+    m_gnssNormal = CreateObject<NormalRandomVariable>();
 }
 
 ItsStationApp::~ItsStationApp()
@@ -205,7 +270,8 @@ ItsStationApp::AssignStreams(int64_t stream)
     m_offsetY->SetStream(stream + 1);
     m_speedFactor->SetStream(stream + 2);
     m_uniform->SetStream(stream + 3);
-    return 4;
+    m_gnssNormal->SetStream(stream + 4);
+    return 5;
 }
 
 std::string
@@ -258,7 +324,17 @@ ItsStationApp::StartApplication()
     m_drawnOffsetY = m_offsetY->GetValue();
     m_drawnSpeedFactor = m_speedFactor->GetValue();
 
-    if (m_attack == ItsAttack::POS_SMALL_OFFSET)
+    if (m_attack == ItsAttack::POS_MEDIUM_OFFSET)
+    {
+        // Same mechanism as the small offset, drawn from a band an order of
+        // magnitude larger. The lateral flattening is kept so the claim still
+        // lands on the road rather than in a field beside it.
+        double mag = m_uniform->GetValue(m_mediumOffsetMin, m_mediumOffsetMax);
+        double ang = m_uniform->GetValue(0.0, 2.0 * M_PI);
+        m_drawnOffsetX = mag * std::cos(ang);
+        m_drawnOffsetY = mag * std::sin(ang) * 0.4;
+    }
+    else if (m_attack == ItsAttack::POS_SMALL_OFFSET)
     {
         // A displacement a driver could plausibly be wrong about: enough to
         // claim the next lane or a car length of gap, not enough to move the
@@ -275,6 +351,8 @@ ItsStationApp::StartApplication()
     }
 
     m_seqPerIdentity.assign(m_attack == ItsAttack::SYBIL ? m_sybilIdentities : 1, 0);
+
+    InitGnssError();
 
     // Stagger the first check so stations do not all evaluate the trigger in
     // the same slot.
@@ -298,6 +376,7 @@ ItsStationApp::StopApplication()
     m_running = false;
     Simulator::Cancel(m_camEvent);
     Simulator::Cancel(m_otherEvent);
+    Simulator::Cancel(m_gnssEvent);
     if (m_socket)
     {
         m_socket->Close();
@@ -499,6 +578,83 @@ ItsStationApp::CheckOtherGeneration()
 }
 
 void
+ItsStationApp::InitGnssError()
+{
+    // A roadside unit is surveyed once and does not move, so it has no fix
+    // error worth modelling, and it never transmits in this scenario anyway.
+    if (!m_gnssError || m_isRsu)
+    {
+        m_gnssE0x = m_gnssE0y = m_gnssEx = m_gnssEy = 0.0;
+        m_speedErrRel = 0.0;
+        m_headingErr0 = 0.0;
+        return;
+    }
+
+    m_gnssE0x = m_uniform->GetValue(-m_gnssMaxInitial, m_gnssMaxInitial);
+    m_gnssE0y = m_uniform->GetValue(-m_gnssMaxInitial, m_gnssMaxInitial);
+    m_gnssEx = m_gnssE0x;
+    m_gnssEy = m_gnssE0y;
+
+    // The per-fix noise is proportional to the vehicle's OWN initial error, so
+    // a receiver that happened to start well positioned stays steady and one
+    // that started badly keeps wandering. This is what makes the process a
+    // quasi-constant bias with a small correlated component rather than white
+    // noise, and it is why the error is not separable per message.
+    m_gnssSigmaX = m_gnssJitter * std::fabs(m_gnssE0x);
+    m_gnssSigmaY = m_gnssJitter * std::fabs(m_gnssE0y);
+
+    m_speedErrRel = m_gnssNormal->GetValue(0.0, m_speedErrSigma * m_speedErrSigma);
+    m_headingErr0 = m_uniform->GetValue(-m_headingErrMaxDeg, m_headingErrMaxDeg)
+                    * M_PI / 180.0;
+
+    m_gnssEvent = Simulator::Schedule(m_gnssTick, &ItsStationApp::StepGnssError, this);
+}
+
+void
+ItsStationApp::StepGnssError()
+{
+    if (!m_running)
+    {
+        return;
+    }
+
+    // The error process advances on the receiver's own fix rate, not on the
+    // transmission rate. Driving it from SendMessage would make a flooding
+    // attacker's position error evolve a hundred times faster than a benign
+    // vehicle's, which would hand the detector a signal that has nothing to do
+    // with the attack.
+    double muX = 0.5 * (m_gnssE0x + m_gnssEx);
+    double muY = 0.5 * (m_gnssE0y + m_gnssEy);
+    m_gnssEx = m_gnssNormal->GetValue(muX, m_gnssSigmaX * m_gnssSigmaX);
+    m_gnssEy = m_gnssNormal->GetValue(muY, m_gnssSigmaY * m_gnssSigmaY);
+
+    // Multipath. A Poisson process at m_gnssSpikeRate per second, evaluated
+    // once per tick, so the per-tick probability is the rate times the tick.
+    if (m_uniform->GetValue(0.0, 1.0) < m_gnssSpikeRate * m_gnssTick.GetSeconds())
+    {
+        m_gnssEx += m_gnssNormal->GetValue(0.0, m_gnssSpikeSigma * m_gnssSpikeSigma);
+        m_gnssEy += m_gnssNormal->GetValue(0.0, m_gnssSpikeSigma * m_gnssSpikeSigma);
+    }
+
+    m_gnssEvent = Simulator::Schedule(m_gnssTick, &ItsStationApp::StepGnssError, this);
+}
+
+void
+ItsStationApp::ApplyGnssError(Vector& pos, double& speed, double& heading) const
+{
+    if (!m_gnssError || m_isRsu)
+    {
+        return;
+    }
+    pos.x += m_gnssEx;
+    pos.y += m_gnssEy;
+    speed += speed * m_speedErrRel;
+    // Heading error decays with speed: a stationary vehicle's heading is
+    // whatever its compass says, a moving one's is derived from its track.
+    heading += m_headingErr0 * std::exp(-0.1 * std::fabs(speed));
+}
+
+void
 ItsStationApp::ApplyAttack(const Vector& truePos,
                            double trueSpeed,
                            double trueHeading,
@@ -516,6 +672,7 @@ ItsStationApp::ApplyAttack(const Vector& truePos,
     {
     case ItsAttack::POS_CONST_OFFSET:
     case ItsAttack::POS_SMALL_OFFSET:
+    case ItsAttack::POS_MEDIUM_OFFSET:
         claimedPos.x += m_drawnOffsetX;
         claimedPos.y += m_drawnOffsetY;
         break;
@@ -604,6 +761,13 @@ ItsStationApp::SendMessage(ItsMsgType type)
                 claimedPos,
                 claimedSpeed,
                 claimedHeading);
+
+    // Receiver error goes on the BROADCAST path only, after the attack has
+    // been applied. Ground truth is written from truePos and never sees this,
+    // so the offline join and every label stay exact. Applying it after the
+    // attack also means a replayed position carries a current fix error, which
+    // is what a station replaying its own earlier fix would actually emit.
+    ApplyGnssError(claimedPos, claimedSpeed, claimedHeading);
 
     uint32_t identityIdx = 0;
     if (m_attack == ItsAttack::SYBIL)

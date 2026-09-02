@@ -58,6 +58,11 @@ enum class ItsAttack : uint8_t
     // paper reports the degradation from the loud variant to the quiet one.
     POS_SMALL_OFFSET = 11, //!< a few metres of displacement, not hundreds
     DOS_LOW_RATE = 12,     //!< a modest rate increase, not a flood
+    // The middle of the magnitude ladder. POS_SMALL_OFFSET sits inside the
+    // benign positioning error and POS_CONST_OFFSET sits far outside it, so
+    // without this class the dataset has no attack in the range where
+    // detection is actually decided.
+    POS_MEDIUM_OFFSET = 13,
 };
 
 class ItsStationApp : public Application
@@ -167,10 +172,43 @@ class ItsStationApp : public Application
     Time m_dosInterval{MilliSeconds(10)};
     double m_smallOffsetMin{4.0};
     double m_smallOffsetMax{25.0};
+    double m_mediumOffsetMin{50.0};
+    double m_mediumOffsetMax{80.0};
     Time m_lowRateIntervalMin{MilliSeconds(40)};
     Time m_lowRateIntervalMax{MilliSeconds(80)};
     double m_playgroundX{2000.0};
     double m_playgroundY{100.0};
+
+    // --- benign GNSS error, VeReMi Extension form -------------------------
+    // Every broadcast position carries receiver error, because a benign
+    // vehicle that claims its exact true position is a vehicle no positioning
+    // system produces. Without this the application-layer self-consistency
+    // features are measured against a benign class with zero variance, and any
+    // attack larger than zero is separable in principle.
+    //
+    // Per vehicle and per axis k in {east, north}:
+    //   E_0     ~ U(-A, A)
+    //   mu_t    = (E_0 + E_{t-1}) / 2
+    //   sigma   = c * |E_0|
+    //   E_t     ~ N(mu_t, sigma^2)
+    // plus a Poisson multipath spike of standard deviation m_gnssSpikeSigma at
+    // rate m_gnssSpikeRate per second. A is 5 m and c is 0.03 for the highway
+    // scenario, which are the VeReMi Extension values.
+    bool m_gnssError{true};
+    double m_gnssMaxInitial{5.0};
+    double m_gnssJitter{0.03};
+    double m_gnssSpikeSigma{5.0};
+    double m_gnssSpikeRate{0.005};
+    double m_speedErrSigma{0.00016};
+    double m_headingErrMaxDeg{20.0};
+    Time m_gnssTick{MilliSeconds(100)};
+    double m_gnssE0x{0.0}, m_gnssE0y{0.0};
+    double m_gnssEx{0.0}, m_gnssEy{0.0};
+    double m_gnssSigmaX{0.0}, m_gnssSigmaY{0.0};
+    double m_speedErrRel{0.0};
+    double m_headingErr0{0.0};
+    Ptr<NormalRandomVariable> m_gnssNormal;
+    EventId m_gnssEvent;
 
     /// Recent true positions, for the replay attack. Bounded by m_replayDelay.
     std::deque<std::pair<Time, Vector>> m_positionHistory;
@@ -181,6 +219,9 @@ class ItsStationApp : public Application
 
     EventId m_camEvent;
     EventId m_otherEvent;
+    void InitGnssError();
+    void StepGnssError();
+    void ApplyGnssError(Vector& pos, double& speed, double& heading) const;
     bool m_running{false};
 
     static uint64_t s_nextMsgUid;
