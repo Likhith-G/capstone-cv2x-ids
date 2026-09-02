@@ -24,7 +24,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, matthews_corrcoef
 
 
 def main():
@@ -75,8 +75,13 @@ def main():
     windows_per_hour = 3600.0 / (a.window_ms / 1000.0)
     n_benign = int((y == 0).sum())
 
+    # MCC here is BINARY, benign against attack, at each operating threshold.
+    # It is not the multiclass MCC reported by benchmark.py and
+    # pooled_consensus.py and the two are not comparable, which is why the
+    # column says so. Binary MCC is the metric the proposal names primary and
+    # it is the one that does not flatter a detector on 99 percent benign data.
     print(f"{'threshold':>9s} {'FPR':>8s} {'recall':>8s} {'precision':>10s} "
-          f"{'false alerts/observer/hour':>28s}")
+          f"{'false alerts/observer/hour':>28s} {'MCC binary':>12s}")
     for t in [0.5, 0.7, 0.9, 0.95, 0.99]:
         pred = proba >= t
         fp = int((pred & (y == 0)).sum())
@@ -90,8 +95,13 @@ def main():
                  else (te.phy_neighbours.median()
                        if "phy_neighbours" in te else 1.0))
         alerts = fpr * windows_per_hour * float(neigh)
-        print(f"{t:9.2f} {fpr:8.4f} {recall:8.4f} {prec:10.4f} {alerts:28.0f}")
+        mcc = matthews_corrcoef(y, pred)
+        print(f"{t:9.2f} {fpr:8.4f} {recall:8.4f} {prec:10.4f} {alerts:28.0f}"
+              f" {mcc:12.4f}")
 
+    print(f"\nbinary MCC at threshold 0.5: "
+          f"{matthews_corrcoef(y, proba >= 0.5):.4f}, at true prevalence "
+          f"({prevalence:.4%} attack)")
     print("\nat threshold 0.5, per class:")
     print(classification_report(y, proba >= 0.5, digits=3, zero_division=0,
                                 target_names=["benign", "attack"]))

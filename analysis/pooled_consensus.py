@@ -45,7 +45,7 @@ from scipy.optimize import least_squares
 from scipy.stats import wilcoxon as _wilcoxon
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedGroupKFold
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, matthews_corrcoef
 
 def wilcoxon(a, b):
     """Wilcoxon that reports p = 1.0 when the two arms are identical rather
@@ -254,7 +254,7 @@ def main():
         # thing changing is how many receivers are allowed to contribute.
         print("\nreceivers per station-window, against detection\n")
         print(f"{'receivers':>10s}  {'macro F1':>16s}  {'class 1':>16s}  "
-              f"{'class 4':>16s}")
+              f"{'class 4':>16s}  {'MCC multiclass':>16s}")
         for k_obs in a.sweep:
             if k_obs and k_obs < MIN_OBS:
                 print(f"{k_obs:>10}  skipped, below the {MIN_OBS} receiver "
@@ -271,7 +271,7 @@ def main():
                   .to_numpy(dtype=np.float32))
             yk = Mk.label_attackId.values
             gk = Mk.label_txNodeId.values
-            mac, c1, c4 = [], [], []
+            mac, c1, c4, mcc = [], [], [], []
             for rep in range(a.repeats):
                 sg = StratifiedGroupKFold(n_splits=a.folds, shuffle=True,
                                           random_state=rep)
@@ -282,6 +282,7 @@ def main():
                     cl.fit(Xk[tr], yk[tr])
                     pr = cl.predict(Xk[te])
                     mac.append(f1_score(yk[te], pr, average="macro"))
+                    mcc.append(matthews_corrcoef(yk[te], pr))
                     lab = sorted(np.unique(yk))
                     f1c = dict(zip(lab, f1_score(yk[te], pr, average=None,
                                                  labels=lab, zero_division=0)))
@@ -290,7 +291,8 @@ def main():
             print(f"{k_obs if k_obs else 'all':>10}  "
                   f"{np.mean(mac):.4f} +/- {np.std(mac):.4f}  "
                   f"{np.mean(c1):.4f} +/- {np.std(c1):.4f}  "
-                  f"{np.mean(c4):.4f} +/- {np.std(c4):.4f}")
+                  f"{np.mean(c4):.4f} +/- {np.std(c4):.4f}  "
+                  f"{np.mean(mcc):.4f} +/- {np.std(mcc):.4f}")
         return
 
     M = pd.DataFrame(meta, columns=["key_seed", "key_claimedStationId", "key_window",
@@ -366,8 +368,14 @@ def main():
     names = ["single", "vote", "vote-soft", "pooled-mean", "consensus-only",
              "pooled-consensus"]
     scores = {k: [] for k in names}
+    # MCC beside macro F1, because the proposal names it the primary aggregate
+    # metric. This is the multiclass generalisation, not the binary MCC that
+    # evaluate_deployment.py reports per threshold, and the two are different
+    # quantities that must not be compared.
+    mccs = {k: [] for k in names}
     per_class = {k: {c: [] for c in classes} for k in names}
     obs_scores = []
+    obs_mccs = []
     obs_per_class = {c: [] for c in classes}
     importances = []
     import time
@@ -394,6 +402,7 @@ def main():
             cls_of_col = clf.classes_
             pr_obs = cls_of_col[proba.argmax(1)]
             obs_scores.append(f1_score(yobs[idx_te], pr_obs, average="macro"))
+            obs_mccs.append(matthews_corrcoef(yobs[idx_te], pr_obs))
             for c, sc in zip(classes, f1_score(yobs[idx_te], pr_obs, average=None,
                                                labels=classes, zero_division=0)):
                 obs_per_class[c].append(sc)
@@ -428,6 +437,7 @@ def main():
             for nm, pr in (("single", pr_single), ("vote", pr_vote),
                            ("vote-soft", pr_soft)):
                 scores[nm].append(f1_score(yt, pr, average="macro"))
+                mccs[nm].append(matthews_corrcoef(yt, pr))
                 for c, sc in zip(classes, f1_score(yt, pr, average=None,
                                                    labels=classes, zero_division=0)):
                     per_class[nm][c].append(sc)
@@ -441,6 +451,7 @@ def main():
                 cl.fit(Xc[tr], y[tr])
                 pr = cl.predict(Xc[te])
                 scores[name].append(f1_score(y[te], pr, average="macro"))
+                mccs[name].append(matthews_corrcoef(y[te], pr))
                 for c, sc in zip(classes, f1_score(y[te], pr, average=None,
                                                    labels=classes, zero_division=0)):
                     per_class[name][c].append(sc)
@@ -450,18 +461,32 @@ def main():
 
     n_meas = a.folds * a.repeats
     print(f"\nsingle-observer model scored per OBSERVATION (the deployed unit "
-          f"today): macro F1 {np.mean(obs_scores):.4f}")
+          f"today): macro F1 {np.mean(obs_scores):.4f}, "
+          f"MCC multiclass {np.mean(obs_mccs):.4f}")
     print("  per class, for comparison with the section 3 benchmark: " +
           "  ".join(f"{c}:{np.mean(v):.3f}" for c, v in obs_per_class.items()))
     print(f"\nmacro F1 per TRIPLE over {n_meas} paired grouped folds "
           f"({a.repeats} repeats x {a.folds} folds)\n")
-    print(f"{'arm':18s} {'macro F1':>16s}  {'vs single':>10s}  {'Wilcoxon p':>10s}")
+    print(f"{'arm':18s} {'macro F1':>16s}  {'vs single':>10s}  {'Wilcoxon p':>10s}"
+          f"  {'MCC multiclass':>18s}")
     base = np.array(scores["single"])
+    mbase = np.array(mccs["single"])
     for name in names:
         v = np.array(scores[name])
+        m = np.array(mccs[name])
         line = f"{name:18s} {v.mean():.4f} +/- {v.std():.4f}"
-        print(line if name == "single" else
-              f"{line}  {v.mean() - base.mean():+10.4f}  {wilcoxon(v, base):10.4g}")
+        # The MCC column is APPENDED, never inserted. verify_results.py pins
+        # substrings that run from the arm name through the delta, so anything
+        # placed before the delta silently breaks those checks.
+        tail = f"  {m.mean():.4f} +/- {m.std():.4f}"
+        if name == "single":
+            print(f"{line}{' ' * 24}{tail}")
+        else:
+            print(f"{line}  {v.mean() - base.mean():+10.4f}  "
+                  f"{wilcoxon(v, base):10.4g}{tail}")
+    print(f"MCC against single, same paired folds: " +
+          "  ".join(f"{n}:{np.mean(mccs[n]) - mbase.mean():+.4f}"
+                    for n in names if n != "single"))
 
     print(f"\nper class F1\n{'class':>6s}  " +
           "  ".join(f"{k:>16s}" for k in names))

@@ -30,7 +30,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.stats import wilcoxon
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, matthews_corrcoef
 from sklearn.preprocessing import StandardScaler
 
 
@@ -198,7 +198,13 @@ def run_method(method, clients, test, cfg, seed):
     g.eval()
     with torch.no_grad():
         pred = g(test[0]).argmax(1).numpy()
-    return f1_score(test[1].numpy(), pred, average="macro")
+    # Both metrics come back from one fit. MCC is the aggregate the proposal
+    # names primary; macro F1 is what every comparison in this file is anchored
+    # on and what hyperparameter selection uses, so that adding MCC reports a
+    # second number without moving any existing one.
+    truth = test[1].numpy()
+    return (f1_score(truth, pred, average="macro"),
+            matthews_corrcoef(truth, pred))
 
 
 def dp_epsilon(z, rounds, delta=1e-5):
@@ -336,10 +342,15 @@ def main():
         for method, (name, values) in grids.items():
             if method not in a.methods.split(","):
                 continue
+            # Selection stays on macro F1. Selecting on MCC would move the
+            # chosen hyperparameters and therefore every federated number in
+            # RESULTS.md, which is a results change dressed as a metric
+            # addition. Which aggregate is primary is decided when the paper is
+            # written, with both in hand.
             best, best_v = None, -1.0
             for v in values:
                 c = dict(cfg, **{name: v})
-                score = run_method(method, clients, val, c, seed=1000)
+                score, _ = run_method(method, clients, val, c, seed=1000)
                 if score > best_v:
                     best, best_v = v, score
             chosen[method] = (name, best)
@@ -353,23 +364,27 @@ def main():
         print(f"DP-FedAvg, update clipped to L2 norm {a.dp_clip}, uniform "
               f"client weights, {len(clients)} clients, "
               f"{int(cfg['participation'] * len(clients))} sampled per round\n")
-        print(f"{'z':>6s} {'macro F1':>18s} {'vs no DP':>9s} {'epsilon':>10s}")
+        print(f"{'z':>6s} {'macro F1':>18s} {'vs no DP':>9s} {'epsilon':>10s}"
+              f" {'MCC multiclass':>18s}")
         base = None
         for z in [None] + list(a.dp_noise or [0.0]):
             c = dict(cfg)
             if z is not None:
                 c["dp_clip"], c["dp_noise"] = a.dp_clip, z
-            scores = np.array([run_method("fedavg", clients, test, c, seed=s)
-                               for s in range(a.seeds)])
+            both = [run_method("fedavg", clients, test, c, seed=s)
+                    for s in range(a.seeds)]
+            scores = np.array([b[0] for b in both])
+            mcc = np.array([b[1] for b in both])
             if z is None:
                 base = scores.mean()
                 print(f"{'off':>6s} {scores.mean():.4f} +/- {scores.std():.4f}"
-                      f" {'':>9s} {'':>10s}")
+                      f" {'':>9s} {'':>10s} {mcc.mean():.4f} +/- {mcc.std():.4f}")
                 continue
             eps = dp_epsilon(z, a.rounds) if z > 0 else float("inf")
             eps_s = f"{eps:10.1f}" if np.isfinite(eps) else f"{'no noise':>10s}"
             print(f"{z:6.2f} {scores.mean():.4f} +/- {scores.std():.4f} "
-                  f"{scores.mean() - base:+9.4f} {eps_s}")
+                  f"{scores.mean() - base:+9.4f} {eps_s} "
+                  f"{mcc.mean():.4f} +/- {mcc.std():.4f}")
         print("\nEpsilon is a CONSERVATIVE bound: Renyi composition of one\n"
               "Gaussian mechanism per round at delta = 1e-5, with NO subsampling\n"
               "amplification credited even though half the clients are sampled\n"
@@ -378,16 +393,20 @@ def main():
               "sampling rate are all stated so it can be recomputed.")
         return
 
-    results = {}
+    results, results_mcc = {}, {}
     for method in a.methods.split(","):
         c = cfg
         if method in chosen:
             name, v = chosen[method]
             c = dict(cfg, **{name: v})
-        scores = [run_method(method, clients, test, c, s) for s in range(a.seeds)]
+        both = [run_method(method, clients, test, c, s) for s in range(a.seeds)]
+        scores = [b[0] for b in both]
+        mcc = [b[1] for b in both]
         results[method] = scores
+        results_mcc[method] = mcc
         print(f"{method:9s} macro F1 {np.mean(scores):.4f} +/- {np.std(scores):.4f}   "
-              f"{[round(s, 4) for s in scores]}")
+              f"{[round(s, 4) for s in scores]}   "
+              f"MCC multiclass {np.mean(mcc):.4f} +/- {np.std(mcc):.4f}")
 
     base = results.get("fedavg")
     if base and len(base) >= 5:
@@ -399,6 +418,22 @@ def main():
                 stat, pval = wilcoxon(s, base)
                 delta = np.mean(s) - np.mean(base)
                 print(f"  {m:9s} delta {delta:+.4f}  p = {pval:.4f}"
+                      f"{'  significant' if pval < 0.05 else ''}")
+            except ValueError as e:
+                print(f"  {m:9s} {e}")
+
+        # The same paired test on MCC, reported separately rather than folded
+        # into the line above, so that a method which wins on one aggregate and
+        # not the other is visible instead of averaged away.
+        mbase = results_mcc.get("fedavg")
+        print("\npaired Wilcoxon on MCC against FedAvg (n=%d seeds):" % len(mbase))
+        for m, s in results_mcc.items():
+            if m == "fedavg":
+                continue
+            try:
+                stat, pval = wilcoxon(s, mbase)
+                delta = np.mean(s) - np.mean(mbase)
+                print(f"  {m:9s} MCC delta {delta:+.4f}  p = {pval:.4f}"
                       f"{'  significant' if pval < 0.05 else ''}")
             except ValueError as e:
                 print(f"  {m:9s} {e}")

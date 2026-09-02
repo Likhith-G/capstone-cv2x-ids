@@ -125,8 +125,15 @@ CLAIMS_CONSISTENCY = [
     "0.0547",         # and its p-value, which must be stated
 ]
 
-STYLE_FILES = ["RESULTS.md", "MASTER_INDEX.md", "BUILD_LOG_V2.md",
-               "PAPER_CLAIMS.md"]
+# Prose files the dash ban is enforced over, as repository relative paths.
+# Every document that gets written by hand belongs here. METHODS_DRAFT.md in
+# particular carries the standards prose, which is copied from sources that use
+# em dashes freely, so it is the file most likely to acquire one.
+STYLE_FILES = ["docs/RESULTS.md", "docs/MASTER_INDEX.md", "docs/BUILD_LOG_V2.md",
+               "docs/PAPER_CLAIMS.md", "docs/METHODS_DRAFT.md",
+               "docs/DEFECTS_V2.md", "docs/PLAN_V3.md", "docs/RUNS_MANIFEST.md",
+               "README.md", "analysis/README.md", "simulation/README.md",
+               "capstone/README.md"]
 
 
 def check_references(bad):
@@ -210,15 +217,16 @@ def check_style(bad):
     zero for files that were full of them. A check that cannot fail is worse
     than no check.
     """
+    repo = DOC.parent.parent
     for name in STYLE_FILES:
-        f = DOC.parent / name
+        f = repo / name
         if not f.exists():
             continue
         text = f.read_text()
         n = sum(text.count(c) for c in "\u2014\u2013")
         ok = n == 0
         bad += not ok
-        print(f"{'ok  ' if ok else 'FAIL'} style: {name:24s}"
+        print(f"{'ok  ' if ok else 'FAIL'} style: {name:26s}"
               f"{'' if ok else f'  <- {n} em or en dashes'}")
     return bad
 

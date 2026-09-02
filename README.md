@@ -4,12 +4,16 @@ A labelled C-V2X sidelink intrusion detection dataset and the cross-layer
 detection pipeline built on it.
 
 Connected vehicles broadcast safety messages several times a second carrying
-position, speed and heading. Those messages are unauthenticated at the content
-level in order to meet a 100 ms latency budget, so a vehicle can transmit a
-correctly signed message whose contents are false. This work generates such
-misbehaviour in simulation, records only what a receiver could actually observe,
-and evaluates detection from the application layer, the radio layer and the two
-combined.
+position, speed and heading. Those messages are signed: ETSI TS 103 097 wraps
+every one of them in an ECDSA signature under a pseudonym certificate, and IEEE
+1609.2 does the same in North America. What the signature establishes is that
+the message came from a credentialled station and was not altered in transit. It
+establishes nothing about whether the position inside it is true, so a station
+holding valid credentials can transmit a correctly signed message whose contents
+are false and no receiver can tell from the cryptography alone. This work
+generates such misbehaviour in simulation, records only what a receiver could
+actually observe, and evaluates detection from the application layer, the radio
+layer and the two combined.
 
 ---
 
