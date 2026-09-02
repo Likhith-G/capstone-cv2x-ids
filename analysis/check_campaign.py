@@ -23,6 +23,8 @@ wrong before:
 Usage: check_campaign.py <run-dir> <tag>
 """
 import argparse
+import sys
+
 import numpy as np
 import pandas as pd
 
@@ -36,6 +38,11 @@ def main():
     ap.add_argument("--expect-classes", default=None,
                     help="comma separated attack ids the run was asked for")
     a = ap.parse_args()
+
+    # Collected rather than printed and forgotten. This script is the gate in
+    # front of a long analysis chain, so a condition worth warning about is a
+    # condition worth a non-zero exit.
+    problems = []
 
     tx = pd.read_csv(f"{a.run_dir}/tx_{a.tag}.csv",
                      on_bad_lines="skip").dropna(subset=["attackId"])
@@ -63,6 +70,7 @@ def main():
     print(f"\nmessage mix:\n{mix.to_string()}")
     if "CAM" in mix and mix.get("CPM", 0) > mix["CAM"]:
         print("  WARNING: CPM outnumbers CAM, check the CPM trigger")
+        problems.append("CPM outnumbers CAM")
 
     c = tx.txCbr
     print(f"\nCBR mean {c.mean():.3f} p95 {c.quantile(.95):.3f} max {c.max():.3f}")
@@ -75,11 +83,13 @@ def main():
           f"{1000 / g.gap.mean():.2f} Hz, {g.gap.nunique()} distinct intervals")
     if g.gap.nunique() < 4:
         print("  WARNING: too few distinct intervals, triggering may be deterministic")
+        problems.append("benign CAM triggering looks deterministic")
     bins = pd.cut(g.txCbr, [0, .2, .3, .4, .5, .6, .7, 1.01])
     print("\nDCC response, benign CAM interval against measured CBR:")
     print(g.groupby(bins, observed=True).agg(
         n=("gap", "size"), median_ms=("gap", "median")).to_string())
 
+    bands = {}
     tx["err"] = np.hypot(tx.claimedX - tx.trueX, tx.claimedY - tx.trueY)
     pos = tx[tx.attackId.isin([1, 2, 3, 4, 11, 13])]
     if len(pos):
@@ -100,6 +110,7 @@ def main():
         if (e < 1e-9).all():
             print("  WARNING: every benign claim is exact. The GnssError "
                   "attribute is off and the corpus will overstate detection")
+            problems.append("benign positioning error is identically zero")
         # Per station, because the error is a quasi-constant bias. A station
         # that drew an initial error near zero keeps a near-zero error for the
         # whole run, which is faithful to the model and worth seeing: if a
@@ -131,7 +142,27 @@ def main():
                       f"{per_att.min():6.1f} to {per_att.max():6.1f} m, "
                       f"{below} of {len(per_att)} stations inside the benign "
                       f"95th percentile")
+                bands[cls] = (per_att.min(), per_att.max())
+
+        # The ladder has to separate or it is not a ladder. Overlapping bands
+        # mean a magnitude comparison is comparing two mixtures of the same
+        # distances, which is the defect that cost one restart of this
+        # campaign, so it is now checked rather than eyeballed.
+        if 11 in bands and 13 in bands and bands[11][1] > bands[13][0]:
+            print(f"  WARNING: the small and medium offset bands overlap, "
+                  f"{bands[11][1]:.1f} m against {bands[13][0]:.1f} m")
+            problems.append("position offset magnitude bands overlap")
+
+    if problems:
+        print(f"\nFAILED with {len(problems)} problem(s):")
+        for pr in problems:
+            print(f"  - {pr}")
+        print("Fix the campaign configuration before spending the analysis "
+              "chain on it.")
+        return 1
+    print("\nseed check passed")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
