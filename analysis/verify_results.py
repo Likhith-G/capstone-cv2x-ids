@@ -93,6 +93,32 @@ CHECKS = [
      "campaign_v3/logs/deployment", "0.90   0.0002   0.4833"),
     ("latency", "single-window inference    3.020 ms",
      "campaign_v3/logs/latency", "single-window inference      3.020 ms"),
+    # Drift. These live under runs/drift/logs because drift.py reads several
+    # corpora at once and has no single run directory to write into.
+    ("drift fused into light traffic",
+     "| light | **fused** | **0.3612 +/- 0.0026** | **0.5554 +/- 0.0213** | "
+     "**-0.1941** | **0.3098** | **0.6984** |",
+     "drift/logs/density",
+     "campaign_v3      fused         0.3612 +/- 0.0026    0.5554 +/- 0.0213  -0.1941"),
+    ("drift fused into congestion",
+     "| congested | **fused** | **0.4230 +/- 0.0109** | **0.5843 +/- 0.0098** | "
+     "**-0.1613** | **0.3609** | **0.6548** |",
+     "drift/logs/density",
+     "campaign_dense   fused         0.4230 +/- 0.0109    0.5843 +/- 0.0098  -0.1613"),
+    ("drift radio degrades least",
+     "| congested | phy-only | 0.2784 +/- 0.0079 | 0.3686 +/- 0.0046 | **-0.0902** |",
+     "drift/logs/density",
+     "campaign_dense   phy-only      0.2784 +/- 0.0079    0.3686 +/- 0.0046  -0.0902"),
+    ("drift benign false alarms",
+     "| benign | 0.601 / 0.911 | 0.749 / 0.892 |",
+     "drift/logs/density",
+     "campaign_v3      fused       0.601/0.911"),
+    ("drift low rate dos collapses",
+     "| dos_low_rate | **0.103 / 0.907** | 0.834 / 0.934 |",
+     "drift/logs/density", "0.103/0.907"),
+    ("drift sybil reverses",
+     "| sybil | **0.882 / 0.962** | **0.217 / 0.886** |",
+     "drift/logs/density", "0.217/0.886"),
     # cross-checks kept from the other corpora
     ("dense blocks", "| **fused** | 50 | **0.5859** | **0.8312** |",
      "benchmark_dense3", "fused            50  0.5859"),
@@ -148,7 +174,7 @@ def check_references(bad):
     text = "\n".join(f.read_text() for f in docs)
     repo = DOC.parent.parent
     bad_refs = []
-    for m in sorted(set(re.findall(r"runs/[a-z0-9_]+(?:/[a-z0-9_]+)?\.(?:log|pkl)", text))):
+    for m in sorted(set(re.findall(r"runs/[a-z0-9_]+(?:/[a-z0-9_]+){0,2}\.(?:log|pkl)", text))):
         if not (RUNS.parent / m).exists():
             bad_refs.append(m)
     for m in sorted(set(re.findall(r"analysis/[a-z_]+\.(?:py|sh)", text))):
