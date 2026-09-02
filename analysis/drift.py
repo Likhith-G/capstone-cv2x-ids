@@ -42,12 +42,18 @@ NAMES = {0: "benign", 1: "pos_const_offset", 3: "pos_offset_random",
          8: "sps_manipulation", 11: "pos_small_offset", 12: "dos_low_rate"}
 
 
-def load(spec, sample, seed=0):
+def load(spec, sample, seed=0, role=None):
     """Load one `name=path` corpus, filtered and subsampled.
 
     Subsampling is not optional on this machine. Two of these corpora together
     are larger than memory, and the comparison needs every scenario to carry
     the same weight anyway, which an unsampled union would not give.
+
+    `role` restricts to one observer type. It matters more than it looks:
+    campaign_v3 has roadside unit observers and campaign_dense has none, so a
+    comparison across the two without this flag varies observer geometry at the
+    same time as traffic density, and the radio block is then measuring
+    infrastructure rather than load.
     """
     name, _, path = spec.partition("=")
     if not path:
@@ -55,6 +61,11 @@ def load(spec, sample, seed=0):
     df = pd.read_pickle(path)
     if "label_clean" in df.columns:
         df = df[df.label_clean == 1]
+    if role and "key_observer_role" in df.columns:
+        before = len(df)
+        df = df[df.key_observer_role == role]
+        print(f"{name}: kept {len(df):,} of {before:,} rows at "
+              f"observer role {role}")
     if sample and len(df) > sample:
         df = df.sample(n=sample, random_state=seed)
     df = df.reset_index(drop=True)
@@ -85,11 +96,38 @@ def clean(df, cols):
 def cross_scenario(a):
     frames = {}
     for spec in a.scenarios:
-        name, df = load(spec, a.sample)
+        name, df = load(spec, a.sample, role=a.observer_role)
         frames[name] = df
         print(f"{name:16s} {len(df):>9,} windows  "
               f"{df.label_txNodeId.nunique():>4} stations  "
-              f"classes {sorted(df.label_attackId.unique())}")
+              f"classes {sorted(int(c) for c in df.label_attackId.unique())}")
+        # What else changes between these corpora decides what the comparison
+        # is allowed to be called. If one has roadside unit observers and the
+        # other does not, the radio block is looking at a different observer
+        # geometry rather than denser traffic, and the result is cross-scenario
+        # transfer, not cross-density transfer.
+        if "key_observer_role" in df.columns:
+            mix = df.key_observer_role.value_counts(normalize=True)
+            print(f"{'':16s} observer roles  " +
+                  "  ".join(f"{k}:{v:.3f}" for k, v in mix.items()))
+        if "key_seed" in df.columns:
+            print(f"{'':16s} seeds  {sorted(df.key_seed.unique())}")
+
+    # Per class support after sampling. Sampling is uniform over windows, and
+    # the corpora are heavily benign, so a rare attack class can arrive with a
+    # few hundred rows. Its per class cell is then noise dressed as a result,
+    # and the table below prints a dash for it rather than a number.
+    print(f"\nrows per class after sampling. A class below {a.min_rows} rows in "
+          f"the held-out corpus\nis not scored per class, because the fold to "
+          f"fold spread swamps any effect.")
+    allc = sorted(set().union(*[set(int(c) for c in d.label_attackId.unique())
+                                for d in frames.values()]))
+    print(f"{'scenario':16s} " + "  ".join(f"{NAMES.get(c, c)[:14]:>14s}"
+                                           for c in allc))
+    for name, df in frames.items():
+        vc = df.label_attackId.value_counts()
+        print(f"{name:16s} " + "  ".join(f"{int(vc.get(c, 0)):>14,}"
+                                         for c in allc))
 
     # Every scenario must be scored on the same label set or the macro average
     # is over different things in different arms and the comparison is void.
@@ -161,13 +199,20 @@ def cross_scenario(a):
     print(f"{'held out':16s} {'block':10s} " +
           "  ".join(f"{NAMES.get(c, c)[:14]:>14s}" for c in classes))
     for held, bname, pc_t, pc_i in per_class_rows:
-        print(f"{held:16s} {bname:10s} " +
-              "  ".join(f"{x:6.3f}/{i:<7.3f}" for x, i in zip(pc_t, pc_i)))
+        vc = frames[held].label_attackId.value_counts()
+        cells = []
+        for c, x, i in zip(classes, pc_t, pc_i):
+            cells.append(f"{'thin':>6s}/{'thin':<7s}" if vc.get(c, 0) < a.min_rows
+                         else f"{x:6.3f}/{i:<7.3f}")
+        print(f"{held:16s} {bname:10s} " + "  ".join(cells))
     print("\nEach cell is transfer / in-distribution on the same held-out rows.")
+    print(f"'thin' means fewer than {a.min_rows} rows of that class survived "
+          f"sampling in that\nscenario, so the cell is not reported rather than "
+          f"reported as noise.")
 
 
 def temporal(a):
-    name, df = load(a.temporal, a.sample)
+    name, df = load(a.temporal, a.sample, role=a.observer_role)
     classes = sorted(df.label_attackId.unique())
     blocks = blocks_of(df)
     seeds = sorted(df.key_seed.unique())
@@ -261,6 +306,14 @@ def main():
     ap.add_argument("--cut", type=float, default=0.5,
                     help="fraction of the run used for training, temporal mode")
     ap.add_argument("--bins", type=int, default=6)
+    ap.add_argument("--observer-role", choices=["vehicle", "rsu"], default=None,
+                    help="restrict to one observer type. Use vehicle when "
+                         "comparing corpora that do not all deploy roadside "
+                         "units, or the comparison confounds observer geometry "
+                         "with whatever else it is meant to measure")
+    ap.add_argument("--min-rows", type=int, default=2000,
+                    help="per class row count below which a per class cell is "
+                         "printed as thin rather than as a number")
     a = ap.parse_args()
     if a.scenarios:
         cross_scenario(a)
