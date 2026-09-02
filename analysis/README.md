@@ -21,7 +21,7 @@ construction: which radio sent the message it just decoded.
 
     build_corpus.py DIR seed1 seed2 ... -o corpus.csv     # writes .csv and .pkl
     merge_corpora.py part1.pkl part2.pkl -o corpus.pkl    # if seeds built separately
-    validate_dataset.py corpus.pkl                        # eight adversarial gates
+    validate_dataset.py corpus.pkl                        # ten adversarial gates
     make_splits.py corpus.pkl --out-dir DIR               # balanced + realism
     benchmark.py corpus.pkl --report --sample 250000      # app / phy / fused
     check_partition_skew.py corpus.pkl                    # BEFORE any federated run
