@@ -104,16 +104,22 @@ CHECKS = [
      "campaign_v3/logs/persistence", "     1       30    0.300"),
     ("pooling cost", "| both | **0.4076** |",
      "campaign_v3/logs/pooling_cost", "both                                               0.4076"),
-    ("federated FedAvg", "| FedAvg | 0.2106 +/- 0.0398 | | |",
-     "campaign_v3/logs/federated", "fedavg    macro F1 0.2106 +/- 0.0398"),
-    ("federated FedLC not significant",
-     "| FedLC | **0.2318 +/- 0.0465** | **+0.0212** | **0.0547** |",
-     "campaign_v3/logs/federated", "fedlc     delta +0.0212  p = 0.0547"),
-    ("federated FedNova worse",
-     "| **FedNova** | 0.2030 +/- 0.0364 | **-0.0075** | **0.0280 worse** |",
-     "campaign_v3/logs/federated", "fednova   delta -0.0075  p = 0.0280  significant"),
-    ("partition skew", "mean total variation from the pooled distribution 0.127",
-     "campaign_v3/logs/skew", "mean total variation from the pooled distribution: 0.127"),
+    ("federated FedAvg",
+     "| FedAvg | 0.2014 +/- 0.0312 | | | 0.2964 +/- 0.0207 | | |",
+     "campaign_gnss/logs/federated", "fedavg    macro F1 0.2014 +/- 0.0312"),
+    ("federated FedLC splits the aggregates",
+     "| **FedLC** | 0.2059 +/- 0.0340 | **+0.0044** | **0.0547** | "
+     "**0.3041 +/- 0.0247** | **+0.0078** | **0.0156** |",
+     "campaign_gnss/logs/federated", "fedlc     delta +0.0044  p = 0.0547"),
+    ("federated FedLC significant on MCC",
+     "significant on the Matthews correlation at p = 0.0156 and not on macro F1 at\np = 0.0547",
+     "campaign_gnss/logs/federated",
+     "fedlc     MCC delta +0.0078  p = 0.0156  significant"),
+    ("federated FedNova no longer worse",
+     "| FedNova | 0.2024 +/- 0.0317 | +0.0010 | 0.0679 | 0.2976 +/- 0.0214 | +0.0013 | 0.0679 |",
+     "campaign_gnss/logs/federated", "fednova   delta +0.0010  p = 0.0679"),
+    ("partition skew", "mean total variation from the pooled distribution 0.126",
+     "campaign_gnss/logs/skew", "mean total variation from the pooled distribution: 0.126"),
     ("deployment at 0.90", "| 0.90 | 0.0002 | 0.483 | 0.999 | **68** |",
      "campaign_v3/logs/deployment", "0.90   0.0002   0.4833"),
     ("latency", "single-window inference    3.020 ms",
@@ -238,7 +244,7 @@ CLAIMS_CONSISTENCY = [
     "0.412",          # pooled consensus, class 13, the band that decides
     "0.019",          # and the same class to one receiver
     "18.2",           # localisation error, which sets the detection floor
-    "0.0547",         # FedLC over FedAvg, still not significant
+    "0.0156",         # FedLC over FedAvg on MCC, the pre-specified aggregate
     "7.16",           # permutation control, benign given a false claim
     "0.905",          # pooled AUC, unchanged under every power adversary
 ]
