@@ -28,7 +28,8 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from pooled_consensus import observer_geometry, consensus_block, MIN_OBS
+from pooled_consensus import (observer_geometry, consensus_block, MIN_OBS,
+                              ROAD_HALFWIDTH)
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
 
@@ -54,6 +55,14 @@ def main():
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--tags", nargs="+", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--road-halfwidth", type=float, default=None,
+                    nargs="?", const=ROAD_HALFWIDTH, metavar="METRES",
+                    help="constrain the position fit to the carriageway, the "
+                         "same way pooled_consensus.py does. The region "
+                         "pipeline feeds the federated panel, the privacy "
+                         "sweep and the operating point, so it has to use the "
+                         "same estimator as the pooling section or those "
+                         "sections describe a different detector")
     a = ap.parse_args()
     rng = np.random.default_rng(0)
 
@@ -87,7 +96,8 @@ def main():
             continue
         cx, cy = float(v.claimedX.iloc[0]), float(v.claimedY.iloc[0])
         cb, _ = consensus_block(v.rxX.values, v.rxY.values,
-                                v.phy_rsrp_mean.values, cx, cy, rng)
+                                v.phy_rsrp_mean.values, cx, cy, rng,
+                                road_halfwidth=a.road_halfwidth)
         rows.append(np.concatenate([v[feats].mean().values,
                                     [cb[c] for c in sorted(cb)]]))
         # One receiver from the SAME region and unit, so a paired comparison
@@ -97,7 +107,8 @@ def main():
                      int(v.label_txNodeId.iloc[0]), len(v)))
 
     cols = feats + sorted(consensus_block(np.zeros(6), np.zeros(6), np.zeros(6),
-                                          0.0, 0.0, rng)[0])
+                                          0.0, 0.0, rng,
+                                          road_halfwidth=a.road_halfwidth)[0])
     X = pd.DataFrame(rows, columns=cols)
     M = pd.DataFrame(meta, columns=KEY + ["key_region", "label_attackId",
                                           "label_txNodeId", "n_recv"])
