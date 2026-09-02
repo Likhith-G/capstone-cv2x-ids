@@ -39,6 +39,14 @@ the detection outcome is in the corpus.
 
     offset_floor.py corpus.pkl --run-dir DIR --tags seed1 ... --pooled pooled.pkl
 
+`veremi_bridge.py` runs this project's application-layer detector on VeReMi
+Extension, on the seventeen features computable from both datasets. Prove the
+feature definitions still match before trusting a comparison, because the
+arithmetic is duplicated from `build_features.py` rather than imported:
+
+    veremi_bridge.py --selftest RUN_DIR seed1 --corpus RUN_DIR/corpus_seed1.pkl
+    veremi_bridge.py /path/to/veremi/sim --corpus corpus.pkl
+
 Both arms of the scenario comparison are trained on the same number of rows and
 scored on the same test rows, because otherwise the difference between them is
 mostly training set size rather than the shift being measured.
@@ -77,6 +85,7 @@ invalidate every grouped fold.
 | `check_campaign.py` | is one seed of a campaign configured correctly, before hours are spent on the rest |
 | `drift.py` | does the detector survive a scenario or a period it was not trained on |
 | `offset_floor.py` | how far must a vehicle lie before anyone can tell, against the benign error |
+| `veremi_bridge.py` | does the application layer's blindness to constant offsets reproduce on somebody else's dataset |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
 
