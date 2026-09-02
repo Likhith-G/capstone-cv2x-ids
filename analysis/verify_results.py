@@ -78,15 +78,20 @@ CHECKS = [
      "campaign_v3/logs/pool_separation",
      "pool_rmse_ratio                4.97    1.56    3.01   -0.02    0.78    0.45    0.05    0.15    0.19"),
     ("permutation control",
-     "| **benign, claim permuted** | **1773.4 m** | **9.91 dB** | **7.18** | **0.106** |",
-     "campaign_v3/logs/claim_permutation",
-     "benign, claim permuted              29567        9.91            7.18     0.106     1773.4 m"),
-    ("power evasion class 1", "| 1 | power-targeted | **0.500** | **0.882** |",
-     "campaign_v3/logs/power_evasion", "power-targeted             0.500             0.882"),
-    ("power evasion class 4", "| 4 pos_replay | none | 0.574 | 0.861 |",
-     "campaign_v3/logs/power_evasion", "4       none             0.574             0.861"),
-    ("power evasion class 6", "| 6 sybil | none | 0.564 | 0.600 |",
-     "campaign_v3/logs/power_evasion", "6       none             0.564             0.600"),
+     "| **benign, claim permuted** | **1769.0 m** | **9.90 dB** | **7.16** | **0.109** |",
+     "campaign_gnss/logs/claim_permutation",
+     "benign, claim permuted              29574        9.90            7.16     0.109     1769.0 m"),
+    ("power evasion class 1", "| 1 | power-targeted | **0.500** | **0.905** |",
+     "campaign_gnss/logs/power_evasion",
+     "     1 power-targeted             0.500             0.905"),
+    ("power evasion class 13 invariant",
+     "| 13 | power-targeted | **0.500** | **0.784** |",
+     "campaign_gnss/logs/power_evasion",
+     "    13 power-targeted             0.500             0.784"),
+    ("power evasion class 4", "| 4 pos_replay | none | 0.561 | 0.835 |",
+     "campaign_gnss/logs/power_evasion", "4       none             0.561             0.835"),
+    ("power evasion class 6", "| 6 sybil | none | 0.561 | 0.600 |",
+     "campaign_gnss/logs/power_evasion", "6       none             0.561             0.600"),
     ("pooled federated gain", "| pooling, against one receiver | 0.4933 | **0.5564** | **+0.0631** | 0.0078 |",
      "campaign_v3/logs/federated_regions", "fedavg    macro F1 0.5564 +/- 0.0044"),
     ("consensus block earns place", "| the consensus block, on top of pooling | 0.5455 | **0.5564** | **+0.0109** | 0.0078 |",
@@ -232,6 +237,8 @@ CLAIMS_CONSISTENCY = [
     "0.019",          # and the same class to one receiver
     "18.2",           # localisation error, which sets the detection floor
     "0.0547",         # FedLC over FedAvg, still not significant
+    "7.16",           # permutation control, benign given a false claim
+    "0.905",          # pooled AUC, unchanged under every power adversary
 ]
 
 # Prose files the dash ban is enforced over, as repository relative paths.
