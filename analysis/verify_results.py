@@ -130,6 +130,8 @@ CHECKS = [
      "| 15 to 30 m | 10 | 0.00 | 0.00 |",
      "campaign_gnss/logs/offset_floor",
      "          15 to 30 m        10       568      0.058     0.00"),
+    ("collusion needs twenty receivers",
+     "| a half | 20 | 13 |", None, None),
     # Drift. These live under runs/drift/logs because drift.py reads several
     # corpora at once and has no single run directory to write into.
     ("drift fused into light traffic",
