@@ -219,6 +219,12 @@ CHECKS = [
      "0.951 at 50 m in\n`best_response_free_roadest.log`",
      "drift/logs/best_response_free_roadest",
      "        50 m       2.807     0.311       0.951      0.148         0.013"),
+    ("calibration BLER waterfall",
+     "**0.0375\nat 10-15**, 0.0131 at 15-20, 0.0063 at 20-30, 0.0017 above 30",
+     "campaign_gnss/logs/calibration", "(10, 15]    193656  0.0375"),
+    ("calibration PRR decay",
+     "0.9292 under 50 m, 0.8787 at\n150-200",
+     "campaign_gnss/logs/calibration", "(0.0, 50.0]               6756  0.9292"),
     # cross-checks kept from the other corpora
     ("dense blocks", "| **fused** | 50 | **0.5859** | **0.8312** |",
      "benchmark_dense3", "fused            50  0.5859"),
