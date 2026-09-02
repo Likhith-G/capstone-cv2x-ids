@@ -119,6 +119,10 @@ main(int argc, char* argv[])
     // --- misbehaviour ----------------------------------------------------
     double attackerFraction = 0.30;
     std::string attackMix = "1,2,3,4,5,6,7,8"; // ItsAttack values in play
+    // Fraction of the run an attacker actually attacks. Zero is continuous
+    // misbehaviour, which is what every corpus so far assumed and is the
+    // easiest adversary to catch.
+    double sporadicDuty = 0.0;
     uint32_t rngRun = 1;
 
     // --- radio -----------------------------------------------------------
@@ -184,6 +188,10 @@ main(int argc, char* argv[])
                  brakeEventsPerHour);
     cmd.AddValue("enableDcc", "Apply TS 102 687 reactive DCC gating", enableDcc);
     cmd.AddValue("attackerFraction", "Fraction of stations that misbehave", attackerFraction);
+    cmd.AddValue("sporadicDuty",
+                 "Fraction of the run each attacker spends attacking, in "
+                 "exponential bursts. 0 attacks continuously",
+                 sporadicDuty);
     cmd.AddValue("attackMix", "Comma separated ItsAttack ids in play", attackMix);
     cmd.AddValue("rngRun", "RNG run number, this is the seed of a replicate", rngRun);
     cmd.AddValue("enableSensing", "Enable the mode 2 sensing procedure", enableSensing);
@@ -666,6 +674,7 @@ main(int argc, char* argv[])
         app->SetAttribute("IsVru", BooleanValue(!isRsu && i >= numVehicles));
         app->SetAttribute("DenmEventsPerHour", DoubleValue(denmEventsPerHour));
         app->SetAttribute("EnableDcc", BooleanValue(enableDcc));
+        app->SetAttribute("SporadicDuty", DoubleValue(sporadicDuty));
         app->SetAttack(assigned[i]);
         stream += app->AssignStreams(stream);
         allUes.Get(i)->AddApplication(app);

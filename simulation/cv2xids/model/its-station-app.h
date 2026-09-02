@@ -179,6 +179,19 @@ class ItsStationApp : public Application
     double m_playgroundX{2000.0};
     double m_playgroundY{100.0};
 
+    // --- sporadic misbehaviour -------------------------------------------
+    // An attacker that misbehaves continuously is the easiest one to catch,
+    // and it is the only one the corpus contains. A station that lies for a
+    // few seconds and then tells the truth for a while attacks the persistence
+    // rule directly, because that rule asks whether a station looked wrong in
+    // several of its recent windows, and it is trivially available to a real
+    // attacker. Duty is the fraction of time spent attacking; zero means
+    // always on, which is the behaviour every earlier corpus has.
+    double m_sporadicDuty{0.0};
+    Time m_sporadicMeanBurst{Seconds(3)};
+    bool m_attackActive{true};
+    EventId m_sporadicEvent;
+
     // --- benign GNSS error, VeReMi Extension form -------------------------
     // Every broadcast position carries receiver error, because a benign
     // vehicle that claims its exact true position is a vehicle no positioning
@@ -219,6 +232,8 @@ class ItsStationApp : public Application
 
     EventId m_camEvent;
     EventId m_otherEvent;
+    void InitSporadic();
+    void ToggleSporadic();
     void InitGnssError();
     void StepGnssError();
     void ApplyGnssError(Vector& pos, double& speed, double& heading) const;

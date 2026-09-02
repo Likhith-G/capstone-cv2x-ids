@@ -163,6 +163,21 @@ ItsStationApp::GetTypeId()
                           TimeValue(MilliSeconds(10)),
                           MakeTimeAccessor(&ItsStationApp::m_dosInterval),
                           MakeTimeChecker())
+            .AddAttribute("SporadicDuty",
+                          "Fraction of the run an attacker actually attacks, "
+                          "in bursts. Zero means it attacks continuously, "
+                          "which is what every earlier corpus assumed and is "
+                          "the easiest adversary to catch",
+                          DoubleValue(0.0),
+                          MakeDoubleAccessor(&ItsStationApp::m_sporadicDuty),
+                          MakeDoubleChecker<double>(0.0, 1.0))
+            .AddAttribute("SporadicMeanBurst",
+                          "Mean length of one attacking burst. Bursts and gaps "
+                          "are exponential with means set so their ratio is "
+                          "the duty cycle",
+                          TimeValue(Seconds(3)),
+                          MakeTimeAccessor(&ItsStationApp::m_sporadicMeanBurst),
+                          MakeTimeChecker())
             .AddAttribute("GnssError",
                           "Apply benign receiver positioning error to every "
                           "broadcast. Off reproduces the earlier behaviour in "
@@ -363,6 +378,7 @@ ItsStationApp::StartApplication()
 
     m_seqPerIdentity.assign(m_attack == ItsAttack::SYBIL ? m_sybilIdentities : 1, 0);
 
+    InitSporadic();
     InitGnssError();
 
     // Stagger the first check so stations do not all evaluate the trigger in
@@ -388,6 +404,7 @@ ItsStationApp::StopApplication()
     Simulator::Cancel(m_camEvent);
     Simulator::Cancel(m_otherEvent);
     Simulator::Cancel(m_gnssEvent);
+    Simulator::Cancel(m_sporadicEvent);
     if (m_socket)
     {
         m_socket->Close();
@@ -589,6 +606,41 @@ ItsStationApp::CheckOtherGeneration()
 }
 
 void
+ItsStationApp::InitSporadic()
+{
+    if (m_sporadicDuty <= 0.0 || m_attack == ItsAttack::NONE || m_isRsu)
+    {
+        m_attackActive = true;
+        return;
+    }
+    // Start in whichever phase the duty cycle says is more likely, so the
+    // population is not synchronised on a burst at t = 0.
+    m_attackActive = m_uniform->GetValue(0.0, 1.0) < m_sporadicDuty;
+    ToggleSporadic();
+}
+
+void
+ItsStationApp::ToggleSporadic()
+{
+    if (!m_running && m_sporadicEvent.IsPending())
+    {
+        return;
+    }
+    // Exponential burst and gap lengths, with means in the ratio the duty
+    // cycle asks for. Fixed lengths would give the detector a period to lock
+    // onto, which is a weaker adversary than the one being modelled.
+    double meanOn = m_sporadicMeanBurst.GetSeconds();
+    double meanOff = meanOn * (1.0 - m_sporadicDuty) / std::max(m_sporadicDuty, 1e-6);
+    double mean = m_attackActive ? meanOn : meanOff;
+    double u = std::max(m_uniform->GetValue(0.0, 1.0), 1e-9);
+    Time dwell = Seconds(-mean * std::log(u));
+    m_sporadicEvent = Simulator::Schedule(dwell, [this]() {
+        m_attackActive = !m_attackActive;
+        ToggleSporadic();
+    });
+}
+
+void
 ItsStationApp::InitGnssError()
 {
     // A roadside unit is surveyed once and does not move, so it has no fix
@@ -678,6 +730,16 @@ ItsStationApp::ApplyAttack(const Vector& truePos,
     claimedPos = truePos;
     claimedSpeed = trueSpeed;
     claimedHeading = trueHeading;
+
+    // A sporadic attacker in its quiet phase transmits exactly what a benign
+    // station would. The LABEL is unchanged, because the station is still an
+    // attacker and a detector that only finds it while it is lying has not
+    // found it. That is the point of the configuration, and it is why the
+    // label is not switched off with the behaviour.
+    if (!m_attackActive)
+    {
+        return;
+    }
 
     switch (m_attack)
     {
