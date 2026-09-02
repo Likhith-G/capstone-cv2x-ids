@@ -27,6 +27,16 @@ construction: which radio sent the message it just decoded.
     check_partition_skew.py corpus.pkl                    # BEFORE any federated run
     federated.py corpus.pkl --seeds 8 --rounds 20 --tune
 
+`drift.py` sits outside that sequence because it reads several finished corpora
+at once rather than one:
+
+    drift.py --scenarios light=A/corpus.pkl dense=B/corpus.pkl --sample 150000
+    drift.py --temporal A/corpus.pkl --cut 0.5 --bins 6
+
+Both arms of the scenario comparison are trained on the same number of rows and
+scored on the same test rows, because otherwise the difference between them is
+mostly training set size rather than the shift being measured.
+
 `merge_corpora.py` exists because building several large seeds in one process
 runs out of memory, and building them separately gives every seed the same
 station-id offset. It reapplies the offset a combined build would have applied
@@ -59,6 +69,7 @@ invalidate every grouped fold.
 | `measure_latency.py` | end to end detection latency, window fill included |
 | `a1_victim_effect.py` | does sensing manipulation damage its neighbours |
 | `check_campaign.py` | is one seed of a campaign configured correctly, before hours are spent on the rest |
+| `drift.py` | does the detector survive a scenario or a period it was not trained on |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
 
