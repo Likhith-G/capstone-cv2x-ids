@@ -140,6 +140,24 @@ CHECKS = [
      "**0.5767 +/- 0.0181 on the congested corpus against 0.5843\nstation-grouped**",
      "drift/logs/density_seedgrouped",
      "campaign_dense   fused         0.4132 +/- 0.0265    0.5767 +/- 0.0181  -0.1634"),
+    # The estimator-aware adversary. Two logs, because the constrained and
+    # unconstrained versions are the whole point and quoting one without the
+    # other is the misreading this section exists to prevent.
+    ("best response defeats the check off road",
+     "| 50 m | **1.011** | **0.147** | **0.003** | 80 deg | +14.9 m |",
+     "drift/logs/best_response_free",
+     "        50 m       2.807     0.311       1.011      0.147         0.003"),
+    ("best response is lateral",
+     "**The mechanism is in the off-axis column: 75 to 85 degrees, which is lateral.**",
+     "drift/logs/best_response_free", "        25 m       2.875     0.340"),
+    ("on road best response is caught",
+     "| 100 m | 1.742 | **0.937** | **0.814** | 5 deg |",
+     "drift/logs/best_response_onroad",
+     "       100 m       4.875     0.909       1.742      0.937         0.814"),
+    ("localisation error is the attacker budget",
+     "**Free-fit localisation error on these triples is 62.6 m.**",
+     "drift/logs/best_response_free",
+     "free-fit localisation error on these benign triples: median 62.6 m"),
     # cross-checks kept from the other corpora
     ("dense blocks", "| **fused** | 50 | **0.5859** | **0.8312** |",
      "benchmark_dense3", "fused            50  0.5859"),
