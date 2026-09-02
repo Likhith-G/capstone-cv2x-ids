@@ -67,6 +67,16 @@ def wilcoxon(a, b):
 MIN_OBS = 5
 FIT_CAP = 48         # observers used in the nonlinear fit, for runtime
 
+# Half width of the carriageway, in metres, when the free fit is road
+# constrained. A vehicle is on the road or it is not a vehicle, and saying so
+# to the estimator removes the direction in which received power carries almost
+# no information: receivers strung along a straight road are close to
+# collinear, so range-only measurements barely constrain position across it.
+# That direction is where most of the localisation error lives and it is the
+# direction an estimator-aware attacker lies in, so constraining it improves
+# accuracy and closes the strongest evasion with one change.
+ROAD_HALFWIDTH = 12.0
+
 
 # ---------------------------------------------------------------- geometry ---
 def observer_geometry(run_dir, tags, window_ms=1000.0):
@@ -120,7 +130,33 @@ def _resid(p, ox, oy, rsrp):
     return rsrp - (p[2] - 10.0 * p[3] * np.log10(d))
 
 
-def consensus_block(ox, oy, rsrp, cx, cy, rng):
+def free_fit(fx, fy, fr, road_halfwidth=None):
+    """Best single position explaining these measurements, and its residual.
+
+    With `road_halfwidth`, the across-road coordinate is bounded to the
+    carriageway. That is a hard constraint rather than a prior, because a
+    position off the road is not unlikely, it is impossible, and the
+    unconstrained fit spends most of its freedom exactly there.
+
+    Bounded fitting needs a trust region method; Levenberg-Marquardt does not
+    take bounds, so the two paths use different solvers and the unconstrained
+    one is left as it was so that existing results do not move.
+    """
+    i0 = int(np.argmax(fr))
+    p0 = np.array([fx[i0], fy[i0], float(np.max(fr)) + 20.0, 2.5])
+    if road_halfwidth is None:
+        sol = least_squares(_resid, p0, args=(fx, fy, fr), method="lm",
+                            max_nfev=400)
+    else:
+        lo = np.array([-np.inf, -road_halfwidth, -np.inf, 0.5])
+        hi = np.array([np.inf, road_halfwidth, np.inf, 6.0])
+        p0 = np.clip(p0, lo + 1e-6, hi - 1e-6)
+        sol = least_squares(_resid, p0, args=(fx, fy, fr), method="trf",
+                            bounds=(lo, hi), max_nfev=400)
+    return sol
+
+
+def consensus_block(ox, oy, rsrp, cx, cy, rng, road_halfwidth=None):
     """Cross-observer consensus statistics for one triple.
 
     Returns the localisation estimate too, so --validate can score it.
@@ -145,10 +181,8 @@ def consensus_block(ox, oy, rsrp, cx, cy, rng):
     claim_r2 = 1.0 - float(np.sum(r_claim ** 2)) / ss_tot if ss_tot > 0 else 0.0
 
     # Free-position fit: the best any single position can do on the same data.
-    i0 = int(np.argmax(fr))
-    p0 = np.array([fx[i0], fy[i0], float(np.max(fr)) + 20.0, 2.5])
     try:
-        sol = least_squares(_resid, p0, args=(fx, fy, fr), method="lm", max_nfev=400)
+        sol = free_fit(fx, fy, fr, road_halfwidth)
         px, py = float(sol.x[0]), float(sol.x[1])
         expo = float(sol.x[3])
         free_rmse = float(np.sqrt(np.mean(sol.fun ** 2)))
@@ -202,6 +236,14 @@ def main():
     ap.add_argument("--validate", action="store_true",
                     help="score the localisation against true positions")
     ap.add_argument("--out", default=None, help="write the pooled table here")
+    ap.add_argument("--road-halfwidth", type=float, default=None,
+                    nargs="?", const=ROAD_HALFWIDTH, metavar="METRES",
+                    help="constrain the free position fit to the carriageway. "
+                         "Range-only measurements from receivers along a "
+                         "straight road barely constrain position across it, "
+                         "so this removes the direction that carries most of "
+                         "the localisation error and the direction an "
+                         "estimator-aware attacker lies in")
     a = ap.parse_args()
     if a.class_weight == "none":
         a.class_weight = None
@@ -237,7 +279,8 @@ def main():
             # picks one of them at random, the pooled arms use all of them.
             cx, cy = float(v.claimedX.iloc[0]), float(v.claimedY.iloc[0])
             cb, (px, py) = consensus_block(v.rxX.values, v.rxY.values,
-                                           v.phy_rsrp_mean.values, cx, cy, r)
+                                           v.phy_rsrp_mean.values, cx, cy, r,
+                                           road_halfwidth=a.road_halfwidth)
             pick = v.iloc[r.integers(len(v))]
             rs.append(pick[feats].values)
             rm.append(v[feats].mean().values)

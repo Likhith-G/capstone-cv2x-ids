@@ -44,7 +44,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from pooled_consensus import (observer_geometry, true_positions,
-                              consensus_block, MIN_OBS)
+                              consensus_block, free_fit, MIN_OBS)
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
 
@@ -57,6 +57,16 @@ def fit_global_law(d, rsrp):
     A = np.c_[np.ones(len(L)), -L]
     beta, *_ = np.linalg.lstsq(A, rsrp, rcond=None)
     return float(beta[0]), float(beta[1])
+
+
+def free_rmse_of(ox, oy, rsrp, road_halfwidth):
+    """Residual of the best single position, constrained or not."""
+    try:
+        sol = free_fit(ox, oy, rsrp, road_halfwidth)
+        return (float(np.sqrt(np.mean(sol.fun ** 2))),
+                float(sol.x[0]), float(sol.x[1]))
+    except Exception:
+        return np.nan, np.nan, np.nan
 
 
 def pooled_rmse(ox, oy, rsrp, cx, cy):
@@ -123,6 +133,13 @@ def main():
                          "the road centreline. Without it the best response is "
                          "free to claim a position in the field beside the "
                          "road, which a map check rejects for nothing")
+    ap.add_argument("--br-estimator-road", type=float, default=None,
+                    metavar="METRES",
+                    help="constrain the DETECTOR's position estimate to the "
+                         "carriageway. Distinct from --br-lateral, which "
+                         "constrains the ATTACKER. Setting both asks the "
+                         "question that matters: a road-aware detector against "
+                         "an attacker that must stay on the road")
     ap.add_argument("--br-angles", type=int, default=72,
                     help="directions searched per displacement. The attacker "
                          "is given a fine search because the bound is supposed "
@@ -248,7 +265,8 @@ def run_best_response(df, a, levels):
         ox, oy = g.rxX.values, g.rxY.values
         r = g.phy_rsrp_mean.values
         tx, ty = float(g.trueX.iloc[0]), float(g.trueY.iloc[0])
-        blk, est = consensus_block(ox, oy, r, tx, ty, rng)
+        blk, est = consensus_block(ox, oy, r, tx, ty, rng,
+                                   road_halfwidth=a.br_estimator_road)
         free = blk["pool_free_rmse"]
         if not np.isfinite(free) or free <= 0 or not np.isfinite(est[0]):
             continue
@@ -292,6 +310,7 @@ def run_best_response(df, a, levels):
           "instead of away from it.\n")
     print(f"{'displacement':>13s} {'best rmse':>11s} {'AUC rmse':>9s} "
           f"{'best ratio':>11s} {'AUC ratio':>10s} {'caught at 5%':>13s} "
+          f"{'AUC 2-sided':>12s} {'caught 2-sided':>15s} "
           f"{'off-axis deg':>13s} {'toward est m':>13s}")
     print(f"{'0 m, honest':>13s} {np.median(hr):11.3f} {'':>9s} "
           f"{np.median(hq):11.3f}")
@@ -306,12 +325,23 @@ def run_best_response(df, a, levels):
         y = np.r_[np.zeros(len(hr)), np.ones(len(v))]
         auc_r = roc_auc_score(y, np.r_[hr, v])
         auc_q = roc_auc_score(y, np.r_[hq, q])
+        # Two-sided, because the ratio is only bounded below by one while the
+        # claim lies inside the estimator's feasible set. Constrain the
+        # estimator to the road and an off-road claim can score BELOW one: it
+        # explains the measurements better than any on-road position does,
+        # which is not the check failing, it is the check saying the claim is
+        # not on the road. A one-sided reading throws that away.
+        centre = np.median(hq)
+        auc_2 = roc_auc_score(y, np.r_[np.abs(hq - centre), np.abs(q - centre)])
+        lo, hi = np.quantile(hq, [0.025, 0.975])
+        sep2 = float(((q < lo) | (q > hi)).mean())
         # Caught at a threshold set to the honest 95th percentile of the RATIO,
         # which is the statistic a deployment would threshold, at one false
         # alarm in twenty.
         sep = float((q > np.quantile(hq, 0.95)).mean())
         print(f"{lv:11.0f} m {np.median(v):11.3f} {auc_r:9.3f} "
               f"{np.median(q):11.3f} {auc_q:10.3f} {sep:13.3f} "
+              f"{auc_2:12.3f} {sep2:15.3f} "
               f"{np.median(rows[lv]['axis']):13.1f} "
               f"{np.median(rows[lv]['toward']):13.1f}"
               + (f"   ({blocked} triples had no on-road direction)"
@@ -333,6 +363,12 @@ The ratio does NOT rescue this. It is bounded below by one, so it cannot be
 driven to zero, but the honest ratio is not one either, and an attacker
 standing nearer the residual minimum than the honest vehicle gets the lower
 ratio of the two.
+
+The two-sided columns score deviation from the honest ratio in EITHER
+direction, against a band holding 95 percent of honest traffic. Use them
+whenever the estimator is road constrained and the attacker is not, because a
+ratio below one then means the claim fits better than anywhere on the road,
+which is a detection rather than a miss.
 
 The 'off-axis' column says whether the best lies are longitudinal, zero degrees
 being along the road and ninety across it. Receivers strung along a straight
