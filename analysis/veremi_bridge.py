@@ -323,6 +323,15 @@ def main():
               f"receptions, {raw.claimedStationId.nunique()} senders")
     vm = residuals_and_windows(raw)
     feats = transferable(vm)
+
+    # BOTH sides are sampled to the same budget. Sampling one and not the
+    # other makes the arms differ in the amount of data as well as in the
+    # dataset, which is the confound that would make any difference between
+    # them unreadable. It is also faster, and the comparison does not need
+    # four decimal places, it needs to know whether the score is near zero.
+    if a.sample and len(vm) > a.sample:
+        vm = vm.sample(n=a.sample, random_state=0).reset_index(drop=True)
+        print(f"sampled to {len(vm):,} windows, the same budget as the corpus")
     print(f"{len(vm):,} windows, {len(feats)} transferable features\n")
 
     ours = pd.read_pickle(a.corpus)
@@ -356,6 +365,7 @@ def main():
             mccs.append(matthews_corrcoef(y[te], p))
         print(f"{name:34s} {len(sub):>9,} windows  "
               f"{int(sub.label_txNodeId.nunique()):>4} stations  "
+              f"{int((sub.label_attackId != benign).sum()):>8,} attack rows  "
               f"F1 {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}  "
               f"MCC {np.mean(mccs):.4f}")
         return float(np.mean(f1s))
@@ -374,6 +384,14 @@ def main():
           f"that something\nabout this corpus is hiding a signal the "
           f"application layer can normally find.")
     print(f"\nVeReMi {v:.4f}, this corpus {o:.4f}")
+    print("\nThis is a BINARY task over seventeen features: constant-offset "
+          "attackers against benign, on the\nsubset both datasets support. It "
+          "is NOT the same number as the per class figure\nin the cross layer "
+          "benchmark, which is one class of eleven over twenty two\nfeatures. "
+          "A small positive here and an exact zero there are consistent, "
+          "and\nquoting one against the other compares two different "
+          "questions. What both\nsay is that the application layer cannot "
+          "separate a constant position offset.")
 
 
 def selftest(run_dir, tag, corpus_path, tol=1e-6):
