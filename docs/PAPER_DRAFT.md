@@ -91,15 +91,36 @@ VeReMi-scale offsets of 250 m is being asked an easy question.
 ### Contributions
 
 1. A labelled NR sidelink misbehaviour dataset with realistic benign
-   positioning error and a graded position falsification ladder.
+   positioning error and a graded position falsification ladder, whose bands
+   are chosen against that error so the set brackets the detection threshold.
 2. The measurement that cooperative detection has to fuse measurements rather
-   than verdicts, demonstrated on the magnitude band where it matters.
+   than verdicts, demonstrated on the magnitude band where it matters: 0.019 at
+   one receiver, 0.412 pooled, and exactly 0.000 for both voting schemes.
 3. A detection floor for position falsification, located between 30 and 80 m
-   and explained by the estimator's own error.
-4. The best response of an attacker that knows the estimator, and the road
-   constraint that closes it.
+   and explained by the estimator's own error rather than by the classifier.
+4. The best response of an attacker that knows the estimator, the geometric
+   reason it works, and the road constraint that closes it while taking
+   localisation error from 65 m to 18 m.
 5. A federated evaluation under geometric label skew, with the cost of
-   differential privacy at deployment scale.
+   differential privacy at deployment scale and the operating point a persistence
+   rule reaches.
+
+### What this paper does not claim
+
+Stated here rather than left to a limitations section, because each is a claim
+a reader might reasonably expect and would be wrong to infer.
+
+- **That federated training recovers the drift loss.** We show the detector
+  loses a third of its score at an unseen density. We do not show that
+  federating it back recovers any of that.
+- **That the cross layer detector catches radio layer attacks.** Both radio
+  layer attacks in the dataset are inert in this simulator. The cross layer
+  result is radio features catching application layer misbehaviour.
+- **That the pooled architecture is robust to drift.** The drift measurement is
+  on the single observer detector, because the cross receiver features live in
+  a separate table.
+- **That the floor is located precisely.** It lies between 30 and 80 m; the
+  band that would pin it down holds three attacker stations.
 
 ---
 
