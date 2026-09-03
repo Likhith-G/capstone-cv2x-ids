@@ -76,11 +76,24 @@ ATTACKS_EXTENSION = {0: "benign", 1: "const_pos", 2: "const_pos_offset",
                      13: "data_replay_sybil", 14: "dos_random_sybil",
                      15: "dos_disruptive_sybil"}
 
-# The families that displace a claimed position by a fixed vector, which is the
-# behaviour this project's small, medium and large offset classes implement.
-# The codes coincide across the two releases for exactly these two, which is
-# luck rather than design and is why the release is still detected.
-CONST_OFFSET = {1, 2}
+# ConstPosOffset ONLY. This project's small, medium and large offset classes all
+# displace the claimed position by a fixed vector while leaving speed and
+# heading truthful, so the claim stays self consistent and the application layer
+# has nothing to test it against. VeReMi's type 2 is that attack.
+#
+# VeReMi's type 1, ConstPos, transmits a FIXED position instead. A vehicle that
+# claims not to move while claiming a speed contradicts itself in every
+# consecutive pair of messages, which is exactly what the self consistency
+# features are for. Treating the two as one family conflates a self consistent
+# lie with a self inconsistent one and produces a high score that says nothing
+# about the claim being tested. It did: lumping them together scored 0.7203.
+CONST_OFFSET = {2}
+
+# Kept as a POSITIVE CONTROL rather than discarded. If the application layer
+# detects a self inconsistent position lie and not a self consistent one, the
+# blindness is specific rather than general, and that is a much stronger
+# statement than either result alone.
+SELF_INCONSISTENT = {1}
 
 ATTACKS = ATTACKS_ORIGINAL
 
@@ -370,11 +383,18 @@ def main():
               f"MCC {np.mean(mccs):.4f}")
         return float(np.mean(f1s))
 
-    print("constant-offset position falsification against benign, application "
-          "layer only,\nthe same seventeen features and the same model on "
-          "both datasets\n")
-    v = run(vm, "VeReMi Extension", CONST_OFFSET)
-    o = run(ours, "this project's corpus", {1, 11, 13})
+    print("position falsification against benign, application layer only, the "
+          "same\nseventeen features and the same model throughout\n")
+
+    # The positive control first, because it is what makes the negative result
+    # readable. A fixed claimed position contradicts the claimed speed in every
+    # consecutive pair of messages, so the self consistency features should
+    # catch it. If they do not, they are broken and nothing below means
+    # anything.
+    c = run(vm, "VeReMi, FIXED position (control)", SELF_INCONSISTENT)
+    v = run(vm, "VeReMi, constant OFFSET", CONST_OFFSET)
+    o = run(ours, "this corpus, constant OFFSET", {1, 11, 13})
+    print(f"\ncontrol {c:.4f}, VeReMi offset {v:.4f}, this corpus {o:.4f}\n")
     print(f"\nBoth near zero is the result. It says the application layer "
           f"cannot see a constant\nposition offset, on two independently "
           f"generated datasets with different mobility,\ndifferent radio "
