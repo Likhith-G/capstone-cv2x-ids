@@ -140,7 +140,12 @@ assume we did not look.
 
 **So, Petit and Starobinski (WiSec 2019)** found physical layer features beat
 application layer ones on VeReMi position attacks and did not build the fused
-model. This work reproduces the ordering on C-V2X sidelink and builds the fused
+model. They reported a correct classification rate of 0.9376 for the physical
+layer against 0.8838 for the application layer on position falsification, so
+the ordering is theirs and the gap is small in their setting. In ours the
+application layer does not merely trail, it scores exactly zero, and the
+difference is that their position attacks are VeReMi scale while ours span a
+ladder down to the noise floor. This work reproduces the ordering on C-V2X sidelink and builds the fused
 model, and finds the application layer is not merely worse but blind.
 
 **Gurjar et al. (2025)** closed the gap that federated learning had not been
