@@ -140,6 +140,12 @@ def main():
                          "constrains the ATTACKER. Setting both asks the "
                          "question that matters: a road-aware detector against "
                          "an attacker that must stay on the road")
+    ap.add_argument("--br-triples", type=int, default=None, metavar="N",
+                    help="cap the number of benign triples the best response "
+                         "search runs over. The search is 72 nonlinear fits "
+                         "per triple per displacement, so the full corpus is "
+                         "hours; a few thousand triples already give a spread "
+                         "far tighter than the effect being measured")
     ap.add_argument("--br-angles", type=int, default=72,
                     help="directions searched per displacement. The attacker "
                          "is given a fine search because the bound is supposed "
@@ -259,7 +265,16 @@ def run_best_response(df, a, levels):
             for lv in levels}
     free_err = []
     n_tri = 0
-    for k, g in ben.groupby(KEY, sort=False):
+    groups = list(ben.groupby(KEY, sort=False))
+    if a.br_triples and len(groups) > a.br_triples:
+        # Sampled rather than truncated, because the groupby order follows seed
+        # and window and taking a prefix would measure one seed's early traffic.
+        idx = np.random.default_rng(0).choice(len(groups), a.br_triples,
+                                              replace=False)
+        groups = [groups[i] for i in sorted(idx)]
+        print(f"capped to {len(groups):,} benign triples, sampled across the "
+              f"corpus")
+    for k, g in groups:
         if len(g) < MIN_OBS:
             continue
         ox, oy = g.rxX.values, g.rxY.values
