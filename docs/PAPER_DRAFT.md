@@ -376,34 +376,146 @@ rerun. The mechanism is geometric and survives; the numbers are provisional.*
 
 ---
 
-## 7. Federation, drift, and the operating point
+## 7. Deployment: drift, federation, and the operating point
 
-[RESULTS.md sections 3c, 5, 5b, 5c, 6, 6b.]
+### The detector does not survive a density it was not trained on
 
-Three findings, in order of how much they change what a reader believes.
+The project brief names non stationarity as its aim, and until this measurement
+nothing tested it. Every result above holds training and test in one
+distribution: the grouped folds stop a station appearing on both sides, and the
+scenario is identical on both sides.
 
-**A density the detector has not seen costs a third of its macro F1**, and
-fusion does not protect against it. That is the non stationarity result and it
-is what motivates continual adaptation.
+Trained at one traffic density and tested at the other, on two corpora that
+share the positioning error model and are both restricted to vehicle observers,
+the fused detector loses **0.1543 macro F1 going to light traffic and 0.1222
+going to congested**, from in distribution scores near 0.51.
 
-**Pooling inside a roadside unit region is worth 0.0578 macro F1 on all eight
-seeds**, and 0.0553 of that comes from combining measurements at all rather
-than from the consistency statistics, which do not reach significance at eight
-receivers.
+**Fusion does not protect against the shift, and going to light traffic it is
+the worst of the three blocks**, losing 0.1543 against 0.1468 for the
+application block and 0.1422 for the radio one. Fusion buys detection at a
+fixed operating point and nothing against a change of operating point.
 
-**The deployable operating point is 7 false alert episodes per region hour at
-54 percent of attackers found**, under a 5 of 7 persistence rule costing six
-seconds of latency.
+**The cost lands on false alarms rather than misses.** Benign F1 falls from
+0.902 to 0.672. A detector deployed at the wrong density does not mainly miss
+attacks, it alerts on ordinary traffic, which is the failure an operator sees
+first and which makes the operating point below conditional on the deployment
+matching the training distribution.
 
-Privacy costs three times what the architecture gains, and the reason is the
-size of the federation rather than the method.
+**One class shows the mechanism.** Low rate denial of service scores 0.884 in
+distribution and 0.114 when a model trained on congestion is tested on light
+traffic, because a modest rate increase is defined against an ambient rate and
+the ambient rate is exactly what changed. It holds at 0.829 in the reverse
+direction, where the model has seen the quieter baseline. Sybil moves the
+opposite way, conspicuous when identities are scarce and hidden when the
+channel is full of them.
+
+**Nothing drifts inside a single run.** With held out seeds on both sides of a
+time cut, the fused block moves by 0.0017 across 60 s, and a prequential curve
+trained once and never updated is flat across 57 s and rises across the
+boundary where its training data ends. So the transfer cost belongs to the
+scenario rather than to time passing, and calling it drift over time would be
+wrong.
+
+### Federation at the edge
+
+A client is a roadside unit region: the unit plus every vehicle whose nearest
+unit it is. The vehicles contribute measurements, the unit fuses them into one
+pooled record per station and window, and the unit federates. Receivers per
+region: median 8, tenth percentile 5, which is just above the five receiver
+identifiability floor and far below the 39 of the corpus wide study.
+
+**Pooling inside a region is worth +0.0578 macro F1 and wins on all eight
+seeds.** Of that, 0.0553 comes from combining measurements at all and 0.0025
+from the eleven cross receiver consistency statistics, which do not reach
+significance at this receiver count. Averaging is doing nearly all the work
+here. At 39 receivers the same statistics are worth 0.0334, so the claim is
+that they matter where receivers are plentiful and one region is not where they
+are.
+
+**Logit calibration is the only aggregation rule that helps**, +0.0147 macro F1
+and +0.0080 MCC, both at p = 0.0078 across eight seeds. Correcting for unequal
+local work is reliably worse. The spread between best and worst rule is a fifth
+of the spread between seeds, so which rule is chosen matters far less than the
+fact that clients see different class mixtures.
+
+**Privacy costs three times what the architecture gains.** Clipping alone costs
+0.0341 before any noise, and at the tightest bound measured, an epsilon of 8.3,
+macro F1 falls from 0.4775 to 0.3063. The obstacle is the size of the
+federation rather than the method: Gaussian noise is divided by the number of
+clients sampled per round and this deployment samples 33.
+
+### The operating point
+
+Per window alerting is unusable at every threshold: at 0.90 the detector raises
+161 false alerts per observer hour. Counting alert episodes rather than
+windows, and requiring a station to look wrong in K of its last M windows,
+changes that.
+
+| rule | false alert episodes per region hour | attackers found |
+|---|---|---|
+| 2 of 3 | 85 | 0.632 |
+| 4 of 5 | 12 | 0.565 |
+| **5 of 7** | **7** | **0.540** |
+
+**Detection at the operating point follows the magnitude ladder**, 0.591 on the
+largest position offset, 0.458 on the mid magnitude one and 0.125 on the
+smallest, which is the detection floor of section 5 appearing outside a
+controlled comparison. Everything that is not a position lie sits above 0.93.
+
+**State the operating point as two numbers.** Stratified by contact time,
+detection is 0.292 for stations in range four windows or fewer and 0.718 above
+sixteen, so it is roughly 70 percent of vehicles that linger and under a third
+of those passing quickly. The cost of the stricter rule is six seconds of
+latency on top of one second of window fill.
 
 ---
 
 ## 8. Limitations
 
-[RESULTS.md section 9, eleven items. Do not compress. The detection floor, the
-map dependency and the inert radio layer attacks are the three that matter.]
+Eleven are listed in full in `RESULTS.md` section 9 and should not be
+compressed away. Three matter enough to state in the body rather than at the
+end.
+
+**Both radio layer attacks are inert.** Mode 2 grants in 5G-LENA are data
+driven, so a reserved resource is used only when there is data for it and an
+attacker cannot hoard the channel. Sensing manipulation scores 0.000 in every
+block on three corpora. It is not weakly detectable, it is not detectable. The
+cross layer claim therefore rests on radio features catching application layer
+attacks, which is still cross layer and still the point, and it should be said
+plainly rather than left for a reader to work out.
+
+**The road constraint needs a map.** Bounding the position fit to the
+carriageway is what takes localisation error from 65 m to 18 m, and it is the
+only part of the method depending on infrastructure data rather than on what a
+receiver measures. Carriageway extent is static, so the dependency is modest,
+but it is one the rest of the method does not have.
+
+**One road geometry.** Every figure here is for receivers strung along the
+length of a straight carriageway. A junction, a curve, or receivers set back
+from the road would break the collinearity that makes lateral position
+unobservable, and this work does not measure by how much. The lateral
+degeneracy is the mechanism behind both the detection floor and the strongest
+evasion, so a different geometry could move both.
+
+---
+
+## 10. What would come next
+
+Not in this paper, and worth naming so the boundary is deliberate.
+
+**Locating the floor properly.** The band that brackets it holds three attacker
+stations. A campaign sampling 25 to 60 m densely would place it to within a few
+metres instead of within fifty.
+
+**Does the pooled architecture transfer?** The drift measurement is on the
+single observer detector, because the cross receiver features live in a
+separate table. Whether cooperative detection degrades the same way under a
+density shift is unmeasured.
+
+**Does federated training recover the drift loss?** Nothing here shows that it
+does. The drift result motivates continual adaptation; it does not demonstrate
+that this architecture delivers it, and the two must not be allowed to run
+together.
 
 ---
 
