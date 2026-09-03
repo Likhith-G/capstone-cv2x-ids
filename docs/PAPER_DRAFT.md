@@ -511,7 +511,7 @@ evasion, so a different geometry could move both.
 
 ---
 
-## 10. What would come next
+## 9. What would come next
 
 Not in this paper, and worth naming so the boundary is deliberate.
 
@@ -531,12 +531,34 @@ together.
 
 ---
 
-## 9. What to check before submission
 
-- Re-run `analysis/verify_results.py` and confirm every check passes.
-- Re-check the novelty claim against the literature; it was last checked 29 Aug
-  2026 and it is the claim the paper lives or dies on.
-- Confirm section 4b has been rerun across seeds on the current corpus. It is
-  one seed of the superseded corpus as of this draft.
-- Confirm the VeReMi cross dataset result exists, or state plainly that the
-  application layer arm was not evaluated on external data and why.
+## Appendix: what to check before submission
+
+- Re-run `analysis/verify_results.py` and confirm every check passes. Every
+  number in this file is pinned by it.
+- Re-check the novelty claim against the literature. It was last checked 29 Aug
+  2026 and it is the claim the paper lives or dies on. `NOVELTY_POSITION.md`
+  has the competitive table and the closest prior work.
+- Confirm section 6's figures come from the rerun across all eight seeds of the
+  current corpus rather than the one seed of the superseded one they were
+  first measured on.
+- Confirm the persistence operating point in section 7 is the rerun figure. The
+  zero false alert result from the superseded corpus must not appear anywhere.
+- Confirm the VeReMi comparison states that the original release was used
+  rather than the Extension, and why: the Extension is distributed through a
+  file locker needing an interactive client, and the original's noise free
+  benign class is the harsher test for this particular claim rather than the
+  easier one.
+- Check every figure and table against `RESULTS.md` rather than against this
+  draft, and check the draft against the results rather than the other way
+  round.
+- Confirm no sentence claims federated training recovers the drift loss.
+  Nothing measured that.
+
+### The five conclusions that changed when the corpus was regenerated
+
+Worth re-reading before writing anything from memory, because each was
+confidently reported in an earlier draft of this work and each is now something
+else. They are listed in `MASTER_INDEX.md` section 2. The pattern matters more
+than any one of them: a number measured against a benign class with no
+positional variance was measuring the absence of variance.
