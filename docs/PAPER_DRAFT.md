@@ -338,32 +338,40 @@ features both datasets support, computed by definitions verified to match ours
 exactly across 218,782 windows. Six of its simulations at the highest density
 and attacker fraction available, roughly a thousand constant offset attackers.
 
-**The numbers live in `RESULTS.md` section 3f and are copied here when that
-section is complete.** One place holds them so that a rerun means editing one
-table rather than reconciling four. `runs/drift/logs/veremi_crossdataset.log`
-is the source.
+Binary, constant offset attackers against benign. **This is not the same task
+as the eleven class table above**, which is one class of eleven over twenty two
+features and reads exactly 0.000, so a small positive here does not contradict
+the zero there.
 
-What is settled: the positive control, VeReMi's fixed-position attack, reaches
-**F1 0.9644** on these seventeen features. The self consistency features work.
-Whatever the constant offset rows say, they say it about a detector that has
-been shown capable rather than one that might simply be broken.
+| arm | F1 | MCC |
+|---|---|---|
+| VeReMi, FIXED position (control) | **0.9644** | 0.9575 |
+| VeReMi, constant OFFSET | **0.3382** | 0.3149 |
+| this corpus, constant OFFSET | **0.0290** | 0.0496 |
 
-**When writing this in, state the task with the number.** It is a binary
-separation of constant offset attackers from benign over seventeen features.
-The table above it is eleven classes over twenty two features and reads exactly
-0.000. Those are different questions, and a small positive here does not
-contradict the zero there. Placed adjacent without that sentence, a reader will
-assume one refutes the other.
+**The control works**, so the seventeen features are capable and the low
+numbers are not a broken feature set.
 
-**Report the positive control beside it.** VeReMi has two constant position
-families. Type 2 displaces the true position by a fixed vector and leaves the
-claim self consistent, which is our attack. Type 1 transmits a fixed position,
-which contradicts the claimed speed in every consecutive pair of messages and
-which the self consistency features should catch. Running both turns a negative
-result into a specific one: the application layer catches the lie that
-contradicts itself and misses the lie that does not, so the features work and
-the blindness has a cause. The negative alone reads as features that do not
-work.
+**The middle row was not expected and produced a sharper claim than the one
+under test.** VeReMi's offset attackers are partly detectable, and chasing why
+shows it is not self consistency doing it: the distance-moved-against-speed
+residual has a median of 0.072 m on benign senders and 0.061 m on offset
+attackers, indistinguishable. The separation comes from range plausibility.
+`app_claimed_dist_mean` is the single most important feature at 0.303, and
+VeReMi's attackers claim a median 315.5 m from the receiver against 172.6 m for
+benign. They are caught for claiming to be somewhere a vehicle in range would
+not be, not for contradicting themselves.
+
+**So there are two thresholds and only one of them is self consistency.** A
+constant offset becomes visible at the application layer once it is large
+enough to make the claimed position implausible for a vehicle in radio range,
+which is a far coarser test. Our ladder sits below that threshold on a 6 km
+road; VeReMi's single large offset sits above it.
+
+**This is a methodological point about the field's default benchmark**, and it
+belongs in the paper as one. A detector evaluated only at VeReMi scale offsets
+earns partial credit from range plausibility and can appear to be performing
+self consistency checking when it is not.
 
 **We used the original VeReMi rather than the Extension**, because the
 Extension is distributed through a file locker requiring an interactive client.

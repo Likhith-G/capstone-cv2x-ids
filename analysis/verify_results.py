@@ -165,6 +165,18 @@ CHECKS = [
      "drift/logs/veremi_crossdataset",
      "VeReMi, FIXED position (control)     214,247 windows  2509 stations    "
      "35,952 attack rows  F1 0.9644 +/- 0.0014  MCC 0.9575"),
+    ("cross dataset VeReMi offset partly detectable",
+     "| **VeReMi, constant OFFSET** | 214,048 | 2,509 | 35,753 | "
+     "**0.3382 +/- 0.0071** | **0.3149** |",
+     "drift/logs/veremi_crossdataset",
+     "VeReMi, constant OFFSET              214,048 windows  2509 stations    "
+     "35,753 attack rows  F1 0.3382 +/- 0.0071  MCC 0.3149"),
+    ("cross dataset ours near zero",
+     "| **this corpus, constant OFFSET** | 195,359 | 579 | 19,934 | "
+     "**0.0290 +/- 0.0194** | **0.0496** |",
+     "drift/logs/veremi_crossdataset",
+     "this corpus, constant OFFSET         195,359 windows   579 stations    "
+     "19,934 attack rows  F1 0.0290 +/- 0.0194  MCC 0.0496"),
     ("floor pooled crosses at 50 to 80 m",
      "| 50 to 80 m | 21 | 0.00 | **0.90** |",
      "campaign_gnss/logs/offset_floor_full",
