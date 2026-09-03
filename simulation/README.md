@@ -44,10 +44,33 @@ exist. Make no other change to `contrib/nr`.
     ./build/contrib/cv2xids/examples/ns3.42-cv2x-ids-scenario-optimized \
         --numLanesPerDirection=3 --vehiclesPerLane=15 --roadLength=6000 \
         --numRsu=12 --simTime=60s --rngRun=1 --attackerFraction=0.30 \
-        --attackMix=1,3,4,5,6,7,8,11,12 \
+        --attackMix=1,3,4,5,6,7,8,11,12,13 \
         --outputDir=OUT --simTag=seed1
 
 `--PrintHelp` lists every option.
+
+### Two things worth knowing before changing the defaults
+
+**Benign vehicles carry positioning error and should keep it.** The `GnssError`
+attribute is on by default and applies a per vehicle bias with a small
+correlated component and occasional multipath excursions, giving a median
+radial error near 4 m. Turning it off makes the benign class exactly truthful
+about position, so any displacement at all becomes separable in principle and
+every position attack is easier to detect than it could be in deployment.
+`analysis/check_campaign.py` fails a seed whose benign error is identically
+zero for that reason.
+
+**The three constant offset attacks are one ladder.** Class 11 displaces 20 to
+25 m, class 13 displaces 47 to 60 m and class 1 displaces 71 to 233 m, and the
+bands are chosen against the benign error so the set brackets the point where
+detection becomes possible. `MediumOffsetMin` and `MediumOffsetMax` set the
+middle rung. If any two bands are changed so they overlap, the campaign check
+fails, because a ladder whose rungs overlap cannot bracket a threshold.
+
+**Attackers can misbehave in bursts.** `--sporadicDuty 0.2` makes each attacker
+spend a fifth of the run attacking, in exponential bursts, and keep its label
+throughout. It is off by default. It exists to attack persistence based
+alerting, which a continuously lying attacker satisfies trivially.
 
 Run one simulation at a time on a machine with 8 GB. Six in parallel exhausts
 memory and the runs are killed partway, which leaves every table truncated at a
