@@ -278,8 +278,11 @@ def transferable(df):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("veremi_dir", nargs="?",
-                    help="one VeReMi simulation directory")
+    ap.add_argument("veremi_dir", nargs="*",
+                    help="one or more VeReMi simulation directories. Several "
+                         "are merged, with receiver and sender identifiers "
+                         "namespaced per directory so two runs cannot put "
+                         "different vehicles under one identifier")
     ap.add_argument("--corpus", required=True,
                     help="this project's corpus, for the paired comparison")
     ap.add_argument("--selftest", nargs=2, metavar=("RUN_DIR", "TAG"),
@@ -296,14 +299,29 @@ def main():
     if a.selftest:
         raise SystemExit(selftest(a.selftest[0], a.selftest[1], a.corpus))
     if not a.veremi_dir:
-        ap.error("give a VeReMi directory, or --selftest RUN_DIR TAG")
+        ap.error("give one or more VeReMi directories, or --selftest RUN_DIR TAG")
 
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import StratifiedGroupKFold
     from sklearn.metrics import f1_score, matthews_corrcoef
 
-    print("VeReMi Extension")
-    vm = residuals_and_windows(load_veremi(a.veremi_dir, a.limit_receivers))
+    print("VeReMi")
+    frames = []
+    for i, d in enumerate(a.veremi_dir):
+        f = load_veremi(d, a.limit_receivers)
+        # Namespace per simulation. Two VeReMi runs both number their vehicles
+        # from zero, so merging them naively would put different vehicles under
+        # one identifier and break every grouped fold, which is the same trap
+        # merge_corpora.py guards against on this project's own seeds.
+        f["rxNodeId"] += i * 100000
+        f["claimedStationId"] += i * 100000
+        f["msgUid"] += i * 10000000
+        frames.append(f)
+    raw = pd.concat(frames, ignore_index=True)
+    if len(a.veremi_dir) > 1:
+        print(f"\nmerged {len(a.veremi_dir)} simulations: {len(raw):,} "
+              f"receptions, {raw.claimedStationId.nunique()} senders")
+    vm = residuals_and_windows(raw)
     feats = transferable(vm)
     print(f"{len(vm):,} windows, {len(feats)} transferable features\n")
 
