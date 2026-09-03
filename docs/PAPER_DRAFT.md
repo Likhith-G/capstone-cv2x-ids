@@ -20,7 +20,26 @@ Candidates, in order of preference:
 
 The first is preferred because the paper's most defensible contribution is a
 bound rather than a score, and a title that promises a bound is one the results
-can keep.
+can keep. It also sets the reader's expectation correctly for section 6, which
+is the half of the paper that says what the method cannot do.
+
+## Venue
+
+Not chosen, and worth choosing before the next revision because it changes the
+structure. `docs/research/reports/08_venues.txt` ranks ACM WiSec first, then
+NDSS VehicleSec, then IEEE VNC, with the Automotive Cyber-Security Workshop and
+VTC below them.
+
+**The shape of this paper suits the top two.** The contribution is a limit and
+a mechanism rather than a system, and both are security venues that take
+measurement papers. WiSec is also where the prior result this work builds on
+was published, which is an argument for and not against: the paper reproduces
+their ordering on a different radio stack and then says what the ordering costs.
+
+**The structural consequence.** A security venue wants the adversarial section
+early and needs little standards background. A vehicular networking venue is
+the reverse, and would want the sidelink and congestion control detail that is
+currently compressed into the dataset section. Do not write to both.
 
 ---
 
