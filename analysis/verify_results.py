@@ -159,6 +159,12 @@ CHECKS = [
      "campaign_gnss/logs/deployment", "0.70   0.0228   0.5617"),
     ("latency", "single-window inference    3.390 ms",
      "campaign_gnss/logs/latency", "single-window inference      3.390 ms"),
+    ("cross dataset positive control",
+     "| **VeReMi, FIXED position (control)** | 214,247 | 2,509 | 35,952 | "
+     "**0.9644 +/- 0.0014** | **0.9575** |",
+     "drift/logs/veremi_crossdataset",
+     "VeReMi, FIXED position (control)     214,247 windows  2509 stations    "
+     "35,952 attack rows  F1 0.9644 +/- 0.0014  MCC 0.9575"),
     ("floor pooled crosses at 50 to 80 m",
      "| 50 to 80 m | 21 | 0.00 | **0.90** |",
      "campaign_gnss/logs/offset_floor_full",

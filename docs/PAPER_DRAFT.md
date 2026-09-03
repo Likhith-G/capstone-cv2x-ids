@@ -338,12 +338,15 @@ features both datasets support, computed by definitions verified to match ours
 exactly across 218,782 windows. Six of its simulations at the highest density
 and attacker fraction available, roughly a thousand constant offset attackers.
 
-[RESULT PENDING: `runs/drift/logs/veremi_crossdataset.log`. Both near zero is
-the expected outcome and would say the blindness is a property of the attack
-rather than of this simulator. A high score there and a low one here would say
-the opposite, that something about our corpus hides a signal the application
-layer can normally find, and would need explaining before anything else in this
-paper is believed.]
+**The numbers live in `RESULTS.md` section 3f and are copied here when that
+section is complete.** One place holds them so that a rerun means editing one
+table rather than reconciling four. `runs/drift/logs/veremi_crossdataset.log`
+is the source.
+
+What is settled: the positive control, VeReMi's fixed-position attack, reaches
+**F1 0.9644** on these seventeen features. The self consistency features work.
+Whatever the constant offset rows say, they say it about a detector that has
+been shown capable rather than one that might simply be broken.
 
 **When writing this in, state the task with the number.** It is a binary
 separation of constant offset attackers from benign over seventeen features.
