@@ -105,6 +105,10 @@ VeReMi-scale offsets of 250 m is being asked an easy question.
 
 ## 2. Related work
 
+Full source list and the competitive analysis are in
+`docs/research/NOVELTY_POSITION.md`, last checked 29 Aug 2026. **Re-check
+before submission.** This is the claim the paper lives or dies on.
+
 ### Datasets
 
 **VeReMi and VeReMi Extension** are the reference misbehaviour datasets and are
