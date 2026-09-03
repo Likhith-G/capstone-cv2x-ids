@@ -275,6 +275,32 @@ monotone in displacement. **A single receiver cannot resolve a position lie at
 any magnitude this dataset contains**, and the ordering is what makes magnitude
 an axis rather than a label.
 
+### The blindness is not a property of our simulator
+
+We evaluate the same application layer detector on VeReMi, on the seventeen
+features both datasets support, computed by definitions verified to match ours
+exactly across 218,782 windows. Six of its simulations at the highest density
+and attacker fraction available, roughly a thousand constant offset attackers.
+
+[RESULT PENDING: `runs/drift/logs/veremi_crossdataset.log`. Both near zero is
+the expected outcome and would say the blindness is a property of the attack
+rather than of this simulator. A high score there and a low one here would say
+the opposite, that something about our corpus hides a signal the application
+layer can normally find, and would need explaining before anything else in this
+paper is believed.]
+
+**We used the original VeReMi rather than the Extension**, because the
+Extension is distributed through a file locker requiring an interactive client.
+The substitution matters and is in our favour rather than against it: the
+original's benign vehicles are effectively noise free, which is the easiest
+possible case for a self consistency detector, and a constant offset is self
+consistent by construction so the application layer cannot see it whether or
+not benign traffic carries noise.
+
+The cross layer arm cannot be evaluated externally, because no public
+misbehaviour dataset carries the radio measurements it needs. After this
+comparison that is demonstrated rather than asserted.
+
 ---
 
 ## 5. Pooling measurements, and the detection floor
