@@ -494,8 +494,9 @@ without the other, and presenting the received power check alone invites a
 reviewer to find the lateral hole.
 
 *Rerun and confirmed across all eight seeds of the current corpus in four
-configurations. Every figure is within 0.02 of the one seed measurement it
-replaces and the off axis angles are identical to the degree.*
+configurations, on all 29,574 benign triples, which is about nine times the
+support behind the measurement it replaces. Every figure is within 0.02 of that
+measurement and the off axis angles are identical to the degree.*
 
 ---
 
