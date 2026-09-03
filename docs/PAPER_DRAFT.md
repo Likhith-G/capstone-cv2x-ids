@@ -345,6 +345,13 @@ the opposite, that something about our corpus hides a signal the application
 layer can normally find, and would need explaining before anything else in this
 paper is believed.]
 
+**When writing this in, state the task with the number.** It is a binary
+separation of constant offset attackers from benign over seventeen features.
+The table above it is eleven classes over twenty two features and reads exactly
+0.000. Those are different questions, and a small positive here does not
+contradict the zero there. Placed adjacent without that sentence, a reader will
+assume one refutes the other.
+
 **We used the original VeReMi rather than the Extension**, because the
 Extension is distributed through a file locker requiring an interactive client.
 The substitution matters and is in our favour rather than against it: the
