@@ -602,6 +602,9 @@ evasion, so a different geometry could move both.
 
 ## 9. What would come next
 
+**Two of these are cheap and one is not, and the cheap ones are the ones that
+would change what the paper can claim.**
+
 Not in this paper, and worth naming so the boundary is deliberate.
 
 **Locating the floor properly.** The band that brackets it holds three attacker
@@ -616,7 +619,15 @@ density shift is unmeasured.
 **Does federated training recover the drift loss?** Nothing here shows that it
 does. The drift result motivates continual adaptation; it does not demonstrate
 that this architecture delivers it, and the two must not be allowed to run
-together.
+together. This is the expensive one: it needs a continual learning loop that
+does not exist, and it is the obvious follow-up paper rather than a missing
+section of this one.
+
+**A geometry that is not a straight road.** The lateral degeneracy behind both
+the detection floor and the strongest evasion is a property of receivers strung
+along a line. A junction, a curve, or receivers set back from the carriageway
+would break it, and measuring by how much would say whether the floor reported
+here is a property of the method or of this road.
 
 ---
 
