@@ -460,8 +460,8 @@ its purpose the one leaving the smallest pooled residual. That is the bound
 worth having.
 
 **Unconstrained, the check is defeated.** At 50 m of displacement the best lie
-leaves a consistency ratio of 1.011 against 1.128 for an honest claim, an AUC
-of **0.147**, and three lies in a thousand caught at a five percent false alarm
+leaves a consistency ratio of 1.011 against 1.124 for an honest claim, an AUC
+of **0.139**, and three lies in a thousand caught at a five percent false alarm
 rate. An AUC below one half means the attacker looks less anomalous than an
 honest vehicle, which it manages because the free fit sits tens of metres from
 the truth, so the true position is not the residual minimum and a short lie can
@@ -478,14 +478,14 @@ localisation error.
 **Such a claim is in the field beside the carriageway.** A map check rejects it
 at no cost and with no radio evidence at all. Held within 12 m of the
 centreline, the attacker is forced longitudinal, the off axis angle falls to
-zero as displacement grows, and it is caught **81 percent of the time at 100 m
-and 92 percent at 200 m**.
+zero as displacement grows, and it is caught **82 percent of the time at 100 m
+and 94 percent at 200 m**.
 
 **Constraining the estimator closes the same gap from the other side.** A
 vehicle is on the carriageway or it is not a vehicle, so the position fit is
 bounded to the road as a hard constraint rather than a prior. Localisation
-error falls from **65.2 m to 18.2 m**, a factor of 3.6, and detection of the on
-road best response at 50 m rises from 0.282 to 0.398.
+error falls from **65.2 m to 18.3 m**, a factor of 3.6, and detection of the on
+road best response at 50 m rises from 0.264 to 0.380.
 
 **The pair is the contribution.** The lies received power cannot see are the
 lies a map rejects for free, and the lies that survive a map check are the
@@ -493,8 +493,9 @@ longitudinal ones received power sees best. Neither statement is available
 without the other, and presenting the received power check alone invites a
 reviewer to find the lateral hole.
 
-*Caveat to carry: these figures are one seed of an earlier corpus and are being
-rerun. The mechanism is geometric and survives; the numbers are provisional.*
+*Rerun and confirmed across all eight seeds of the current corpus in four
+configurations. Every figure is within 0.02 of the one seed measurement it
+replaces and the off axis angles are identical to the degree.*
 
 ---
 
