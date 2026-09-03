@@ -352,6 +352,16 @@ The table above it is eleven classes over twenty two features and reads exactly
 contradict the zero there. Placed adjacent without that sentence, a reader will
 assume one refutes the other.
 
+**Report the positive control beside it.** VeReMi has two constant position
+families. Type 2 displaces the true position by a fixed vector and leaves the
+claim self consistent, which is our attack. Type 1 transmits a fixed position,
+which contradicts the claimed speed in every consecutive pair of messages and
+which the self consistency features should catch. Running both turns a negative
+result into a specific one: the application layer catches the lie that
+contradicts itself and misses the lie that does not, so the features work and
+the blindness has a cause. The negative alone reads as features that do not
+work.
+
 **We used the original VeReMi rather than the Extension**, because the
 Extension is distributed through a file locker requiring an interactive client.
 The substitution matters and is in our favour rather than against it: the
