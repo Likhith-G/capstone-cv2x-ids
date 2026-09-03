@@ -115,7 +115,10 @@ before submission.** This is the claim the paper lives or dies on.
 application layer only: they carry position, speed and a received signal
 strength value, and no network or MAC layer measurement. VeReMi Extension adds
 realistic sensor error to benign traffic, and this work adopts its positioning
-error model directly so that the benign class is comparable.
+error model directly so that the benign class is comparable. We also evaluate
+our application layer detector on VeReMi itself, on the seventeen features both
+datasets support, so that our headline negative result is not a property of our
+own simulator.
 
 **VASP** implements 68 BSM attacks, far more than this work, and is likewise
 application layer. Breadth of attack catalogue is explicitly not a contribution
