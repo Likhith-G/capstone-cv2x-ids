@@ -58,19 +58,31 @@ import pandas as pd
 EXCLUDED = ["app_n_cam", "app_n_denm", "app_n_cpm",
             "app_seq_gaps", "app_seq_loss_rate"]
 
-# VeReMi Extension attacker type codes, from the dataset's own documentation.
-# Only the position falsification families are used here; the rest are listed so
-# an unexpected code is recognised rather than silently folded into benign.
-ATTACKS = {0: "benign", 1: "const_pos", 2: "const_pos_offset",
-           3: "random_pos", 4: "random_pos_offset", 5: "eventual_stop",
-           6: "disruptive", 7: "data_replay", 8: "delayed_messages",
-           9: "dos", 10: "dos_random", 11: "dos_disruptive",
-           12: "grid_sybil", 13: "data_replay_sybil", 14: "dos_random_sybil",
-           15: "dos_disruptive_sybil"}
+# Attacker type codes. The two VeReMi releases number them differently and the
+# release has to be told apart, because reading one dataset's codes against the
+# other's table would silently relabel every attack.
+#
+#   original VeReMi   powers of two: 1 ConstPos, 2 ConstPosOffset, 4 RandomPos,
+#                     8 RandomPosOffset, 16 EventualStop
+#   VeReMi Extension  consecutive integers over a much longer catalogue
+ATTACKS_ORIGINAL = {0: "benign", 1: "const_pos", 2: "const_pos_offset",
+                    4: "random_pos", 8: "random_pos_offset",
+                    16: "eventual_stop"}
+ATTACKS_EXTENSION = {0: "benign", 1: "const_pos", 2: "const_pos_offset",
+                     3: "random_pos", 4: "random_pos_offset",
+                     5: "eventual_stop", 6: "disruptive", 7: "data_replay",
+                     8: "delayed_messages", 9: "dos", 10: "dos_random",
+                     11: "dos_disruptive", 12: "grid_sybil",
+                     13: "data_replay_sybil", 14: "dos_random_sybil",
+                     15: "dos_disruptive_sybil"}
 
 # The families that displace a claimed position by a fixed vector, which is the
-# behaviour this project's class 1, 11 and 13 implement.
+# behaviour this project's small, medium and large offset classes implement.
+# The codes coincide across the two releases for exactly these two, which is
+# luck rather than design and is why the release is still detected.
 CONST_OFFSET = {1, 2}
+
+ATTACKS = ATTACKS_ORIGINAL
 
 
 def _need(d, *keys):
@@ -146,6 +158,12 @@ def load_receiver(path, truth, receiver_id):
 def load_veremi(root, limit=None):
     """Every receiver log under one VeReMi simulation directory."""
     root = pathlib.Path(root)
+    # A VeReMi archive nests the results directory several levels down, so
+    # accept either the results directory itself or anything above it.
+    if not list(root.glob("GroundTruthJSONlog*")):
+        found = sorted(root.rglob("GroundTruthJSONlog*"))
+        if found:
+            root = found[0].parent
     gt = sorted(root.glob("GroundTruthJSONlog*"))
     if not gt:
         raise SystemExit(
@@ -170,8 +188,15 @@ def load_veremi(root, limit=None):
     print(f"{len(df):,} receptions from {df.rxNodeId.nunique()} receivers, "
           f"{df.claimedStationId.nunique()} senders")
     counts = df.groupby("label_attackId").claimedStationId.nunique()
+
+    # Tell the two releases apart by the codes present. A code of 16 can only
+    # be the original's EventualStop; a 3 or a 5 can only be the Extension's.
+    seen = set(int(k) for k in counts.index)
+    table = ATTACKS_EXTENSION if (seen & {3, 5, 6, 7}) else ATTACKS_ORIGINAL
+    release = "Extension" if table is ATTACKS_EXTENSION else "original"
+    print(f"attacker codes read as VeReMi {release}")
     print("senders per attacker type: " +
-          "  ".join(f"{ATTACKS.get(int(k), k)}:{v}" for k, v in counts.items()))
+          "  ".join(f"{table.get(int(k), k)}:{v}" for k, v in counts.items()))
     return df
 
 
