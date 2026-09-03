@@ -55,7 +55,7 @@ def main():
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--tags", nargs="+", required=True)
     ap.add_argument("--units", type=int, default=2000)
-    ap.add_argument("--inference-ms", type=float, default=3.020,
+    ap.add_argument("--inference-ms", type=float, default=3.390,
                     help="single-window inference cost to compare against, "
                          "from measure_latency.py on the same corpus")
     a = ap.parse_args()
