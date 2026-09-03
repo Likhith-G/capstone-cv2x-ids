@@ -26,6 +26,16 @@ construction: which radio sent the message it just decoded.
     benchmark.py corpus.pkl --report --sample 250000      # app / phy / fused
     check_partition_skew.py corpus.pkl                    # BEFORE any federated run
     federated.py corpus.pkl --seeds 8 --rounds 20 --tune
+    pooled_regions.py corpus.pkl --run-dir DIR --tags ... --road-halfwidth
+    federated.py pooled_regions.pkl --observer-col key_region --tune
+
+**A region-pooled table identifies a client by `key_region`, not by receiver.**
+`federated.py`, `make_splits.py` and `check_partition_skew.py` all default to
+the per receiver column, which is right for every other caller and wrong for
+this one. Getting it wrong killed the analysis chain three times before
+`regenerate.sh` carried these stages, and the default is deliberately unchanged
+because a table sniffing default would hide the distinction rather than remove
+it.
 
 `drift.py` sits outside that sequence because it reads several finished corpora
 at once rather than one:
