@@ -132,16 +132,42 @@ def main():
         # absolute metres, because a displacement only means something relative
         # to the error a benign receiver already has.
         p95 = e.quantile(.95)
+        # The per station statistic is the median displacement AMONG THAT
+        # STATION'S LYING MESSAGES, taken as those exceeding the benign 95th
+        # percentile. Neither the median nor a fixed quantile of all its
+        # messages works, and both were tried:
+        #
+        #   median of all messages   a sporadic attacker tells the truth in
+        #                            most of what it sends, so its median is
+        #                            the benign error and every band collapses
+        #                            onto every other one
+        #   fixed high quantile      breaks whenever a station's realised duty
+        #                            falls below the quantile's tail, which
+        #                            exponential burst lengths make common
+        #
+        # Conditioning on the lying messages asks the question the ladder is
+        # actually about, which is how far the attacker moves its claim when it
+        # moves it, and it gives the same answer for a continuous attacker.
+        # A message counts as lying if it exceeds the LARGEST benign error
+        # observed, not the 95th percentile. By definition five percent of
+        # honest messages exceed the 95th, and for a station that lies in a
+        # fifth of what it sends those honest outliers are a quarter of the
+        # selected set and drag the median down onto the noise floor. Nothing
+        # honest exceeds the observed maximum.
+        lie_floor = float(e.max())
+        print(f"  a message counts as lying above {lie_floor:.1f} m, the "
+              f"largest benign error seen")
         for cls, label in [(11, "pos_small_offset"), (13, "pos_medium_offset"),
                            (1, "pos_const_offset")]:
-            d = tx[tx.attackId == cls]
+            d = tx[(tx.attackId == cls) & (tx.err > lie_floor)]
+            all_d = tx[tx.attackId == cls]
             if len(d):
                 per_att = d.groupby("txNodeId").err.median()
-                below = (per_att < p95).sum()
-                print(f"  {label:18s} per station median offset "
-                      f"{per_att.min():6.1f} to {per_att.max():6.1f} m, "
-                      f"{below} of {len(per_att)} stations inside the benign "
-                      f"95th percentile")
+                silent = all_d.txNodeId.nunique() - len(per_att)
+                print(f"  {label:18s} per station median offset WHEN LYING "
+                      f"{per_att.min():6.1f} to {per_att.max():6.1f} m, over "
+                      f"{len(per_att)} of {all_d.txNodeId.nunique()} stations"
+                      + (f", {silent} never lied" if silent else ""))
                 bands[cls] = (per_att.min(), per_att.max())
 
         # A sporadic attacker that never entered an attacking burst carries the
@@ -152,7 +178,7 @@ def main():
         # all reduce the support it rests on without reducing the class count.
         pos = tx[tx.attackId.isin([1, 11, 13])]
         if len(pos):
-            realised = pos.groupby("txNodeId").err.max()
+            realised = pos.groupby("txNodeId").err.quantile(0.99)
             silent = int((realised < p95).sum())
             print(f"  position attackers that never exceeded the benign 95th "
                   f"percentile: {silent} of {len(realised)}")
