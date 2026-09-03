@@ -300,6 +300,7 @@ CLAIMS_CONSISTENCY = [
 # em dashes freely, so it is the file most likely to acquire one.
 STYLE_FILES = ["docs/RESULTS.md", "docs/MASTER_INDEX.md", "docs/BUILD_LOG_V2.md",
                "docs/PAPER_CLAIMS.md", "docs/METHODS_DRAFT.md",
+               "docs/PAPER_DRAFT.md",
                "docs/DEFECTS_V2.md", "docs/PLAN_V3.md", "docs/RUNS_MANIFEST.md",
                "README.md", "analysis/README.md", "simulation/README.md",
                "capstone/README.md"]
@@ -363,11 +364,24 @@ def check_readme(bad):
 
 
 def check_claims(bad):
-    """The claims summary must not drift from the results it summarises."""
+    """The claims summary must not drift from the results it summarises.
+
+    The paper draft is checked against the same tokens, because it is the file
+    that gets read while writing and therefore the one most likely to acquire a
+    remembered number instead of a measured one.
+    """
     claims = DOC.parent / "PAPER_CLAIMS.md"
+    draft = DOC.parent / "PAPER_DRAFT.md"
     if not claims.exists():
         return bad
     ctext, rtext = claims.read_text(), DOC.read_text()
+    if draft.exists():
+        dtext = draft.read_text()
+        for token in ["0.5145", "0.412", "0.0578", "18.2"]:
+            ok = token in dtext and token in rtext
+            bad += not ok
+            print(f"{'ok  ' if ok else 'FAIL'} draft agrees on {token:8s}"
+                  f"{'' if ok else '  <- missing from PAPER_DRAFT.md'}")
     for token in CLAIMS_CONSISTENCY:
         ok = token in ctext and token in rtext
         bad += not ok
