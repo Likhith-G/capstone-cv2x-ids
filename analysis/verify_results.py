@@ -183,6 +183,10 @@ CHECKS = [
     ("drift prequential rises across the cut",
      "| 30 to 40 s | 11,814 | **0.5935** | **0.7378** |",
      "drift/logs/temporal", "30-40s    11,814    0.5935    0.7378"),
+    ("region panel FedLC significant on both",
+     "FedLC **+0.0147 at p = 0.0078**", None, None),
+    ("region panel FedNova worse again",
+     "FedNova **-0.0046 at p = 0.0078**", None, None),
     # Superseded pair, kept because section 3d is a statement about the filter
     # rather than about the corpus and has not been repeated.
     ("drift baseline holds under seed grouping",
