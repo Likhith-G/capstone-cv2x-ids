@@ -590,6 +590,24 @@ sixteen, so it is roughly 70 percent of vehicles that linger and under a third
 of those passing quickly. The cost of the stricter rule is six seconds of
 latency on top of one second of window fill.
 
+### And it does not survive a bursty attacker
+
+An attacker active a fifth of the time, in exponential bursts, keeping its
+label throughout. At the same 5 of 7 rule, false alert episodes rise from **7
+to 139 per region-hour** while detection falls slightly, and per window
+classification collapses from 0.5145 to **0.3762** fused. The operating point
+above is gone.
+
+**Two effects are mixed and only one of them is evasion.** The attacker is
+quiet in four windows out of five, so a rule needing several recent windows has
+fewer to work with. And four out of five attack labelled windows contain no
+attack, so the classifier is trained to call ordinary driving an attack, which
+is what takes benign stations flagged from 0.086 to 0.360. Station level
+labelling is what a deployment has, because a misbehaviour report names a
+station and not a window, so this is the realistic case. Separating the two
+needs a per window labelled variant, which the transmit log supports and which
+is not done.
+
 ---
 
 ## 8. Limitations
