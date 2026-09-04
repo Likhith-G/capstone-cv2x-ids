@@ -93,6 +93,28 @@ def fisher(ox, oy, px, py, n_exp, sigma, profile=True):
     return (Gp.T @ Gp) / (sigma ** 2)
 
 
+# A fixed cloud of standard normal pairs, reused for every unit so the median
+# radial error below is comparable across units and reproducible.
+_UNIT_CLOUD = np.random.default_rng(12345).standard_normal((512, 2))
+
+
+def median_radial(C):
+    """Median radial error of an efficient estimator with covariance C.
+
+    RESULTS.md 4b reports the measured localisation error as a MEDIAN of the
+    distance from the fit to the truth. The trace of C is a mean square, so
+    comparing its square root against that median compares two different
+    statistics and flatters whichever is smaller. This returns the median of
+    the radial error implied by C, which is the quantity 4b measures.
+    """
+    try:
+        L = np.linalg.cholesky(C)
+    except np.linalg.LinAlgError:
+        return np.nan
+    pts = _UNIT_CLOUD @ L.T
+    return float(np.median(np.hypot(pts[:, 0], pts[:, 1])))
+
+
 def ellipse(J):
     """Semi-axes and orientation of the CRLB error ellipse, metres and degrees
     from the road axis. Returns nan when the geometry is singular."""
@@ -355,19 +377,20 @@ distance, so a unit set too far back contributes better geometry and less of it.
             C = np.linalg.inv(J)
             free_along = float(np.sqrt(C[0, 0]))
             free_across = float(np.sqrt(C[1, 1]))
+            free_med = median_radial(C)
         except np.linalg.LinAlgError:
-            free_along = free_across = np.nan
+            free_along = free_across = free_med = np.nan
         # Road constrained: the across-road coordinate is pinned to the
         # carriageway, so the along-road coordinate is estimated with the other
         # one effectively known. That is the conditional bound, not the
         # marginal one, and it is the right comparison for the constrained fit.
         road_along = float(np.sqrt(1.0 / J[0, 0])) if J[0, 0] > 0 else np.nan
         rows.append((len(v), maj, mnr, ang, majk, free_along, free_across,
-                     road_along))
+                     road_along, free_med))
 
     r = pd.DataFrame(rows, columns=["n_obs", "major", "minor", "angle",
                                     "major_known", "free_along", "free_across",
-                                    "road_along"])
+                                    "road_along", "free_median"])
     r = r.replace([np.inf, -np.inf], np.nan).dropna()
     print(f"{len(r):,} pooled units with {a.min_obs} or more receivers, "
           f"median {r.n_obs.median():.0f} receivers per unit\n")
@@ -381,6 +404,12 @@ distance, so a unit set too far back contributes better geometry and less of it.
     print(f"  along the road            {r.free_along.median():9.1f} m")
     print(f"  across the road           {r.free_across.median():9.1f} m")
     print(f"  anisotropy                {r.free_across.median() / r.free_along.median():9.1f}")
+    print(f"  median radial error of an efficient estimator "
+          f"{r.free_median.median():9.1f} m")
+    print(f"    RESULTS.md 4b measures the MEDIAN distance from the fit to the "
+          f"truth, so this\n    is the row to compare it against. The per axis "
+          f"figures above are standard\n    deviations and are not the same "
+          f"statistic.")
     print(f"\nroad constrained, the across-road coordinate pinned to the carriageway")
     print(f"  along the road            {r.road_along.median():9.1f} m")
     print(f"  improvement over the free fit  "

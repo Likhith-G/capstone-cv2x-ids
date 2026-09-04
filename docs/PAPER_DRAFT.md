@@ -112,21 +112,31 @@ position falsification appears at three magnitudes chosen to bracket the point
 where detection becomes possible rather than to sit on one side of it.
 
 We show that a single receiver cannot detect a constant position offset at any
-magnitude the dataset contains, and that pooling received power across
+magnitude the dataset contains, and we show it three ways that do not share a
+failure mode: four learner families, the field's calibrated plausibility
+checks, and the geometry itself, which says a single receiver cannot estimate
+position under this measurement model at any observation length, and that pooling received power across
 receivers before any decision is taken detects 90 percent of attackers
 displaced 50 to 80 m and all of them above 80 m. Combining per receiver
 verdicts instead of measurements recovers none of this, which makes the case
 for cooperative detection an argument about information rather than about
 privacy.
 
-We then bound what that check can do. An attacker who knows the estimator lies
-perpendicular to the road, where receivers strung along a carriageway are
-nearly collinear and range only measurements barely constrain position, and
-defeats the check entirely. Constraining the position estimate to the
+We then bound what that check can do, and the bound predicts the attack. The
+Cramer Rao ellipse for this receiver geometry, computed from the propagation
+law and its residual with no classifier involved, points 79.3 degrees off the
+road axis. An attacker given free choice of where to claim to be, searched by
+brute force over 72 directions with no knowledge of that bound, lies at 75 to
+85 degrees and defeats the check entirely: receivers strung along a carriageway
+are nearly collinear, and range only measurements barely constrain position
+across it. Constraining the position estimate to the
 carriageway removes that degree of freedom, takes localisation error from 65 m
 to 18 m, and leaves an attacker that must remain on the road detectable 85
-percent of the time at 100 m. The lies received power cannot see are the lies a
-map rejects for nothing, and we argue the pair rather than either half.
+percent of the time at 100 m. Moving the receivers instead is worth about a
+fifth of the error and leaves the geometry 2.4 times weaker across the road than
+along it, so the weakness cannot be placed away. The lies received power cannot
+see are the lies a map rejects for nothing, and we argue the pair rather than
+either half.
 
 ---
 
