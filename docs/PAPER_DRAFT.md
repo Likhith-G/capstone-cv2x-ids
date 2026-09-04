@@ -429,6 +429,46 @@ monotone in displacement. **A single receiver cannot resolve a position lie at
 any magnitude this dataset contains**, and the ordering is what makes magnitude
 an axis rather than a label.
 
+Reported over all eleven classes the fused score is 0.5145. One of the eleven,
+sensing manipulation, has no signature in this simulator at all, because Mode 2
+grants are data driven and an attacker cannot hoard the channel, so it scores
+0.000 in every block on every corpus we generated. Over the ten classes that
+carry a signature the fused score is **0.5659**. We report the eleven class
+figure as primary so that nothing is hidden, and the ten class figure because it
+is what the detector achieves on the classes the simulator can express. The
+exclusion is mechanistic and was established before these scores existed.
+
+### The blindness is not a property of the classifier
+
+A bound evidenced by one model's failure is a statement about that model. We
+therefore repeat the comparison under four learner families that fail in
+different ways: a linear model, a boosted tree ensemble, a bagged tree ensemble
+and a network. Same rows, same folds, same features.
+
+| class | best of four learners |
+|---|---|
+| 20 to 25 m | 0.010 |
+| 47 to 60 m | 0.052 |
+| 71 to 233 m | 0.167 |
+
+The random forest reproduces the table above exactly, which is what makes the
+other three comparable to it, and it is the best of the four overall, so nothing
+here rests on an unlucky choice of model.
+
+We also compare against the plausibility checks the field standardised on:
+acceptance range, distance moved, sudden speed change, position prediction,
+acceleration, and a received signal strength check against the claimed distance.
+Each threshold is set on the training fold's benign traffic at a 1 percent false
+positive rate rather than at a chosen constant. The suite reaches an F1 of 0.252
+against 0.682 for the cross layer detector, and **recalls 0.040 of constant
+offset attackers against the learned detector's 0.076**. The floor is not an
+artefact of learning: a hand built rule set calibrated on the same data does no
+better.
+
+The single receiver signal strength check on its own, which is the form the
+prior work proposed, recalls 0.010 of them and has a negative correlation
+coefficient.
+
 ### The blindness is not a property of our simulator
 
 We evaluate the same application layer detector on VeReMi, on the seventeen
@@ -541,6 +581,50 @@ anything to see, which is why the estimator moves this line and better features
 do not. Its existence is solid; its location is known only to within 30 to
 80 m, because the bracketing band holds three attacker stations.
 
+### Why a single receiver is not merely bad at this
+
+The measurement model has four free parameters, two of position and two of
+propagation, and the propagation pair is free precisely so that the statistic is
+invariant to transmit power. One receiver supplies one equation per window with
+the same geometry every time, so **a single receiver cannot estimate position
+under this model at any observation length.** It can only test whether the power
+it received is consistent with the range the claim implies, and that test has a
+floor of its own.
+
+Splitting the residual of the fitted propagation law on 1,151,960 benign
+observations gives 1.358 dB that persists for as long as a link lasts and
+3.830 dB that averages away within one. Watching longer removes the second and
+never the first, so the range check keeps a distance ambiguity proportional to
+range: 39 m at the first quartile of link distances and **83 m at the median.**
+
+That predicts the ordering of the single receiver scores. Two of the three
+offset classes sit entirely below the median ambiguity and only the largest
+carries mass above it, and those are the classes scoring 0.002, 0.021 and 0.146.
+The bound says which of them could have been detected at all, and the
+measurement agrees.
+
+### What the geometry allows
+
+Computing the Cramer Rao bound on position from the same law, with the
+propagation parameters profiled out because the estimator fits them freely, puts
+a floor under any unbiased estimator on this receiver array. The measured
+localisation error sits above it by a factor of 2.3, 65.2 m median radial
+against 28.0 m, so the fit is within about a factor of two of what the geometry
+allows and its error is not an artefact of the fitting method.
+
+**And the bound is strongly anisotropic**: 36.4 m across the road against 12.3 m
+along it, a ratio of three, which is section 6.
+
+**The scale at which receivers cooperate matters more than how many of them
+there are.** Pooling corpus wide over a median of 39 receivers gives the 36.4 m
+above. The same computation scoped to one roadside unit region, which is the
+deployment this paper proposes for federation, gives 6.2 km, because eight
+receivers clustered around one unit barely identify four parameters. Units with
+10 to 14 receivers give 72.8 m spread over kilometres and 2,148.8 m clustered in
+a region: **the same count, a factor of thirty in the bound.** Any claim about
+cooperative position verification has to state the receiver geometry it assumes,
+and a corpus wide pooling gain is not what one region delivers.
+
 ---
 
 ## 6. The attacker that knows the estimator
@@ -566,12 +650,40 @@ the truth, so the true position is not the residual minimum and a short lie can
 be aimed at the minimum instead of away from it. An honest vehicle has no
 equivalent freedom.
 
-**The direction explains it.** The best lies are 75 to 85 degrees off the road
-axis, which is sideways. Receivers strung along a straight road are nearly
-collinear, and range only measurements barely constrain position perpendicular
-to a collinear array, so displacing a claim across the road changes every
-receiver's distance by almost nothing. That one direction carries most of the
-localisation error.
+**The direction explains it, and the geometry predicted it.** The best lies are
+75 to 85 degrees off the road axis, which is sideways, found by searching 72
+directions at each displacement with no model of why one should win. The
+Cramer Rao ellipse of section 5, computed from the propagation law and its
+residual with no attacker and no classifier anywhere in it, has its major axis
+at **79.3 degrees** from the road. Receivers strung along a straight road are
+nearly collinear, range only measurements barely constrain position
+perpendicular to a collinear array, and displacing a claim across the road
+changes every receiver's distance by almost nothing.
+
+We emphasise the agreement because of what it rules out. The evasion is not a
+weakness of our estimator, our feature set or our search: it is a property of
+where the receivers stand, and any range based cooperative check on this array
+has the same hole in the same direction.
+
+### Standing the receivers somewhere else does not close it
+
+Every roadside unit in our campaign is on the road centreline. That is a real
+deployment pattern and it is also the worst case for geometric diversity, so
+the obvious question is whether the result is an artefact of the placement.
+
+Recomputing the bound with the units moved to alternating lateral offsets, on
+identical pooled units, gives an optimum near 40 m, about three times the
+carriageway half width: the across road bound falls from 36.8 m to 29.6 m and
+the anisotropy from 2.99 to 2.38. Past the optimum the placement is worse than
+doing nothing, and at 200 m it is worse than the centreline, because the
+information a receiver carries falls as the inverse square of its distance while
+the geometry it adds does not keep up.
+
+So placement is a genuine design parameter, it has a derived rule, and it is
+worth about a fifth of the error. **It is not a cure.** Even at the optimum the
+geometry is 2.4 times weaker across the road than along it and the attacker
+keeps its preferred direction. The complementary claim below is therefore
+structural rather than a repair for a badly placed array.
 
 **Such a claim is in the field beside the carriageway.** A map check rejects it
 at no cost and with no radio evidence at all. Held within 12 m of the
@@ -731,11 +843,15 @@ receiver measures. Carriageway extent is static, so the dependency is modest,
 but it is one the rest of the method does not have.
 
 **One road geometry.** Every figure here is for receivers strung along the
-length of a straight carriageway. A junction, a curve, or receivers set back
-from the road would break the collinearity that makes lateral position
-unobservable, and this work does not measure by how much. The lateral
-degeneracy is the mechanism behind both the detection floor and the strongest
-evasion, so a different geometry could move both.
+length of a straight carriageway. Setting the roadside units back from the road
+is measured, in section 6, and is worth about a fifth of the localisation bound
+before the inverse square loss of distance overtakes the geometric gain. That
+measurement is a recomputation of the bound on the same pooled units rather
+than a fresh campaign, so it captures the geometric effect and not the change in
+what a relocated unit would hear. A junction or a curve would break the
+collinearity far more thoroughly than any lateral offset can, and that is not
+measured at all. The lateral degeneracy is the mechanism behind both the
+detection floor and the strongest evasion, so a different road could move both.
 
 ---
 
@@ -748,7 +864,8 @@ Not in this paper, and worth naming so the boundary is deliberate.
 
 **Locating the floor properly.** The band that brackets it holds three attacker
 stations. A campaign sampling 25 to 60 m densely would place it to within a few
-metres instead of within fifty.
+metres instead of within fifty. [A campaign doing exactly this is running;
+replace this item with the result or restore it if the campaign does not land.]
 
 **Does the pooled architecture transfer?** The drift measurement is on the
 single observer detector, because the cross receiver features live in a
