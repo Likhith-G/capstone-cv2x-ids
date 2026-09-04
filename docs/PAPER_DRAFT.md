@@ -894,10 +894,8 @@ detection floor and the strongest evasion, so a different road could move both.
 
 ## 9. What would come next
 
-**Two of these are cheap and one is not, and the cheap ones are the ones that
-would change what the paper can claim.**
-
-Not in this paper, and worth naming so the boundary is deliberate.
+Not in this paper, and worth naming so the boundary is deliberate. The first
+two are cheap and the last two are not.
 
 **Locating the floor properly.** The banded table brackets it between 30 and
 80 m because the band that contains it holds three attacker stations. Fitting
@@ -914,18 +912,23 @@ single observer detector, because the cross receiver features live in a
 separate table. Whether cooperative detection degrades the same way under a
 density shift is unmeasured.
 
-**Does federated training recover the drift loss?** Nothing here shows that it
-does. The drift result motivates continual adaptation; it does not demonstrate
-that this architecture delivers it, and the two must not be allowed to run
-together. This is the expensive one: it needs a continual learning loop that
-does not exist, and it is the obvious follow-up paper rather than a missing
-section of this one.
+**Personalisation, which is what our own negative result asks for.** Section 7
+shows a federation spanning two densities doing worse than a model trained on
+either, so the one global model this architecture produces is the wrong shape
+for the non stationarity that motivates it. What the result points at is per
+region or per density models with shared structure, which the federated
+literature calls personalisation and which needs a continual learning loop that
+does not exist here. That is the follow up paper rather than a missing section
+of this one.
 
 **A geometry that is not a straight road.** The lateral degeneracy behind both
 the detection floor and the strongest evasion is a property of receivers strung
-along a line. A junction, a curve, or receivers set back from the carriageway
-would break it, and measuring by how much would say whether the floor reported
-here is a property of the method or of this road.
+along a line. Moving them off the centreline is measured in section 6 and is
+worth a fifth of the error, which is not enough to remove it. A junction or a
+curve would break the collinearity far more thoroughly, and measuring by how
+much would say whether the floor reported here is a property of the method or of
+this road. That needs a road network rather than a straight carriageway, so it
+is a new campaign and a new scenario rather than a parameter.
 
 ---
 
@@ -934,9 +937,15 @@ here is a property of the method or of this road.
 
 - Re-run `analysis/verify_results.py` and confirm every check passes. Every
   number in this file is pinned by it.
-- Re-check the novelty claim against the literature. It was last checked 29 Aug
-  2026 and it is the claim the paper lives or dies on. `NOVELTY_POSITION.md`
-  has the competitive table and the closest prior work.
+- Re-check the novelty claim against the literature. The dataset and detection
+  positioning was last checked 29 Aug 2026 and the cooperative position
+  verification prior art on 5 Sep 2026. It is the claim the paper lives or dies
+  on. `NOVELTY_POSITION.md` has the competitive table and the closest prior
+  work, and `PAPER_CLAIMS.md` has the two standing positions from the field's
+  survey that this paper is placed against.
+- Confirm VeReMi NextGen is cited and differentiated. It is the current state of
+  that lineage, it settles application layer breadth, and a reviewer from that
+  group will be reading.
 - Confirm section 6's figures come from the rerun across all eight seeds of the
   current corpus rather than the one seed of the superseded one they were
   first measured on.
@@ -950,8 +959,15 @@ here is a property of the method or of this road.
 - Check every figure and table against `RESULTS.md` rather than against this
   draft, and check the draft against the results rather than the other way
   round.
-- Confirm no sentence claims federated training recovers the drift loss.
-  Nothing measured that.
+- Confirm no sentence claims federated training recovers the drift loss. It was
+  measured and it does not, so the risk now runs the other way: check that the
+  negative result is stated where a reader expects the recovery claim, not
+  buried.
+- Confirm every claim about the detection floor names all three lines of
+  evidence, or none. Quoting only the learner families invites the objection
+  that a different model might do better, which the geometry answers.
+- Confirm nothing says the effect of moving the receivers is unmeasured. It is
+  measured; what remains unmeasured is a junction or a curve.
 
 ### The five conclusions that changed when the corpus was regenerated
 
