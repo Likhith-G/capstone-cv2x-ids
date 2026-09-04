@@ -772,6 +772,20 @@ local work is reliably worse. The spread between best and worst rule is a fifth
 of the spread between seeds, so which rule is chosen matters far less than the
 fact that clients see different class mixtures.
 
+**Federating across the shift does not repair it, and we measured that rather
+than assuming either way.** Federation is introduced above as the answer to
+non-stationarity, so the obvious test is whether a federation spanning both
+densities recovers what the density change costs. On identical held out clients
+and an identical row budget it does not: 0.1305 macro F1 against 0.1774 for a
+model trained on the wrong density alone and 0.2966 for one trained on the
+right one. Given twice the rows it reaches 0.2243, still below a single density
+model trained on half as much data. **Twice as much data from the wrong
+distribution loses to half as much from the right one.** A single global model
+pulled between two distributions serves neither, so non stationarity argues for
+continual and local adaptation and against the one global model this
+architecture produces. Personalisation is what the result asks for and we have
+not built it.
+
 **Privacy costs three times what the architecture gains.** Clipping alone costs
 0.0341 before any noise, and at the tightest bound measured, an epsilon of 8.3,
 macro F1 falls from 0.4775 to 0.3063. The obstacle is the size of the
