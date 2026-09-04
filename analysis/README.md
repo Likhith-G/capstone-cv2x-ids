@@ -60,6 +60,14 @@ different answer from corpus-wide pooling.
 
     geometry_bound.py corpus.pkl --run-dir DIR --tags seed1 ... [--regions]
 
+`federated_drift.py` answers the question the federated panel exists to answer.
+Four arms on identical held-out clients of the target corpus and an identical
+training row budget: trained on the other density, trained on the target
+density, federated across both, and federated across both with twice the rows so
+that breadth and volume can be read apart.
+
+    federated_drift.py --source A/corpus.pkl --target B/corpus.pkl
+
 `model_independence.py` runs the fused block under four learner families over
 the same rows and folds, and reports the best score any of them reached per
 class. The random forest runs first with the settings `benchmark.py` uses, so
@@ -124,6 +132,7 @@ invalidate every grouped fold.
 | `model_independence.py` | is the detection floor a property of the problem, or of the random forest |
 | `geometry_bound.py` | what the receiver geometry and the noise allow, derived, with no classifier |
 | `plausibility_baseline.py` | how the work stands against the field's standard checks rather than its own ablations |
+| `federated_drift.py` | does federating across two densities recover what the density change costs |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
 
