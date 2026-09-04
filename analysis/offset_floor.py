@@ -84,7 +84,8 @@ def per_station_detection(df, feats, folds, trees, jobs):
             .rename(columns={"mean": "flag_rate", "size": "windows"}))
 
 
-def curve(det, offsets, floor95, label, edges, min_stations):
+def curve(det, offsets, floor95, label, edges, min_stations,
+          save_to=None, borrow=None, corpus_tag=None):
     det = det.merge(offsets[["key_seed", "key_claimedStationId", "offset"]],
                     how="left", on=["key_seed", "key_claimedStationId"])
     ben = det[det.label_attackId == 0]
@@ -113,7 +114,35 @@ def curve(det, offsets, floor95, label, edges, min_stations):
               f"{b.flag_rate.mean():>10.3f} {caught:>8.2f}")
     print(f"\n  benign positioning error on the same scale: median "
           f"{floor95[0]:.2f} m, 95th {floor95[1]:.2f} m, max {floor95[2]:.2f} m")
-    locate(att, label)
+
+    keep = att[["offset", "flag_rate"]].copy()
+    keep["arm"] = label
+    keep["corpus"] = corpus_tag or "this run"
+    keep["benign_flag_rate"] = ben.flag_rate.mean()
+    if save_to:
+        path = pathlib.Path(save_to)
+        prev = pd.read_csv(path) if path.exists() else None
+        pd.concat([prev, keep] if prev is not None else [keep],
+                  ignore_index=True).to_csv(path, index=False)
+        print(f"  station table appended to {path}")
+
+    pooled_in = keep
+    if borrow is not None and len(borrow):
+        b = borrow[borrow.arm == label]
+        if len(b):
+            gap = abs(b.benign_flag_rate.mean() - ben.flag_rate.mean())
+            print(f"\n  borrowing {len(b)} stations from "
+                  f"{', '.join(sorted(b.corpus.unique()))} for the locate step")
+            print(f"    benign false flag rate here {ben.flag_rate.mean():.4f}, "
+                  f"there {b.benign_flag_rate.mean():.4f}, difference {gap:.4f}")
+            if gap > 0.01:
+                print("    REFUSED: the two runs are not at the same operating "
+                      "point, so their\n    per station flag rates are not "
+                      "comparable and pooling them would mix two\n    "
+                      "thresholds. Locate on this run alone.")
+            else:
+                pooled_in = pd.concat([keep, b], ignore_index=True)
+    locate(pooled_in, label)
 
 
 def locate(att, label, n_boot=2000, seed=0):
@@ -211,7 +240,21 @@ def main():
     ap.add_argument("--trees", type=int, default=100)
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--min-stations", type=int, default=3)
+    ap.add_argument("--save-stations", default=None,
+                    help="append this run's per station offsets and flag rates "
+                         "to a csv, so a later run can borrow them")
+    ap.add_argument("--locate-with", default=None,
+                    help="a csv written by --save-stations on another corpus. "
+                         "Its stations join the locate step only, never the "
+                         "banded table, and only when both runs sit at the same "
+                         "benign false flag rate. This is how the floor campaign "
+                         "and the main corpus are combined: one supplies density "
+                         "through the transition, the other the anchors at both "
+                         "ends that fix the slope")
+    ap.add_argument("--corpus-tag", default=None,
+                    help="name recorded beside this run's stations")
     a = ap.parse_args()
+    borrow = pd.read_csv(a.locate_with) if a.locate_with else None
 
     offsets, benign_err = station_offsets(a.run_dir, a.tags)
     floor = (benign_err.median(), benign_err.quantile(0.95), benign_err.max())
@@ -245,7 +288,8 @@ def main():
                         ("fused", app + phy)]:
         det = per_station_detection(df, feats, a.folds, a.trees, a.jobs)
         curve(det, offsets, floor,
-              f"single observer, {name}", edges, a.min_stations)
+              f"single observer, {name}", edges, a.min_stations,
+              a.save_stations, borrow, a.corpus_tag)
 
     if a.pooled:
         pl = pd.read_pickle(a.pooled)
@@ -253,7 +297,8 @@ def main():
                 if c.startswith("pm_") or c.startswith("pool_")]
         det = per_station_detection(pl, cols, a.folds, a.trees, a.jobs)
         curve(det, offsets, floor,
-              "pooled across receivers, all features", edges, a.min_stations)
+              "pooled across receivers, all features", edges, a.min_stations,
+              a.save_stations, borrow, a.corpus_tag)
         print("\nThe pooled rows are (station, window) units rather than "
               "(observer, station, window),\nso its window counts are smaller "
               "by the number of receivers per unit. The flag\nrates are "

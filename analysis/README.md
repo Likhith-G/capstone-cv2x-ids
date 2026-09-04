@@ -49,6 +49,21 @@ the detection outcome is in the corpus.
 
     offset_floor.py corpus.pkl --run-dir DIR --tags seed1 ... --pooled pooled.pkl
 
+It also fits detection against log displacement across every station, which
+locates the crossing with an interval instead of bracketing it between two
+bands. That fit needs stations well below and well above the crossing as well as
+inside it, and no single campaign has all three, so `--save-stations` writes a
+run's per station table and `--locate-with` borrows another run's for the locate
+step only. Borrowed stations never enter the banded table, and the borrow is
+refused outright if the two runs sit more than a percentage point apart on their
+benign false flag rate, because per station flag rates measured at different
+operating points are not the same quantity.
+
+    offset_floor.py MAIN/corpus.pkl --run-dir MAIN --tags ... \
+        --save-stations /tmp/floor_stations.csv --corpus-tag main
+    offset_floor.py FLOOR/corpus.pkl --run-dir FLOOR --tags ... \
+        --locate-with /tmp/floor_stations.csv --corpus-tag floor
+
 `geometry_bound.py` takes no classifier and simulates no attack. It fits the
 propagation law on benign traffic, splits the residual into the part that
 persists for the life of a link and the part that averages away, and computes
