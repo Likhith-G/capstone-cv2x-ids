@@ -253,10 +253,35 @@ def main():
                          "ends that fix the slope")
     ap.add_argument("--corpus-tag", default=None,
                     help="name recorded beside this run's stations")
+    ap.add_argument("--extra-corpus", default=None,
+                    help="a second corpus to TRAIN AND SCORE TOGETHER with the "
+                         "first, rather than to borrow scored stations from. "
+                         "One detector over both sets means the per station flag "
+                         "rates are the same quantity by construction, which "
+                         "--locate-with can only approximate. Use this when the "
+                         "two corpora differ in attacker magnitude distribution, "
+                         "because separately trained detectors then settle at "
+                         "different operating points and their flag rates stop "
+                         "being comparable")
+    ap.add_argument("--extra-run-dir", default=None)
+    ap.add_argument("--extra-tags", nargs="+", default=None)
+    ap.add_argument("--extra-prefix", default="x",
+                    help="seed tags of the extra corpus are prefixed with this, "
+                         "and its node identifiers are pushed clear of the "
+                         "first corpus, so a grouped fold cannot put the same "
+                         "physical station on both sides")
     a = ap.parse_args()
     borrow = pd.read_csv(a.locate_with) if a.locate_with else None
 
     offsets, benign_err = station_offsets(a.run_dir, a.tags)
+    extra_offsets = None
+    if a.extra_corpus:
+        if not (a.extra_run_dir and a.extra_tags):
+            raise SystemExit("--extra-corpus needs --extra-run-dir and --extra-tags")
+        extra_offsets, extra_benign = station_offsets(a.extra_run_dir, a.extra_tags)
+        extra_offsets["key_seed"] = a.extra_prefix + "_" + extra_offsets.key_seed
+        offsets = pd.concat([offsets, extra_offsets], ignore_index=True)
+        benign_err = pd.concat([benign_err, extra_benign], ignore_index=True)
     floor = (benign_err.median(), benign_err.quantile(0.95), benign_err.max())
 
     # The benign 95th percentile is a bin edge, because it is the boundary the
@@ -275,6 +300,25 @@ def main():
     df = pd.read_pickle(a.corpus)
     if "label_clean" in df.columns:
         df = df[df.label_clean == 1]
+    if a.extra_corpus:
+        ex = pd.read_pickle(a.extra_corpus)
+        if "label_clean" in ex.columns:
+            ex = ex[ex.label_clean == 1]
+        # Push the second corpus clear of the first. build_corpus.py namespaces
+        # by seed POSITION, so both corpora reuse the same identifiers and a
+        # naive concatenation would put two different physical stations under
+        # one id and quietly break every grouped fold.
+        bump = int(max(df.key_rxNodeId.max(), df.label_txNodeId.max())) + 1_000_000
+        ex["key_rxNodeId"] += bump
+        ex["label_txNodeId"] += bump
+        ex["key_seed"] = a.extra_prefix + "_" + ex.key_seed.astype(str)
+        shared = [c for c in df.columns if c in ex.columns]
+        assert not set(df.label_txNodeId) & set(ex.label_txNodeId), \
+            "identifiers still collide after the bump"
+        print(f"training over both corpora: {len(df):,} + {len(ex):,} windows, "
+              f"{len(shared)} shared columns, second corpus seeds prefixed "
+              f"'{a.extra_prefix}_'")
+        df = pd.concat([df[shared], ex[shared]], ignore_index=True)
     if a.sample and len(df) > a.sample:
         df = df.sample(n=a.sample, random_state=0)
     df = df.reset_index(drop=True)

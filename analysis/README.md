@@ -64,6 +64,21 @@ operating points are not the same quantity.
     offset_floor.py FLOOR/corpus.pkl --run-dir FLOOR --tags ... \
         --locate-with /tmp/floor_stations.csv --corpus-tag floor
 
+Borrowing compares two separately trained detectors, which only works if they
+settled at the same operating point. Two corpora whose attackers sit at
+different magnitudes will not, because one of them poses a harder position
+problem. `--extra-corpus` is the stronger form: it trains and scores ONE
+detector over both corpora, so the per station flag rates are the same quantity
+by construction rather than by a check. It prefixes the second corpus's seed
+tags and pushes its node identifiers clear of the first, because
+`build_corpus.py` namespaces by seed position and both corpora reuse the same
+identifiers, so a naive concatenation would put two physical stations under one
+id and break every grouped fold. It asserts that afterwards.
+
+    offset_floor.py MAIN/corpus.pkl --run-dir MAIN --tags seed1 ... \
+        --extra-corpus FLOOR/corpus.pkl --extra-run-dir FLOOR \
+        --extra-tags seed1 ... --extra-prefix floor
+
 `geometry_bound.py` takes no classifier and simulates no attack. It fits the
 propagation law on benign traffic, splits the residual into the part that
 persists for the life of a link and the part that averages away, and computes
