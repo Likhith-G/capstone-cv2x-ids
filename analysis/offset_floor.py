@@ -58,6 +58,30 @@ def station_offsets(run_dir, tags):
     return pd.concat(rows, ignore_index=True), pd.concat(benign, ignore_index=True)
 
 
+def scenario_fingerprint(run_dir, tags):
+    """A hash of where the benign vehicles actually were.
+
+    Two campaigns run with the same rngRun share their entire scenario: the
+    same vehicles start in the same places and the same nodes are assigned the
+    same attack classes. Merging two such campaigns and renumbering their
+    stations does not make them independent, it makes one physical vehicle look
+    like two, and a fold grouped by station then puts a vehicle's own twin on
+    the other side of the split. That is verbatim train/test overlap wearing a
+    different identifier, which is the exact failure the integrity gates exist
+    to catch.
+    """
+    import hashlib
+    out = {}
+    for tag in tags:
+        tx = pd.read_csv(f"{run_dir}/tx_{tag}.csv",
+                         usecols=["claimedStationId", "attackId", "trueX", "trueY"],
+                         on_bad_lines="skip").dropna()
+        b = (tx[tx.attackId == 0].groupby("claimedStationId")[["trueX", "trueY"]]
+             .first().round(2).sort_index())
+        out[tag] = hashlib.sha1(b.to_csv().encode()).hexdigest()[:12]
+    return out
+
+
 def per_station_detection(df, feats, folds, trees, jobs):
     """Fraction of each station's windows flagged as misbehaving.
 
@@ -284,6 +308,19 @@ def main():
     if a.extra_corpus:
         if not (a.extra_run_dir and a.extra_tags):
             raise SystemExit("--extra-corpus needs --extra-run-dir and --extra-tags")
+        fa = scenario_fingerprint(a.run_dir, a.tags)
+        fb = scenario_fingerprint(a.extra_run_dir, a.extra_tags)
+        shared_scenes = set(fa.values()) & set(fb.values())
+        if shared_scenes:
+            raise SystemExit(
+                f"REFUSED: the two corpora share {len(shared_scenes)} scenario "
+                f"realisation(s).\nThe same benign vehicles start in the same "
+                f"places in both, because the campaigns\nwere run with the same "
+                f"rngRun values. Renumbering the stations would make one\n"
+                f"physical vehicle look like two and put its twin on the other "
+                f"side of a grouped\nfold, which is verbatim train/test overlap. "
+                f"Either run the second campaign with\nrngRun values the first "
+                f"does not use, or analyse it on its own.")
         extra_offsets, extra_benign = station_offsets(a.extra_run_dir, a.extra_tags)
         extra_offsets["key_seed"] = a.extra_prefix + "_" + extra_offsets.key_seed
         offsets = pd.concat([offsets, extra_offsets], ignore_index=True)
