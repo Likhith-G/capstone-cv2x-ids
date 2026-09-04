@@ -25,21 +25,63 @@ is the half of the paper that says what the method cannot do.
 
 ## Venue
 
-Not chosen, and worth choosing before the next revision because it changes the
-structure. `docs/research/reports/08_venues.txt` ranks ACM WiSec first, then
-NDSS VehicleSec, then IEEE VNC, with the Automotive Cyber-Security Workshop and
-VTC below them.
+**ACM WiSec, chosen 4 Sep 2026.** Write to a security venue. The alternatives
+below are ordered, and all three want the same paper, so the structure is
+settled by this decision and does not need revisiting if the first submission
+fails.
 
-**The shape of this paper suits the top two.** The contribution is a limit and
-a mechanism rather than a system, and both are security venues that take
-measurement papers. WiSec is also where the prior result this work builds on
-was published, which is an argument for and not against: the paper reproduces
-their ordering on a different radio stack and then says what the ordering costs.
+**Why WiSec and not the vehicular venues.** The object of this paper is
+received power on PC5 sidelink and what a nearly collinear receiver array does
+to it. That is a wireless measurement result, and the contribution is a limit
+and a mechanism rather than a system that performs well. Security venues take
+papers whose headline is a bound; vehicular networking venues generally want a
+system that works. WiSec is also where the prior result this work reproduces
+and then bounds was published, so its programme committee contains the people
+who know that line of work. That is an argument for and not against.
 
-**The structural consequence.** A security venue wants the adversarial section
-early and needs little standards background. A vehicular networking venue is
-the reverse, and would want the sidelink and congestion control detail that is
-currently compressed into the dataset section. Do not write to both.
+**Why not VehicleSec.** Its centre of mass is in-vehicle: CAN, ECUs, sensors,
+autonomy. Its dataset artefact award went to a CAN bus dataset. This paper is a
+radio and network paper and would be the odd one out. Note also that
+`docs/research/reports/08_venues.txt` is stale on this point: VehicleSec has
+left NDSS and is now a USENIX symposium co-located with USENIX Security, so its
+deadline pattern is late February for an August event rather than late December.
+
+### Dates
+
+Verified against the WiSec 2026 call and the published pattern. The 2027 call
+was not posted when this was written, so confirm the exact dates when it is.
+
+| | |
+|---|---|
+| cycle 1 | mid November 2026, notification mid January 2027 |
+| cycle 2 | early March 2027, notification mid April 2027 |
+| format | 10 pages ACM sigconf excluding bibliography, 12 total; 6 page short |
+| review | double blind, thoroughly anonymised |
+| artefacts | optional, evaluated after acceptance, badged, and stated to count positively |
+
+**Cycle 1 is a cheap roll and cycle 2 is the real target.** The call states
+that a paper rejected in the first round may be resubmitted to the second, and
+that authors may request the same reviewers by supplying a letter detailing the
+revisions. A November submission therefore buys expert reviews in January and
+roughly seven weeks to act on them, at no cost to the March attempt. Decide in
+late October, once the capstone is submitted, whether the draft is ready enough
+for November to be worth the effort. Do not rush it there; the March cycle is
+the one that has to be good.
+
+### The structural consequence
+
+A security venue wants the adversarial section early and needs little standards
+background. A vehicular networking venue is the reverse, and would want the
+sidelink and congestion control detail that is currently compressed into the
+dataset section. Do not write to both.
+
+### The artefact ordering, which is irreversible if done wrong
+
+Review is double blind and artefact evaluation happens only after acceptance.
+**Do not deposit the dataset under his name, or push a public repository that
+identifies the authors, before the submission is in.** The anonymised artefact
+has to be a separate deposit. And nothing in `docs/` that is gitignored may go
+into any release: those files name defects the team has not seen.
 
 ---
 
