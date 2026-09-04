@@ -119,6 +119,21 @@ def main():
                     help="five receivers is the identifiability floor: four "
                          "free parameters plus one")
     ap.add_argument("--road-halfwidth", type=float, default=ROAD_HALFWIDTH)
+    ap.add_argument("--rsu-lateral", type=float, default=None,
+                    help="counterfactual: move the roadside unit receivers to "
+                         "this lateral offset from the centreline, alternating "
+                         "sides, and recompute the bound. Nothing is "
+                         "resimulated, so this predicts the geometric effect of "
+                         "a placement before a campaign is spent on it. It does "
+                         "NOT model the change in what a relocated unit would "
+                         "hear, which only a campaign can settle")
+    ap.add_argument("--rsu-lateral-sweep", type=float, nargs="+", default=None,
+                    help="sweep the counterfactual placement over several "
+                         "offsets in one run, on identical units, and report "
+                         "the bound against offset. There is an optimum: "
+                         "geometric diversity improves with offset while the "
+                         "information each receiver carries falls as the "
+                         "inverse square of its distance")
     ap.add_argument("--regions", action="store_true",
                     help="scope each pooled unit to one roadside unit region, "
                          "receivers assigned to their nearest unit exactly as "
@@ -137,6 +152,27 @@ def main():
     df = df.merge(truth, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df[df.phy_rsrp_mean.notna()]
+
+    def move_rsus(frame, lateral):
+        """Counterfactual placement. Returns the number of observations moved."""
+        moved = 0
+        for i, tag in enumerate(a.tags):
+            st = pd.read_csv(f"{a.run_dir}/stations_{tag}.csv")
+            ids = st[st.role == "rsu"].nodeId.astype(int) + (i + 1) * 100000
+            order = {nid: j for j, nid in enumerate(sorted(ids))}
+            m = (frame.key_seed == tag) & (frame.key_rxNodeId.isin(set(ids)))
+            if not m.any():
+                continue
+            side = frame.loc[m, "key_rxNodeId"].map(order) % 2
+            frame.loc[m, "rxY"] = np.where(side == 0, lateral, -lateral)
+            moved += int(m.sum())
+        return moved
+
+    if a.rsu_lateral is not None:
+        moved = move_rsus(df, a.rsu_lateral)
+        print(f"counterfactual placement: roadside unit receivers moved to "
+              f"+/-{a.rsu_lateral:.0f} m from the centreline, {moved:,} "
+              f"observations relocated. Nothing was resimulated.\n")
 
     # The law is calibrated the way a deployment would calibrate it: on traffic
     # it has no reason to doubt, against the position that traffic claims, which
@@ -246,6 +282,54 @@ all, and the measurement agrees.
         unit_keys = unit_keys + ["region"]
         print(f"scoped to roadside unit regions, {len(rsu)} units across "
               f"{len(a.tags)} seeds\n")
+    if a.rsu_lateral_sweep:
+        print("counterfactual placement sweep. The same pooled units and the "
+              "same noise\nthroughout; only where the roadside units stand "
+              "changes. Nothing is resimulated,\nso this predicts the geometric "
+              "effect of a placement before a campaign is spent\non it, and it "
+              "does not model the change in what a relocated unit would hear.\n")
+        base_y = df["rxY"].copy()
+        keysweep = ["key_seed", "key_claimedStationId", "key_window"]
+        print(f"{'offset':>8s} {'across-road':>13s} {'along-road':>12s}"
+              f" {'ellipse angle':>15s} {'anisotropy':>11s}")
+        for off in a.rsu_lateral_sweep:
+            df["rxY"] = base_y
+            move_rsus(df, off)
+            gg = df.groupby(unit_keys)
+            ks = [k for k, v in gg.size().items() if v >= a.min_obs]
+            rr = np.random.default_rng(0)
+            if len(ks) > a.units:
+                ks = [ks[i] for i in rr.choice(len(ks), a.units, replace=False)]
+            ac, al, an = [], [], []
+            for k in ks:
+                v = gg.get_group(k)
+                J = fisher(v.rxX.values, v.rxY.values,
+                           float(v.trueX.iloc[0]), float(v.trueY.iloc[0]),
+                           n_exp, sigma, profile=True)
+                try:
+                    C = np.linalg.inv(J)
+                except np.linalg.LinAlgError:
+                    continue
+                if C[0, 0] <= 0 or C[1, 1] <= 0:
+                    continue
+                _, _, ang = ellipse(J)
+                ac.append(np.sqrt(C[1, 1])); al.append(np.sqrt(C[0, 0]))
+                an.append(ang)
+            if not ac:
+                continue
+            mac, mal = float(np.median(ac)), float(np.median(al))
+            print(f"{off:7.0f}m {mac:11.1f} m {mal:10.1f} m "
+                  f"{np.nanmedian(an):13.1f} deg {mac / mal:11.2f}")
+        print("""
+Anisotropy is the number the adversary cares about. Above one the geometry is
+weakest across the road, which is the direction section 4b's attacker lies in;
+at one the ellipse is round and there is no cheap direction left. The bound
+falls with offset because the array stops being collinear, and stops falling
+because the information a receiver carries goes as the inverse square of its
+distance, so a unit set too far back contributes better geometry and less of it.
+""")
+        df["rxY"] = base_y
+
     g = df.groupby(unit_keys)
     keys = [k for k, v in g.size().items() if v >= a.min_obs]
     rng = np.random.default_rng(0)
