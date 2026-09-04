@@ -91,11 +91,16 @@ into any release: those files name defects the team has not seen.
 |---|---|
 | 3 dataset | `campaign_gnss/logs/merge.log`, `validate.log`, `check_seed1.log` |
 | 4 single receiver | `campaign_gnss/logs/benchmark.log` |
+| 4 four learner families | `campaign_gnss/logs/model_independence.log` |
+| 4 plausibility baseline | `campaign_gnss/logs/plausibility_baseline.log` |
 | 4 cross dataset | `drift/logs/veremi_crossdataset.log` |
 | 5 pooling and floor | `campaign_gnss/logs/pooled_road.log`, `offset_floor_full.log` |
-| 6 adversary | `drift/logs/br_gnss_*.log`, rerunning; currently `best_response_*.log` |
+| 5 the geometric bound | `campaign_gnss/logs/geometry_bound.log`, `geometry_bound_regions.log` |
+| 6 adversary | `drift/logs/br_gnss_*.log` |
+| 6 receiver placement | `campaign_gnss/logs/geometry_placement.log` |
 | 7 drift | `drift/logs/density_gnss.log` |
 | 7 federation | `campaign_gnss/logs/federated_regions*.log`, `dp_sweep.log` |
+| 7 federating across the shift | `drift/logs/federated_drift_dense.log` |
 | 7 operating point | `campaign_gnss/logs/persistence.log` |
 | 8 calibration | `campaign_gnss/logs/calibration.log` |
 

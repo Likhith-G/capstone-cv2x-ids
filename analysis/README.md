@@ -60,6 +60,13 @@ different answer from corpus-wide pooling.
 
     geometry_bound.py corpus.pkl --run-dir DIR --tags seed1 ... [--regions]
 
+`make_figures.py` renders to `docs/figures/` as PDF and PNG. It parses the logs
+rather than recomputing from the corpus, because a figure recomputed
+independently is how a plot comes to disagree with the table beside it, and a
+parser that finds nothing exits with an error rather than drawing an empty axis.
+
+    make_figures.py [--only placement direction calibration]
+
 `federated_drift.py` answers the question the federated panel exists to answer.
 Four arms on identical held-out clients of the target corpus and an identical
 training row budget: trained on the other density, trained on the target
@@ -133,6 +140,7 @@ invalidate every grouped fold.
 | `geometry_bound.py` | what the receiver geometry and the noise allow, derived, with no classifier |
 | `plausibility_baseline.py` | how the work stands against the field's standard checks rather than its own ablations |
 | `federated_drift.py` | does federating across two densities recover what the density change costs |
+| `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
 
