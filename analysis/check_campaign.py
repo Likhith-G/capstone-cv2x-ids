@@ -35,6 +35,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("run_dir")
     ap.add_argument("tag")
+    ap.add_argument("--allow-ladder-overlap", action="store_true",
+                    help="permit the small and medium offset bands to overlap. "
+                         "Legitimate ONLY for a campaign whose analysis bins by "
+                         "realised displacement rather than by class, such as "
+                         "the floor curve, where deliberately overlapping the "
+                         "draws is how the band between them gets populated. "
+                         "Never pass this for a corpus that reports per class "
+                         "magnitude results")
     ap.add_argument("--expect-classes", default=None,
                     help="comma separated attack ids the run was asked for")
     a = ap.parse_args()
@@ -200,7 +208,12 @@ def main():
         if 11 in bands and 13 in bands and bands[11][1] > bands[13][0]:
             print(f"  WARNING: the small and medium offset bands overlap, "
                   f"{bands[11][1]:.1f} m against {bands[13][0]:.1f} m")
-            problems.append("position offset magnitude bands overlap")
+            if a.allow_ladder_overlap:
+                print("  allowed by --allow-ladder-overlap: this campaign is "
+                      "for an analysis that\n  bins by realised displacement "
+                      "and never reads the class label as a magnitude")
+            else:
+                problems.append("position offset magnitude bands overlap")
 
     if problems:
         print(f"\nFAILED with {len(problems)} problem(s):")
