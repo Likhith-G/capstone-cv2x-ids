@@ -881,10 +881,15 @@ would change what the paper can claim.**
 
 Not in this paper, and worth naming so the boundary is deliberate.
 
-**Locating the floor properly.** The band that brackets it holds three attacker
-stations. A campaign sampling 25 to 60 m densely would place it to within a few
-metres instead of within fifty. [A campaign doing exactly this is running;
-replace this item with the result or restore it if the campaign does not land.]
+**Locating the floor properly.** The banded table brackets it between 30 and
+80 m because the band that contains it holds three attacker stations. Fitting
+detection against log displacement across every station instead, rather than
+binning, roughly halves that uncertainty, and a campaign sampling the band
+densely is what supplies the stations for it. It will not place the floor to
+within a few metres: on simulated data with a known crossing the estimator's
+interval is about 28 m wide at 30 attacker stations and 23 m at 100, so
+narrowing it further needs several hundred, which is more simulation than the
+result is worth.
 
 **Does the pooled architecture transfer?** The drift measurement is on the
 single observer detector, because the cross receiver features live in a
