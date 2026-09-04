@@ -116,16 +116,17 @@ which benign vehicles carry realistic receiver positioning error, and in which
 position falsification appears at three magnitudes chosen to bracket the point
 where detection becomes possible rather than to sit on one side of it.
 
-We show that a single receiver cannot detect a constant position offset at any
-magnitude the dataset contains, and we show it three ways that do not share a
-failure mode: four learner families, the field's calibrated plausibility
-checks, and the geometry itself, which says a single receiver cannot estimate
-position under this measurement model at any observation length, and that pooling received power across
-receivers before any decision is taken detects 90 percent of attackers
-displaced 50 to 80 m and all of them above 80 m. Combining per receiver
-verdicts instead of measurements recovers none of this, which makes the case
-for cooperative detection an argument about information rather than about
-privacy.
+A single receiver cannot detect a constant position offset at any magnitude the
+dataset contains, and we show it three ways that do not share a failure mode:
+four learner families, the field's calibrated plausibility checks, and the
+measurement model itself, which is unidentifiable at one receiver and so admits
+no position estimate at any observation length.
+
+Pooling received power across receivers before any decision is taken detects 90
+percent of attackers displaced 50 to 80 m and all of them above 80 m. Combining
+per receiver verdicts instead of measurements recovers none of it, which makes
+the case for cooperative detection an argument about information rather than
+about privacy.
 
 We then bound what that check can do, and the bound predicts the attack. The
 Cramer Rao ellipse for this receiver geometry, computed from the propagation
@@ -134,14 +135,16 @@ road axis. An attacker given free choice of where to claim to be, searched by
 brute force over 72 directions with no knowledge of that bound, lies at 75 to
 85 degrees and defeats the check entirely: receivers strung along a carriageway
 are nearly collinear, and range only measurements barely constrain position
-across it. Constraining the position estimate to the
-carriageway removes that degree of freedom, takes localisation error from 65 m
-to 18 m, and leaves an attacker that must remain on the road detectable 85
-percent of the time at 100 m. Moving the receivers instead is worth about a
-fifth of the error and leaves the geometry 2.4 times weaker across the road than
-along it, so the weakness cannot be placed away. The lies received power cannot
-see are the lies a map rejects for nothing, and we argue the pair rather than
-either half.
+across it.
+
+Constraining the position estimate to the carriageway removes that degree of
+freedom, takes localisation error from 65 m to 18 m, and leaves an attacker
+that must remain on the road detectable 85 percent of the time at 100 m. Moving
+the receivers off the centreline instead has an optimum, is worth about a fifth
+of the error, and still leaves the geometry 2.4 times weaker across the road
+than along it, so the weakness cannot be placed away. The lies received power
+cannot see are the lies a map rejects for nothing, and we argue the pair rather
+than either half.
 
 ---
 
@@ -182,29 +185,44 @@ VeReMi-scale offsets of 250 m is being asked an easy question.
 
 ### Contributions
 
-1. A labelled NR sidelink misbehaviour dataset with realistic benign
-   positioning error and a graded position falsification ladder, whose bands
-   are chosen against that error so the set brackets the detection threshold.
-2. The measurement that cooperative detection has to fuse measurements rather
-   than verdicts, demonstrated on the magnitude band where it matters: 0.019 at
-   one receiver, 0.412 pooled, and exactly 0.000 for both voting schemes.
-3. A detection floor for position falsification, located between 30 and 80 m
-   and explained by the estimator's own error rather than by the classifier.
-4. The best response of an attacker that knows the estimator, the geometric
-   reason it works, and the road constraint that closes it while taking
-   localisation error from 65 m to 18 m.
-5. A federated evaluation under geometric label skew, with the cost of
-   differential privacy at deployment scale and the operating point a persistence
-   rule reaches.
+1. **A detection floor for position falsification, established three ways that
+   do not share a failure mode**: four learner families, a calibrated
+   implementation of the field's standard plausibility checks, and the
+   measurement model itself, which is unidentifiable at a single receiver.
+2. **A derivation of that floor from the receiver geometry, which predicts the
+   adversary.** The Cramer Rao ellipse for the array points 79.3 degrees off
+   the road axis, and an attacker searching 72 directions with no knowledge of
+   it lies at 75 to 85. The bound also says the free position fit is barely
+   identifiable inside one roadside unit region, so geometric spread rather
+   than receiver count is what makes cooperative verification work.
+3. **The measurement that cooperative detection has to fuse measurements rather
+   than verdicts**, on the magnitude band where it matters: 0.019 at one
+   receiver, 0.412 pooled, and exactly 0.000 for both voting schemes.
+4. **The best response of an attacker that knows the estimator, and the pair of
+   checks that answers it.** The road constraint takes localisation error from
+   65 m to 18 m; moving the receivers instead has an optimum, is worth a fifth
+   of the error, and does not remove the direction the attacker uses.
+5. **A federated evaluation under geometric label skew, including the negative
+   result that federating across densities does not recover what a density
+   change costs**, with the cost of differential privacy at deployment scale and
+   the operating point a persistence rule reaches.
+6. A labelled NR sidelink misbehaviour dataset with realistic benign
+   positioning error and a graded position falsification ladder, whose bands are
+   chosen against that error so the set brackets the detection threshold. It is
+   the instrument the results above are measured with rather than the headline,
+   because application layer breadth and traffic realism are settled by VeReMi
+   NextGen and neither is claimed here.
 
 ### What this paper does not claim
 
 Stated here rather than left to a limitations section, because each is a claim
 a reader might reasonably expect and would be wrong to infer.
 
-- **That federated training recovers the drift loss.** We show the detector
-  loses a third of its score at an unseen density. We do not show that
-  federating it back recovers any of that.
+- **That federated training recovers the drift loss.** We tested it and it does
+  not. A federation spanning both densities scores below a model trained on
+  either one alone, and doubling its data does not close the gap. Section 7
+  reports this as a finding rather than leaving it unexamined, and it argues for
+  personalisation, which we have not built.
 - **That the cross layer detector catches radio layer attacks.** Both radio
   layer attacks in the dataset are inert in this simulator. The cross layer
   result is radio features catching application layer misbehaviour.
