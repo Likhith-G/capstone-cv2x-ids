@@ -188,11 +188,16 @@ def locate(att, label, n_boot=2000, seed=0):
           "caught in most\n    of their windows. It is not the same quantity as "
           "a band's proportion and it\n    should be reported instead of one, "
           "not beside it.")
-    print("    On simulated data with a known crossing this estimator recovers "
-          "it, and its\n    interval is about 28 m wide at 30 stations and "
-          "23 m at 100. Locating the floor\n    to a few metres would need "
-          "several hundred attacker stations, so the number to\n    quote is "
-          "the crossing with its interval, not the crossing alone.")
+    # The estimator was checked against simulated data with a known crossing,
+    # log-uniform displacements over 5 to 250 m and a slope of 4 in log space,
+    # which it recovered inside its interval. At that slope the interval ran to
+    # roughly 28 m at 30 stations and 23 m at 100. Those widths depend on the
+    # slope and on how the displacements are spread, so they are a comment here
+    # rather than a figure printed into the log as though it were measured.
+    print("    Quote the crossing WITH its interval. The interval is wide "
+          "unless there are\n    stations well below and well above the "
+          "crossing as well as inside it, so check\n    the displacement "
+          "spread before reading the point estimate as located.")
 
 
 def main():
