@@ -49,6 +49,31 @@ the detection outcome is in the corpus.
 
     offset_floor.py corpus.pkl --run-dir DIR --tags seed1 ... --pooled pooled.pkl
 
+`geometry_bound.py` takes no classifier and simulates no attack. It fits the
+propagation law on benign traffic, splits the residual into the part that
+persists for the life of a link and the part that averages away, and computes
+the Cramer-Rao bound on position with the intercept and exponent profiled out,
+because the estimator fits them freely and the information they absorb is
+information the position does not get. `--regions` scopes each pooled unit to
+one roadside unit region, which is the deployment case and gives a very
+different answer from corpus-wide pooling.
+
+    geometry_bound.py corpus.pkl --run-dir DIR --tags seed1 ... [--regions]
+
+`model_independence.py` runs the fused block under four learner families over
+the same rows and folds, and reports the best score any of them reached per
+class. The random forest runs first with the settings `benchmark.py` uses, so
+its row is a reproduction check before any other row is believed.
+
+    model_independence.py corpus.pkl --sample 250000 --folds 3
+
+`plausibility_baseline.py` implements the standard misbehaviour checks, ART,
+DMV, SSC, MGT, acceleration and a received-signal-strength range check, each
+thresholded on the training fold's benign traffic at a stated false positive
+rate rather than at a chosen constant.
+
+    plausibility_baseline.py corpus.pkl --fpr 0.01
+
 `veremi_bridge.py` runs this project's application-layer detector on VeReMi
 Extension, on the seventeen features computable from both datasets. Prove the
 feature definitions still match before trusting a comparison, because the
@@ -96,6 +121,9 @@ invalidate every grouped fold.
 | `drift.py` | does the detector survive a scenario or a period it was not trained on |
 | `offset_floor.py` | how far must a vehicle lie before anyone can tell, against the benign error |
 | `veremi_bridge.py` | does the application layer's blindness to constant offsets reproduce on somebody else's dataset |
+| `model_independence.py` | is the detection floor a property of the problem, or of the random forest |
+| `geometry_bound.py` | what the receiver geometry and the noise allow, derived, with no classifier |
+| `plausibility_baseline.py` | how the work stands against the field's standard checks rather than its own ablations |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
 

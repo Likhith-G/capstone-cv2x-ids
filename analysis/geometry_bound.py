@@ -119,6 +119,13 @@ def main():
                     help="five receivers is the identifiability floor: four "
                          "free parameters plus one")
     ap.add_argument("--road-halfwidth", type=float, default=ROAD_HALFWIDTH)
+    ap.add_argument("--regions", action="store_true",
+                    help="scope each pooled unit to one roadside unit region, "
+                         "receivers assigned to their nearest unit exactly as "
+                         "pooled_regions.py does. This is the deployment case: "
+                         "corpus-wide pooling has a median of 39 receivers and "
+                         "a region has about 8, and the bound is not the same "
+                         "at the two scales")
     a = ap.parse_args()
 
     df = pd.read_pickle(a.corpus)
@@ -156,12 +163,51 @@ def main():
     print(f"  per sample, averages away within a link   {within:8.3f} dB")
     print(f"  ratio of persistent to averaging          {between / within:8.3f}")
     print("""
-A single receiver watching one station for W windows reduces the per sample
-part by root W and does not reduce the per link part at all, so its position
-error stops falling at the persistent floor no matter how long it watches.
-That is why the single-observer arm never crosses the detection floor at any
-magnitude, rather than crossing it late. Receivers in different places shadow
-independently, so pooling reduces the persistent part instead.
+The part that averages away is the larger of the two here, so a receiver that
+watches one station for W windows does improve, by up to a factor of about
+2.8 before it stops. What it cannot do is go below the per link part, because
+that is one shadow that lasts as long as the link does.
+
+The stronger single-receiver statement does not need this decomposition at
+all. The model has four free parameters, two of position and two of
+propagation, and one receiver supplies one equation per window with the same
+geometry every time. **A single receiver cannot estimate position under this
+model at any observation length**; it can only test whether the power it
+received is consistent with the range the claim implies. That is a property of
+the model rather than of the classifier, and it is why the single-observer arm
+is flat across every magnitude rather than degrading gracefully.
+""")
+
+    # What the persistent floor is worth in metres, which is the quantity the
+    # detection floor is stated in. Under the fitted law a residual of D dB is
+    # a distance ratio of 10^(D / 10n), so a receiver that has averaged away
+    # everything it can still cannot place a transmitter closer than that
+    # fraction of its range. Only the radial component of a displacement moves
+    # the range at all, so this is a floor on the easiest direction, and a
+    # lateral lie at that receiver moves it by less.
+    ratio = 10.0 ** (between / (10.0 * n_exp))
+    med_d = float(np.median(ben.d))
+    amb = med_d * (ratio - 1.0)
+    print(f"what the persistent floor is worth in metres")
+    print(f"  distance ratio implied by {between:.3f} dB      {ratio:8.3f}")
+    print(f"  the ambiguity scales with range, so it is quoted across the "
+          f"distribution of\n  link distances rather than at one point:")
+    print(f"    {'link distance':>16s} {'range ambiguity':>17s}")
+    for q in (0.10, 0.25, 0.50, 0.75, 0.90):
+        d_q = float(np.quantile(ben.d, q))
+        print(f"    {int(q*100):>3d}th {d_q:11.1f} m {d_q * (ratio - 1.0):15.1f} m")
+    print(f"""
+That {amb:.0f} m is a floor on the radial direction only. A lateral
+displacement does not change a receiver's range at all, so the figure is the
+best case rather than the typical one, and it is not itself the detection
+floor because a receiver still has to separate the ambiguity from a lie.
+
+What it does explain is the ordering of the single-observer scores by
+magnitude. Read it against the three constant-offset classes: 20 to 25 m and
+47 to 60 m both sit entirely below this ambiguity, and only 71 to 233 m
+carries mass above it. Those are the classes a single receiver scores 0.002,
+0.021 and 0.146 on. The bound says which of them could have been detected at
+all, and the measurement agrees.
 """)
 
     # Which sigma goes into the bound depends on what is being bounded, and
@@ -177,7 +223,30 @@ independently, so pooling reduces the persistent part instead.
           f"The persistent component\n{between:.3f} dB is the floor a single "
           f"receiver averaging over time cannot go below.\n")
 
-    g = df.groupby(["key_seed", "key_claimedStationId", "key_window"])
+    unit_keys = ["key_seed", "key_claimedStationId", "key_window"]
+    if a.regions:
+        st_all = []
+        for i, tag in enumerate(a.tags):
+            st = pd.read_csv(f"{a.run_dir}/stations_{tag}.csv")
+            ids = set(st[st.role == "rsu"].nodeId.astype(int) + (i + 1) * 100000)
+            sub = obs[(obs.key_seed == tag) & (obs.key_rxNodeId.isin(ids))]
+            q = sub.groupby("key_rxNodeId")[["rxX", "rxY"]].mean().reset_index()
+            q["key_seed"] = tag
+            q["region"] = np.arange(len(q))
+            st_all.append(q)
+        rsu = pd.concat(st_all, ignore_index=True)
+        df["region"] = -1
+        for tag, gg in rsu.groupby("key_seed"):
+            m = df.key_seed == tag
+            if not m.any():
+                continue
+            dd = np.hypot(df.loc[m, "rxX"].values[:, None] - gg.rxX.values[None, :],
+                          df.loc[m, "rxY"].values[:, None] - gg.rxY.values[None, :])
+            df.loc[m, "region"] = gg.region.values[dd.argmin(axis=1)]
+        unit_keys = unit_keys + ["region"]
+        print(f"scoped to roadside unit regions, {len(rsu)} units across "
+              f"{len(a.tags)} seeds\n")
+    g = df.groupby(unit_keys)
     keys = [k for k, v in g.size().items() if v >= a.min_obs]
     rng = np.random.default_rng(0)
     if len(keys) > a.units:
@@ -250,7 +319,7 @@ incidental.""")
     print(f"\nthe bound against the number of cooperating receivers")
     print(f"{'receivers':>12s} {'units':>8s} {'across-road':>13s} {'along-road':>12s}"
           f" {'road-constrained':>18s}")
-    bins = [(5, 6), (7, 9), (10, 14), (15, 24), (25, 44), (45, 10**6)]
+    bins = [(5, 5), (6, 7), (8, 9), (10, 14), (15, 24), (25, 44), (45, 10**6)]
     for lo, hi in bins:
         s = r[(r.n_obs >= lo) & (r.n_obs <= hi)]
         if len(s) < 20:
