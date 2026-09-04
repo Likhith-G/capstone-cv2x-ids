@@ -75,9 +75,22 @@ def load(spec, sample, seed=0, role=None):
 
 
 def blocks_of(df):
+    """Feature blocks. A pooled table carries `pm_` means over a unit's
+    receivers and `pool_` cross-receiver statistics instead of the raw `app_`
+    and `phy_` columns, so a transfer measured on one of those is a statement
+    about the cooperative architecture rather than about a single observer,
+    which is the arm every drift result so far has been measured on."""
     app = [c for c in df.columns if c.startswith("app_")]
     phy = [c for c in df.columns if c.startswith("phy_")]
-    return {"app-only": app, "phy-only": phy, "fused": app + phy}
+    if app or phy:
+        return {"app-only": app, "phy-only": phy, "fused": app + phy}
+    pm = [c for c in df.columns if c.startswith("pm_")]
+    pool = [c for c in df.columns if c.startswith("pool_")]
+    if pm or pool:
+        return {"pooled means": pm, "consensus block": pool,
+                "pooled fused": pm + pool}
+    raise SystemExit("no app_/phy_ or pm_/pool_ columns found; this is neither "
+                     "a corpus nor a pooled table")
 
 
 def fit_score(Xtr, ytr, Xte, yte, classes, trees, jobs):

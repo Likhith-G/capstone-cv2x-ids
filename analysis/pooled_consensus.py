@@ -236,6 +236,11 @@ def main():
     ap.add_argument("--validate", action="store_true",
                     help="score the localisation against true positions")
     ap.add_argument("--out", default=None, help="write the pooled table here")
+    ap.add_argument("--observer-role", choices=["vehicle", "rsu"], default=None,
+                    help="pool over receivers of this role only. Needed when "
+                         "the pooled table will be compared against a corpus "
+                         "that deploys no roadside units, so that observer "
+                         "geometry is not varying alongside the comparison")
     ap.add_argument("--road-halfwidth", type=float, default=None,
                     nargs="?", const=ROAD_HALFWIDTH, metavar="METRES",
                     help="constrain the free position fit to the carriageway. "
@@ -252,6 +257,14 @@ def main():
     df = pd.read_pickle(a.corpus)
     if "label_clean" in df.columns:
         df = df[df.label_clean == 1].reset_index(drop=True)
+    if a.observer_role and "key_observer_role" in df.columns:
+        before = len(df)
+        df = df[df.key_observer_role == a.observer_role].reset_index(drop=True)
+        print(f"kept {len(df):,} of {before:,} rows at observer role "
+              f"{a.observer_role}. Pooling over vehicles only is what a "
+              f"comparison against a corpus with no roadside units needs, "
+              f"because otherwise the receiver geometry varies alongside "
+              f"whatever the comparison is about")
     feats = [c for c in df.columns if c.startswith(("app_", "phy_"))]
     obs, claim = observer_geometry(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
