@@ -29,6 +29,16 @@ def main():
                          "always see the SAME rows and the SAME folds, so the "
                          "comparison stays paired")
     ap.add_argument("--trees", type=int, default=200)
+    ap.add_argument("--inert", type=int, nargs="*", default=[8],
+                    help="classes with no physical signature in this simulator. "
+                         "Macro F1 over every class averages these in, and they "
+                         "carry no information about the detector, so a second "
+                         "aggregate is reported with them excluded. The "
+                         "exclusion is only legitimate because the reason is "
+                         "mechanistic and was established before the scores "
+                         "were seen: Mode 2 grants are data driven, so a "
+                         "sensing attacker cannot hoard the channel. Pass no "
+                         "values to disable.")
     a = ap.parse_args()
 
     df = (pd.read_pickle(a.features) if a.features.endswith(".pkl")
@@ -61,10 +71,11 @@ def main():
 
     keep = None
     classes = sorted(y.unique())
-    per_class = {}
+    signal_classes = [c for c in classes if c not in set(a.inert or [])]
+    per_class, live = {}, {}
     for name, cols in blocks.items():
         X = df[cols].replace([np.inf, -np.inf], np.nan).fillna(0.0)
-        f1s, accs, pc, mccs = [], [], [], []
+        f1s, accs, pc, mccs, live_f1s = [], [], [], [], []
         for tr, te in folds:
             clf = RandomForestClassifier(n_estimators=a.trees, n_jobs=-1, random_state=0)
             clf.fit(X.iloc[tr], y.iloc[tr])
@@ -74,11 +85,30 @@ def main():
             mccs.append(matthews_corrcoef(y.iloc[te], p))
             pc.append(f1_score(y.iloc[te], p, average=None, labels=classes,
                                zero_division=0))
+            if signal_classes:
+                live_f1s.append(f1_score(y.iloc[te], p, average="macro",
+                                         labels=signal_classes,
+                                         zero_division=0))
             if name == "fused" and keep is None:
                 keep = (y.iloc[te], p, clf, cols)
         per_class[name] = np.mean(pc, axis=0)
         print(f"{name:10s} {len(cols):8d}  {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}  "
               f"{np.mean(accs):.4f}  {np.mean(mccs):.4f} +/- {np.std(mccs):.4f}")
+        live[name] = np.mean(live_f1s), np.std(live_f1s)
+
+    if signal_classes and len(signal_classes) < len(classes):
+        dropped = [int(c) for c in classes if c not in signal_classes]
+        print(f"\nmacro F1 over the {len(signal_classes)} classes that have a "
+              f"physical signature, excluding {dropped}")
+        print("This is not a more favourable slice chosen after the fact. Class 8 "
+              "has no\nsignature in this simulator because Mode 2 grants are data "
+              "driven, which was\nestablished mechanically and confirmed on three "
+              "corpora before these scores\nexisted. The figure above remains the "
+              "primary one; this one says what the\ndetector achieves on the "
+              "classes the simulator can actually express.")
+        for name in blocks:
+            m, s = live[name]
+            print(f"  {name:10s} {m:.4f} +/- {s:.4f}")
 
     # Per class for EVERY block, averaged over folds. Which layer catches what
     # is the whole of C2, and reporting it for the fused block alone on one

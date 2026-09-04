@@ -218,6 +218,23 @@ our application layer detector on VeReMi itself, on the seventeen features both
 datasets support, so that our headline negative result is not a property of our
 own simulator.
 
+**VeReMi NextGen** (Hermann, Remmers, Eisermann, Erb and Kargl, IEEE VNC 2026)
+is the current state of the lineage and supersedes the Extension as the
+application layer benchmark: fifteen attack types, urban and highway scenarios
+from the InTAS trace, three driver profiles, and predefined training,
+validation and test partitions, with attacks deliberately harder than the
+Extension's. It is generated in Eclipse MOSAIC and carries application layer
+message logs.
+
+We state the relationship plainly because it decides what this paper is for.
+**Attack breadth and traffic realism at the application layer are settled by
+NextGen and are not contributions claimed here.** What NextGen does not carry
+is any physical or medium access layer measurement, and it is not generated
+over a 3GPP sidelink stack, so it cannot express the question this paper asks:
+what received power at several receivers can and cannot establish about a
+claimed position. Our dataset is the instrument that makes that question
+measurable, not the result.
+
 **VASP** implements 68 BSM attacks, far more than this work, and is likewise
 application layer. Breadth of attack catalogue is explicitly not a contribution
 claimed here.
@@ -252,12 +269,41 @@ not made.
 
 ### Cooperative position verification
 
-No prior work performs cooperative multi receiver position verification on NR
-sidelink, and no work measures the detection cost of exchanging verdicts rather
-than measurements. Both were checked against the 2019 to 2026 literature. The
-second is the sharper gap: cooperative schemes trade summary statistics,
-misbehaviour reports, reputations or model parameters, and almost never pooled
-raw measurements.
+Cooperative position verification is not new and we do not claim it.
+Leinmuller et al. introduced autonomous and cooperative position verification
+sensors over neighbour tables and beacons (ACM VANET 2006, Security and
+Communication Networks 2008), and the field's canonical survey (van der
+Heijden, Dietzel, Leinmuller and Kargl, IEEE Communications Surveys and
+Tutorials 21(1), 2019) reviews a decade of received signal strength schemes
+built on the idea.
+
+Two positions in that survey are what this paper is placed against.
+
+**The first is a standing negative result about the method we use.** The survey
+reports Yao et al. (IEEE TMC 2018) finding that one cannot directly apply RSSI
+measurements, and that using a propagation model to estimate the validity of
+messages through the RSSI is unlikely to give reasonable results. That is
+precisely the method here, and our answer is that the claim is correct about
+the observation unit and not about the method. At a single receiver we confirm
+it in the strongest available form: no learner we tried detects a constant
+position offset at any magnitude our dataset contains. Pooled across receivers
+the same propagation model detects 90 percent of attackers displaced 50 to 80 m.
+The contribution is locating the boundary between those two statements, not
+proposing the statistic.
+
+**The second is a gap the survey names and no one has measured.** Of the
+witness based schemes it reviews, it observes that they do not account for
+scenarios with a low number of witnesses. We measure that dependence: five
+receivers is an identifiability floor set by the four free parameters of the
+fit, a real roadside unit region carries a median of eight, and the cross
+receiver consistency block is worth 0.0025 macro F1 at eight receivers against
+0.0334 at thirty nine.
+
+What we did not find in the 2019 to 2026 literature is any measurement of the
+detection cost of exchanging verdicts rather than measurements, and no
+cooperative verification on NR sidelink. Cooperative schemes trade summary
+statistics, misbehaviour reports, reputations or model parameters, and almost
+never pooled raw measurements.
 
 ### Standards
 
