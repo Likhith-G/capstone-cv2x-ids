@@ -109,6 +109,15 @@ main(int argc, char* argv[])
     // channel load they are there to measure.
     uint16_t numRsu = 4;
     double rsuHeight = 5.0;
+    // Lateral offset of the roadside units from the road centreline, in metres,
+    // alternating sides. Zero puts every unit on the centreline, which makes
+    // the receiver array collinear: range-only measurements then barely
+    // constrain position across the road, which is the direction an
+    // estimator-aware attacker lies in. A real installation is on the verge
+    // rather than the median, so this is a deployment parameter with a
+    // security consequence. Default zero so existing configurations are
+    // unchanged.
+    double rsuLateral = 0.0;
     double denmEventsPerHour = 120.0;
     // DCC is what holds channel occupancy down. Turning it off is both a way
     // to reach the congested regime deliberately and, per TS 102 687, an
@@ -182,6 +191,10 @@ main(int argc, char* argv[])
     cmd.AddValue("numVru", "Number of vulnerable road users sending VAM", numVru);
     cmd.AddValue("numRsu", "Number of roadside units, spaced evenly along the road", numRsu);
     cmd.AddValue("rsuHeight", "Roadside unit antenna height in metres", rsuHeight);
+    cmd.AddValue("rsuLateral",
+                 "Lateral offset of roadside units from the centreline in metres, "
+                 "alternating sides. Zero leaves the receiver array collinear",
+                 rsuLateral);
     cmd.AddValue("denmEventsPerHour", "Fallback DENM event rate when no traffic model",
                  denmEventsPerHour);
     cmd.AddValue("brakeEventsPerHour", "Mean emergency braking events per vehicle per hour",
@@ -269,8 +282,12 @@ main(int argc, char* argv[])
         // the wrap seam where a vehicle teleports.
         double spacing = roadLength / rsuNodes.GetN();
         double x = spacing * (i + 0.5);
+        // Alternating sides rather than one side, so the array is symmetric
+        // about the road and the lateral information does not come with a
+        // systematic bias toward one verge.
+        double y = (i % 2 == 0) ? rsuLateral : -rsuLateral;
         rsuNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(
-            Vector(x, 0.0, rsuHeight));
+            Vector(x, y, rsuHeight));
     }
 
     Ptr<UniformRandomVariable> posVar = CreateObject<UniformRandomVariable>();
