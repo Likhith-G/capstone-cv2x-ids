@@ -265,6 +265,12 @@ def main():
                          "being comparable")
     ap.add_argument("--extra-run-dir", default=None)
     ap.add_argument("--extra-tags", nargs="+", default=None)
+    ap.add_argument("--extra-pooled", default=None,
+                    help="the second corpus's pooled table, bumped and prefixed "
+                         "the same way as its corpus so the pooled arm covers "
+                         "both. Without it the pooled arm sees only the first "
+                         "corpus, which is the arm the crossing actually lives "
+                         "in, so the locate step would be run on the wrong set")
     ap.add_argument("--extra-prefix", default="x",
                     help="seed tags of the extra corpus are prefixed with this, "
                          "and its node identifiers are pushed clear of the "
@@ -337,6 +343,17 @@ def main():
 
     if a.pooled:
         pl = pd.read_pickle(a.pooled)
+        if a.extra_pooled:
+            xp = pd.read_pickle(a.extra_pooled)
+            bump = int(max(pl.label_txNodeId.max(), xp.label_txNodeId.max())) + 1_000_000
+            xp = xp.copy()
+            xp["label_txNodeId"] += bump
+            xp["key_seed"] = a.extra_prefix + "_" + xp.key_seed.astype(str)
+            shared = [c for c in pl.columns if c in xp.columns]
+            assert not set(pl.label_txNodeId) & set(xp.label_txNodeId), \
+                "pooled identifiers still collide after the bump"
+            print(f"\npooled arm over both corpora: {len(pl):,} + {len(xp):,} units")
+            pl = pd.concat([pl[shared], xp[shared]], ignore_index=True)
         cols = [c for c in pl.columns
                 if c.startswith("pm_") or c.startswith("pool_")]
         det = per_station_detection(pl, cols, a.folds, a.trees, a.jobs)
