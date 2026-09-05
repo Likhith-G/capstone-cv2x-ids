@@ -56,6 +56,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("bundle")
     ap.add_argument("--trees", type=int, default=60)
+    ap.add_argument("--sample", type=int, default=400000,
+                    help="cap the training rows. The full set took half an hour, "
+                         "and a check nobody waits for is a check nobody runs. "
+                         "0 uses everything")
     ap.add_argument("--jobs", type=int, default=3,
                     help="keep this small: an unbounded forest on this many rows "
                          "gets OOM killed on an 8 GB machine with no traceback")
@@ -118,9 +122,9 @@ def main():
     print("\npartition")
     sp = pd.read_csv(b / "release_splits.csv")
     key = ["key_seed", "label_txNodeId"]
-    lut = sp.drop_duplicates(key).set_index(key).split
-    m = df.copy()
-    m["split"] = m.set_index(key).index.map(lut)
+    # A merge rather than a MultiIndex map. The map took most of half an hour on
+    # eight million rows, and a check nobody will wait for is a check nobody runs.
+    m = df.merge(sp.drop_duplicates(key)[key + ["split"]], on=key, how="left")
     check("every row lands in exactly one partition", int(m.split.isna().sum()) == 0,
           f"{int(m.split.isna().sum())} unassigned")
     shares = (m.split.value_counts(normalize=True) * 100).round(1).to_dict()
@@ -140,24 +144,37 @@ def main():
               f"scenarios, which is why they are labelled that way")
 
     print("\nbaseline, trained and scored using only what is in the bundle")
-    # Trained and scored on the BENCHMARK scenarios only. A supplementary one
-    # has coverage gaps under the shared partition and is not for headline
-    # scoring, which is the whole reason it is labelled.
-    bm = m[m.scenario.isin(bench)] if "scenario" in m else m
-    print(f"       benchmark scenarios: {', '.join(bench)}")
-    tr, te = bm[bm.split == "train"], bm[bm.split == "test"]
-    clf = RandomForestClassifier(n_estimators=a.trees, n_jobs=a.jobs,
-                                 class_weight=None, random_state=0)
-    t0 = time.time()
-    clf.fit(tr[feats].astype("float32").fillna(-999), tr.label_attackId)
-    pred = clf.predict(te[feats].astype("float32").fillna(-999))
-    f1 = f1_score(te.label_attackId, pred, average="macro")
-    mcc = matthews_corrcoef(te.label_attackId, pred)
-    print(f"       trained on {len(tr):,} rows, scored on {len(te):,}, "
-          f"{time.time()-t0:.0f}s")
+
+    def baseline(sub, label):
+        tr, te = sub[sub.split == "train"], sub[sub.split == "test"]
+        if a.sample and len(tr) > a.sample:
+            tr = tr.sample(a.sample, random_state=0)
+        clf = RandomForestClassifier(n_estimators=a.trees, n_jobs=a.jobs,
+                                     class_weight=None, random_state=0)
+        t0 = time.time()
+        clf.fit(tr[feats].astype("float32").fillna(-999), tr.label_attackId)
+        pred = clf.predict(te[feats].astype("float32").fillna(-999))
+        f1 = f1_score(te.label_attackId, pred, average="macro")
+        mcc = matthews_corrcoef(te.label_attackId, pred)
+        print(f"       {label}: trained on {len(tr):,}, scored on {len(te):,}, "
+              f"{time.time()-t0:.0f}s  ->  macro F1 {f1:.4f}, MCC {mcc:.4f}")
+        return f1, mcc
+
+    # The published figure describes the REFERENCE scenario, so the comparison
+    # has to be made there. Training across three scenarios is a different
+    # experiment and scoring higher on it says nothing about whether the bundle
+    # reproduces the paper.
+    ref = bench[0]
+    f1, mcc = baseline(m[m.scenario == ref], f"reference scenario ({ref})")
     check("fused macro F1 near the published figure",
           abs(f1 - PAPER_FUSED_F1) <= TOLERANCE,
           f"{f1:.4f} against {PAPER_FUSED_F1} published, MCC {mcc:.4f}")
+
+    if len(bench) > 1:
+        f1a, _ = baseline(m[m.scenario.isin(bench)], "all benchmark scenarios")
+        print(f"       training across {len(bench)} scenarios moves it "
+              f"{f1a - f1:+.4f}, which is a property of the data rather than a "
+              f"check on the bundle")
 
     print()
     if fails:
