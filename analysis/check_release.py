@@ -110,7 +110,8 @@ def main():
               "" if ok else str(counts))
     check("columns match the schema exactly",
           [c for c in df.columns if c != "scenario"] == promised,
-          f"{len(df.columns)} vs {len(promised)} promised")
+          f"{len([c for c in df.columns if c != 'scenario'])} of "
+          f"{len(promised)} promised, plus the scenario label this test adds")
     check("schema names a grouping column", "grouping_column_for_splits" in schema,
           schema.get("grouping_column_for_splits", ""))
 
