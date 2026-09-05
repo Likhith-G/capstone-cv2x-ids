@@ -219,13 +219,32 @@ def locate(att, label, n_boot=2000, seed=0):
     cross = float(np.exp(-b[0] / b[1]))
 
     rng = np.random.default_rng(seed)
-    boots = []
-    for _ in range(n_boot):
-        i = rng.integers(0, len(x), len(x))
-        bb = fit(x[i], y[i])
-        if bb is not None and bb[1] > 0:
-            boots.append(np.exp(-bb[0] / bb[1]))
-    boots = np.array([v for v in boots if np.isfinite(v) and 0 < v < 1e4])
+
+    def bootstrap(index_sets):
+        out = []
+        for _ in range(n_boot):
+            if index_sets is None:
+                i = rng.integers(0, len(x), len(x))
+            else:
+                pick = rng.integers(0, len(index_sets), len(index_sets))
+                i = np.concatenate([index_sets[k] for k in pick])
+            bb = fit(x[i], y[i])
+            if bb is not None and bb[1] > 0:
+                out.append(np.exp(-bb[0] / bb[1]))
+        return np.array([v for v in out if np.isfinite(v) and 0 < v < 1e4])
+
+    boots = bootstrap(None)
+
+    # Stations inside one seed share a scenario and a detector fold, so they
+    # are not independent draws and resampling them one at a time understates
+    # the interval. Resampling whole seeds respects that. With a handful of
+    # seeds it is coarse, so both are reported and the wider one is the one to
+    # quote.
+    clusters = None
+    if "key_seed" in d.columns and d.key_seed.nunique() > 2:
+        pos = np.arange(len(d))
+        clusters = [pos[(d.key_seed == s).values] for s in d.key_seed.unique()]
+        clusters = [c for c in clusters if len(c)]
 
     print(f"\n  locating the floor from all {len(d)} stations rather than from bands")
     print(f"    50 percent detection at {cross:8.1f} m")
@@ -234,6 +253,18 @@ def locate(att, label, n_boot=2000, seed=0):
         print(f"    95 percent interval    {lo:8.1f} to {hi:.1f} m "
               f"({len(boots)} of {n_boot} bootstrap fits converged)")
         print(f"    interval width         {hi - lo:8.1f} m")
+        if clusters is not None:
+            cb = bootstrap(clusters)
+            if len(cb) > 100:
+                clo, chi = np.percentile(cb, [2.5, 97.5])
+                wider = "the clustered one" if (chi - clo) > (hi - lo) else \
+                        "the station one"
+                print(f"    resampling whole seeds instead of stations, "
+                      f"{len(clusters)} seeds:")
+                print(f"      95 percent interval  {clo:8.1f} to {chi:.1f} m, "
+                      f"width {chi - clo:.1f} m")
+                print(f"      quote {wider}, because stations inside a seed "
+                      f"share a scenario and a fold")
     else:
         print(f"    too few bootstrap fits converged ({len(boots)}) for an "
               f"interval, so quote the point estimate as indicative only")
