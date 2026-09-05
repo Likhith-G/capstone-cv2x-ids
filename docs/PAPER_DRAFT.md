@@ -156,17 +156,22 @@ measurement model itself, which is unidentifiable at one receiver and so admits
 no position estimate at any observation length.
 
 Pooling received power across receivers before any decision is taken detects 90
-percent of attackers displaced 50 to 80 m and all of them above 80 m. Combining
-per receiver verdicts instead of measurements recovers none of it, which makes
-the case for cooperative detection an argument about information rather than
-about privacy.
+percent of attackers displaced 50 to 80 m and all of them above 80 m. **The
+crossing is located rather than bracketed: 50 percent detection at 47.2 m, with
+a 95 percent interval of 39.3 to 57.4 m.** That figure is the paper's central
+quantity, and it is a property of the problem rather than of the detector.
+Combining per receiver verdicts instead of measurements recovers none of it,
+which makes the case for cooperative detection an argument about information
+rather than about privacy.
 
-We then bound what that check can do, and the bound predicts the attack. The
-Cramer Rao ellipse for this receiver geometry, computed from the propagation
-law and its residual with no classifier involved, points 79.3 degrees off the
-road axis. An attacker given free choice of where to claim to be, searched by
-brute force over 72 directions with no knowledge of that bound, lies at 75 to
-85 degrees and defeats the check entirely: receivers strung along a carriageway
+We then bound what that check can do. Error ellipses for received signal
+strength position verification are not new, and neither are estimator aware
+adversaries; what we add is the rule and its independent confirmation. The
+ellipse for this receiver geometry, computed from the propagation law and its
+residual with no classifier involved, points 79.3 degrees off the road axis. An
+attacker given free choice of where to claim to be, searched by brute force over
+72 directions with no knowledge of that bound, lies at 75 to 85 degrees and
+defeats the check entirely: receivers strung along a carriageway
 are nearly collinear, and range only measurements barely constrain position
 across it.
 
