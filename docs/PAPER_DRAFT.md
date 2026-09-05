@@ -226,9 +226,9 @@ a reader might reasonably expect and would be wrong to infer.
 - **That the cross layer detector catches radio layer attacks.** Both radio
   layer attacks in the dataset are inert in this simulator. The cross layer
   result is radio features catching application layer misbehaviour.
-- **That the pooled architecture is robust to drift.** The drift measurement is
-  on the single observer detector, because the cross receiver features live in
-  a separate table.
+- **That the pooled architecture is robust to drift.** We measured it and it is
+  less robust than the single observer detector, losing 0.21 and 0.36 macro F1
+  across a density change against 0.15 and 0.12.
 - **That the floor is located precisely.** It is located to an interval and
   not to a figure: 50 percent detection at 47.2 m, 95 percent interval 39.3 to
   57.4 m. Quoting the crossing without the interval would overstate it.
@@ -776,6 +776,21 @@ direction, where the model has seen the quieter baseline. Sybil moves the
 opposite way, conspicuous when identities are scarce and hidden when the
 channel is full of them.
 
+**The cooperative architecture is more fragile than the single receiver one,
+not less.** Everything above measures the single observer detector, because the
+cross receiver features live in a separate table. Repeating the comparison on
+pooled tables built over vehicle receivers only, so that the presence of
+roadside units is not varying alongside density, the pooled fused block loses
+**0.2081 going to light traffic and 0.3648 going to congested**, against 0.1543
+and 0.1222 for the single observer detector. It is worth more in distribution,
+0.63 and 0.67 against roughly 0.51, and it pays more of that back under the
+shift.
+
+The mechanism is not a confound to remove. A pooled unit has a median of 34
+cooperating receivers on the light corpus and 136 on the congested one, and the
+cross receiver statistics are computed over those receivers. For a cooperative
+scheme, how many receivers hear you is what traffic density means.
+
 **Nothing drifts inside a single run.** With held out seeds on both sides of a
 time cut, the fused block moves by 0.0017 across 60 s, and a prequential curve
 trained once and never updated is flat across 57 s and rises across the
@@ -915,10 +930,9 @@ than the result is worth, and the interval is already narrow enough to say the
 floor sits near the middle of the fifty metre bracket it replaced rather than at
 either end.
 
-**Does the pooled architecture transfer?** The drift measurement is on the
-single observer detector, because the cross receiver features live in a
-separate table. Whether cooperative detection degrades the same way under a
-density shift is unmeasured.
+**The reverse direction of the federated test**, congested into sparse. One
+direction is measured and the symmetric claim is not, which is cheap to close
+and would change no conclusion.
 
 **Personalisation, which is what our own negative result asks for.** Section 7
 shows a federation spanning two densities doing worse than a model trained on
