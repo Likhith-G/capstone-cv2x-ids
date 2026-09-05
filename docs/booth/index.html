@@ -1,0 +1,352 @@
+<title>Catch Me Lying</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#12171c; --panel:#1a222a; --raised:#212b34; --road:#252f38;
+    --ink:#eaf0f4; --dim:#8195a3; --faint:#4c5c69; --line:#2c3742;
+    --lie:#f2a65a; --verify:#2e9e9e; --truth:#7fb069; --alarm:#e05c5c;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+       line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 64px}
+
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:6px}
+  h1{font-size:clamp(28px,4.4vw,46px);font-weight:600;letter-spacing:-.025em;
+     margin:0;text-wrap:balance}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--verify)}
+  .lede{color:var(--dim);max-width:66ch;margin:10px 0 26px;font-size:16.5px}
+  .lede b{color:var(--ink);font-weight:500}
+
+  .instrument{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+              overflow:hidden}
+  .readout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+           gap:0;border-bottom:1px solid var(--line)}
+  @media(max-width:760px){.readout{grid-template-columns:1fr}}
+
+  .verdict{padding:22px 24px;display:flex;flex-direction:column;justify-content:center;
+           gap:6px;min-height:132px}
+  .verdict .state{font-size:clamp(26px,4vw,38px);font-weight:600;letter-spacing:-.02em;
+                  line-height:1.1}
+  .verdict .why{color:var(--dim);font-size:14px;max-width:42ch}
+  .caught .state{color:var(--alarm)}
+  .clear .state{color:var(--lie)}
+  .void .state{color:var(--dim)}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);
+         border-left:1px solid var(--line)}
+  @media(max-width:760px){.stats{border-left:none;border-top:1px solid var(--line)}}
+  .stat{padding:18px 16px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:none}
+  .stat .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+           text-transform:uppercase;color:var(--faint)}
+  .stat .v{font-family:var(--mono);font-size:23px;font-variant-numeric:tabular-nums;
+           margin-top:3px}
+
+  .stage{position:relative;background:var(--ground)}
+  canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+  .hint{position:absolute;left:16px;bottom:12px;font-family:var(--mono);font-size:11px;
+        color:var(--faint);pointer-events:none}
+
+  .controls{display:flex;flex-wrap:wrap;gap:22px 34px;padding:18px 24px;
+            border-top:1px solid var(--line);align-items:flex-end}
+  .ctl{display:flex;flex-direction:column;gap:7px}
+  .ctl > span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+              text-transform:uppercase;color:var(--faint)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg button{appearance:none;background:transparent;border:none;color:var(--dim);
+              font-family:var(--mono);font-size:13px;padding:7px 13px;cursor:pointer;
+              border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button[aria-pressed="true"]{background:var(--raised);color:var(--ink)}
+  .seg button:focus-visible{outline:2px solid var(--verify);outline-offset:-2px}
+
+  .toggle{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+          font-size:14px;color:var(--dim)}
+  .toggle input{appearance:none;width:38px;height:21px;border-radius:11px;
+                background:var(--raised);border:1px solid var(--line);position:relative;
+                cursor:pointer;margin:0;transition:background .15s}
+  .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;
+                       border-radius:50%;background:var(--faint);transition:transform .15s,background .15s}
+  .toggle input:checked{background:color-mix(in srgb,var(--verify) 32%,var(--raised))}
+  .toggle input:checked::after{transform:translateX(17px);background:var(--verify)}
+  .toggle input:focus-visible{outline:2px solid var(--verify);outline-offset:2px}
+  .toggle input:checked + span{color:var(--ink)}
+
+  .moves{margin-top:34px}
+  .moves h2{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px}
+  .moves p.sub{color:var(--dim);font-size:14px;margin:0 0 16px}
+  ol{list-style:none;counter-reset:m;margin:0;padding:0;display:grid;gap:1px;
+     background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden;
+     grid-template-columns:repeat(auto-fit,minmax(228px,1fr))}
+  ol li{counter-increment:m;background:var(--panel);padding:16px 17px;display:flex;
+        flex-direction:column;gap:6px}
+  ol li::before{content:counter(m);font-family:var(--mono);font-size:11px;
+                color:var(--verify);letter-spacing:.1em}
+  ol li b{font-weight:500;font-size:14.5px}
+  ol li span{color:var(--dim);font-size:13.5px}
+
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--faint);font-size:13px;max-width:74ch}
+  footer code{font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">C-V2X sidelink &middot; misbehaviour detection</span>
+  </header>
+  <h1>Catch me lying</h1>
+  <p class="lede">
+    This car is broadcasting its position several times a second. Every message is
+    correctly signed, so cryptography says it is fine. <b>The position inside is
+    false.</b> You are driving the lie: move the claimed position and see whether
+    the receivers can tell.
+  </p>
+
+  <div class="instrument">
+    <div class="readout" id="readout">
+      <div class="verdict" id="verdict">
+        <div class="state" id="state">&mdash;</div>
+        <div class="why" id="why">Loading the measurement.</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">You lied by</div><div class="v" id="disp">&ndash;</div></div>
+        <div class="stat"><div class="k">Consistency ratio</div><div class="v" id="ratio">&ndash;</div></div>
+        <div class="stat"><div class="k">Flags above</div><div class="v" id="thr">&ndash;</div></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="road" width="1160" height="380"></canvas>
+      <div class="hint">Drag anywhere on the road to move the claimed position</div>
+    </div>
+
+    <div class="controls">
+      <label class="ctl"><span>Receivers listening</span>
+        <span class="seg" id="rx" role="group" aria-label="Receivers listening"></span>
+      </label>
+      <label class="ctl"><span>Detector</span>
+        <label class="toggle"><input type="checkbox" id="mapc"><span>Map constraint</span></label>
+      </label>
+      <label class="ctl"><span>Display</span>
+        <label class="toggle"><input type="checkbox" id="heat" checked><span>Show the whole surface</span></label>
+      </label>
+    </div>
+  </div>
+
+  <section class="moves">
+    <h2>Four moves</h2>
+    <p class="sub">In order. Each one only makes sense after the one before it.</p>
+    <ol>
+      <li><b>Lie with one receiver listening</b><span>Go as far as you like. Nothing happens. One receiver does not do this badly, it cannot do it at all.</span></li>
+      <li><b>Switch the other receivers on</b><span>Now there is a boundary. Find the smallest lie you still get away with and you have found the detection floor yourself.</span></li>
+      <li><b>Lie sideways instead of along the road</b><span>You get away with much more. The receivers sit in a line, so across the road they can barely see.</span></li>
+      <li><b>Turn on the map constraint</b><span>The detector now knows a car cannot be off the carriageway. The sideways trick stops working.</span></li>
+    </ol>
+  </section>
+
+  <footer>
+    Every number on this page was computed by <code>analysis/make_booth_surface.py</code>
+    over the real dataset, using the same consistency statistic the paper reports.
+    The page is a lookup over that measurement sampled on a grid, not an illustration
+    of it. The threshold is the 95th percentile of the ratio over honest stations,
+    so <em>caught</em> means the claim looks worse than 95 in 100 honest cars.
+  </footer>
+</div>
+
+<script>
+const SURFACE = __SURFACE_JSON__;
+
+const cv = document.getElementById("road"), ctx = cv.getContext("2d");
+const el = id => document.getElementById(id);
+let arm = "all", mapOn = false, heat = true;
+let claim = {dx: 0, dy: 0};
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* nearest grid cell: the surface is sampled, so a lookup is exact at the nodes
+   and nearest-neighbour between them. At 81 steps that is about 6 m along the
+   road, finer than the effect being shown. */
+function ratioAt(dx, dy, key){
+  const s = SURFACE.surfaces[key];
+  if (!s || !s.identifiable) return null;
+  const gx = SURFACE.grid.dx, gy = SURFACE.grid.dy;
+  const near = (arr, v) => {
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < arr.length; i++){ const d = Math.abs(arr[i]-v); if (d < bd){ bd = d; bi = i; } }
+    return bi;
+  };
+  return s.grid[near(gy, dy)][near(gx, dx)];
+}
+
+function evaluate(){
+  const s = SURFACE.surfaces[arm];
+  const disp = Math.hypot(claim.dx, claim.dy);
+  el("disp").textContent = disp.toFixed(0) + " m";
+
+  const box = el("verdict");
+  box.className = "verdict";
+
+  if (!s || !s.identifiable){
+    el("state").textContent = "No evidence";
+    el("why").textContent = "One receiver cannot estimate a position at all here. "
+      + "The model has four unknowns and one receiver gives the same geometry every "
+      + "time, so there is nothing to compare your claim against. Lie as far as you like.";
+    el("ratio").textContent = "n/a";
+    el("thr").textContent = "n/a";
+    box.classList.add("void");
+    return;
+  }
+
+  const thr = SURFACE.thresholds[arm];
+  el("thr").textContent = thr.toFixed(2);
+
+  /* The map constraint is a check a receiver can make with no radio evidence at
+     all: a claim off the carriageway is impossible, not merely unlikely. */
+  const offRoad = Math.abs(SURFACE.true_position.y + claim.dy) > SURFACE.road_halfwidth;
+  if (mapOn && offRoad){
+    el("state").textContent = "Caught";
+    el("why").textContent = "That claim is off the carriageway. The map rejects it "
+      + "before any radio evidence is needed, which is why lying sideways stops working.";
+    el("ratio").textContent = "rejected";
+    box.classList.add("caught");
+    return;
+  }
+
+  const r = ratioAt(claim.dx, claim.dy, arm);
+  el("ratio").textContent = r == null ? "n/a" : r.toFixed(3);
+  if (r != null && r > thr){
+    el("state").textContent = "Caught";
+    el("why").textContent = "The received power does not fit that claim as well as it "
+      + "fits somewhere else, by more than 95 in 100 honest cars ever do.";
+    box.classList.add("caught");
+  } else {
+    el("state").textContent = "Got away with it";
+    el("why").textContent = disp < 8
+      ? "Barely a lie. Push further."
+      : "The claim still explains the received power about as well as the truth does. "
+        + "Below the floor a lie is not detectable, and that is the result rather than a flaw.";
+    box.classList.add("clear");
+  }
+}
+
+/* geometry: the road runs left to right, across-road is exaggerated so a lateral
+   lie is visible at all. The scale bar states the exaggeration rather than hiding it. */
+const M = {l: 54, r: 22, t: 26, b: 40};
+const AL = 260, AC = 150;
+const px = dx => M.l + (dx + AL) / (2*AL) * (cv.width - M.l - M.r);
+const py = dy => M.t + (dy + AC) / (2*AC) * (cv.height - M.t - M.b);
+const idx = x => (x - M.l) / (cv.width - M.l - M.r) * 2*AL - AL;
+const idy = y => (y - M.t) / (cv.height - M.t - M.b) * 2*AC - AC;
+
+function draw(){
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = css("--ground"); ctx.fillRect(0,0,W,H);
+
+  const s = SURFACE.surfaces[arm];
+  const thr = SURFACE.thresholds[arm];
+
+  if (heat && s && s.identifiable){
+    const step = 4;
+    for (let y = M.t; y < H - M.b; y += step){
+      for (let x = M.l; x < W - M.r; x += step){
+        const r = ratioAt(idx(x), idy(y), arm);
+        if (r == null) continue;
+        const t = Math.max(0, Math.min(1, (r - 1) / Math.max(0.001, (thr - 1) * 2.4)));
+        ctx.fillStyle = r > thr
+          ? `rgba(224,92,92,${0.10 + 0.30*Math.min(1,(r-thr)/(thr-1+0.001))})`
+          : `rgba(242,166,90,${0.05 + 0.16*t})`;
+        ctx.fillRect(x, y, step, step);
+      }
+    }
+  }
+
+  /* the carriageway */
+  ctx.fillStyle = css("--road");
+  ctx.fillRect(M.l, py(-SURFACE.road_halfwidth), W - M.l - M.r,
+               py(SURFACE.road_halfwidth) - py(-SURFACE.road_halfwidth));
+  ctx.strokeStyle = css("--faint"); ctx.lineWidth = 1; ctx.setLineDash([9,9]);
+  ctx.beginPath(); ctx.moveTo(M.l, py(0)); ctx.lineTo(W - M.r, py(0)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* receivers, only the ones this arm is listening with */
+  const k = s ? s.n : 1;
+  SURFACE.receivers.forEach((rx, i) => {
+    const on = i < k;
+    const x = px(rx.x - SURFACE.true_position.x), y = py(rx.y - SURFACE.true_position.y);
+    if (x < M.l - 6 || x > W - M.r + 6) return;
+    ctx.beginPath(); ctx.arc(x, y, on ? 4 : 2.5, 0, 7);
+    ctx.fillStyle = on ? css("--verify") : css("--faint"); ctx.fill();
+    if (on){ ctx.beginPath(); ctx.arc(x, y, 8.5, 0, 7);
+             ctx.strokeStyle = "rgba(46,158,158,.35)"; ctx.lineWidth = 1; ctx.stroke(); }
+  });
+
+  /* the lie */
+  const tx = px(0), ty = py(0), cx = px(claim.dx), cy = py(claim.dy);
+  ctx.strokeStyle = css("--lie"); ctx.lineWidth = 1.6; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(cx,cy); ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.beginPath(); ctx.arc(tx, ty, 5.5, 0, 7);
+  ctx.fillStyle = css("--truth"); ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, 7);
+  ctx.fillStyle = css("--lie"); ctx.fill();
+  ctx.strokeStyle = css("--ground"); ctx.lineWidth = 2; ctx.stroke();
+
+  /* labels */
+  ctx.font = '500 11px "IBM Plex Mono", monospace';
+  ctx.fillStyle = css("--truth"); ctx.fillText("actually here", tx + 10, ty - 9);
+  ctx.fillStyle = css("--lie");   ctx.fillText("claims to be here", cx + 12, cy + 4);
+
+  ctx.fillStyle = css("--faint");
+  ctx.fillText("along the road →", M.l, H - 14);
+  ctx.save(); ctx.translate(16, M.t + 74); ctx.rotate(-Math.PI/2);
+  ctx.fillText("across →", 0, 0); ctx.restore();
+  ctx.textAlign = "right";
+  ctx.fillText("across-road scale exaggerated ×" +
+               ((2*AL/(cv.width-M.l-M.r)) / (2*AC/(cv.height-M.t-M.b))).toFixed(1),
+               W - M.r, H - 14);
+  ctx.textAlign = "left";
+}
+
+function render(){ draw(); evaluate(); }
+
+/* controls */
+const arms = Object.keys(SURFACE.surfaces)
+  .sort((a,b) => (a === "all" ? 1e9 : +a) - (b === "all" ? 1e9 : +b));
+const seg = el("rx");
+arms.forEach(a => {
+  const b = document.createElement("button");
+  b.textContent = a === "all" ? `all ${SURFACE.surfaces[a].n}` : a;
+  b.setAttribute("aria-pressed", String(a === arm));
+  b.onclick = () => { arm = a;
+    [...seg.children].forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    render(); };
+  seg.appendChild(b);
+});
+el("mapc").onchange = e => { mapOn = e.target.checked; render(); };
+el("heat").onchange = e => { heat = e.target.checked; render(); };
+
+/* dragging */
+let down = false;
+const place = e => {
+  const r = cv.getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  const x = (p.clientX - r.left) * cv.width / r.width;
+  const y = (p.clientY - r.top) * cv.height / r.height;
+  claim.dx = Math.max(-AL, Math.min(AL, idx(x)));
+  claim.dy = Math.max(-AC, Math.min(AC, idy(y)));
+  render();
+};
+cv.addEventListener("pointerdown", e => { down = true; cv.setPointerCapture(e.pointerId); place(e); });
+cv.addEventListener("pointermove", e => { if (down) place(e); });
+cv.addEventListener("pointerup",   e => { down = false; });
+
+/* opens in a working state: a lie already placed, mid-size, along the road */
+claim = {dx: 60, dy: 0};
+render();
+</script>

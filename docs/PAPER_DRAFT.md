@@ -971,6 +971,19 @@ configurations, on all 29,574 benign triples, which is about nine times the
 support behind the measurement it replaces. Every figure is within 0.02 of that
 measurement and the off axis angles are identical to the degree.*
 
+**The estimator has since been improved, and this section is where it earns
+most.** The propagation law leaves a systematic residual that changes sign with
+range; removing a calibrated mean, fitted offline on honest traffic and frozen,
+costs no per unit parameters. Localisation on these triples falls **18.3 m to
+14.0 m**, the honest consistency ratio tightens from 1.032 to 1.021, and
+detection of the on road best response at 50 m rises **0.380 to 0.499**, with
+100 m rising 0.843 to 0.903. A tighter honest distribution leaves a lie less room
+to hide inside it. **The evasion direction does not move**: the off axis angles
+read 35, 15, 5 and 0 degrees against 35, 20, 5 and 0, so the geometry still
+decides where an attacker lies and the correction only makes the check tighter.
+The full accounting for the change, including where it buys nothing, is in
+RESULTS.md 6b2c.
+
 ---
 
 ## 7. Deployment: drift, federation, and the operating point

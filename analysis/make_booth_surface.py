@@ -84,6 +84,47 @@ def main():
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df[df.phy_rsrp_mean.notna()]
 
+    # A calibrated decision threshold, so the demo's verdict is not a number
+    # somebody chose to make the demo work. Taken over benign units at a stated
+    # false positive rate, exactly as the plausibility baseline does.
+    thresholds = {}
+    print("calibrating the verdict threshold on benign units")
+    ben_units = []
+    for k, v in df.groupby(["key_seed", "key_claimedStationId", "key_window"]):
+        v = v[v.phy_rsrp_mean.notna()]
+        if len(v) >= 20 and int(v.label_attackId.iloc[0]) == 0:
+            ben_units.append(v)
+        if len(ben_units) >= 400:
+            break
+    for n in RECEIVER_COUNTS:
+        if n and n < 5:
+            continue
+        ratios = []
+        for v in ben_units:
+            o_x, o_y = v.rxX.values, v.rxY.values
+            r_ = v.phy_rsrp_mean.values
+            t_x, t_y = float(v.trueX.iloc[0]), float(v.trueY.iloc[0])
+            od = np.argsort(np.abs(o_x - t_x))
+            o_x, o_y, r_ = o_x[od], o_y[od], r_[od]
+            kk = len(o_x) if n == 0 else min(n, len(o_x))
+            if kk < 5:
+                continue
+            try:
+                s = free_fit(o_x[:kk], o_y[:kk], r_[:kk], ROAD_HALFWIDTH)
+                fr = float(np.sqrt(np.mean(s.fun ** 2)))
+                if fr <= 0:
+                    continue
+                # the honest claim IS the true position for a benign station
+                ratios.append(pooled_rmse(o_x[:kk], o_y[:kk], r_[:kk], t_x, t_y) / fr)
+            except Exception:
+                continue
+        if ratios:
+            thr = float(np.quantile(ratios, 0.95))
+            thresholds["all" if n == 0 else str(n)] = round(thr, 4)
+            print(f"  {'all' if n == 0 else n:>3} receivers  "
+                  f"{len(ratios):3d} benign units, 95th percentile ratio {thr:.3f}")
+    print()
+
     picked = pick_unit(df)
     if picked is None:
         print("FAIL: no unit with enough receivers")
@@ -142,6 +183,11 @@ def main():
         "road_halfwidth": ROAD_HALFWIDTH,
         "grid": {"dx": [round(float(x), 1) for x in dxs],
                  "dy": [round(float(y), 1) for y in dys]},
+        "thresholds": thresholds,
+        "threshold_note":
+            "The 95th percentile of the consistency ratio over benign units, so "
+            "a verdict of caught means the claim looks worse than 95 percent of "
+            "honest stations do. Calibrated on the data, not chosen.",
         "surfaces": surfaces,
     }
     pathlib.Path(a.out).write_text(json.dumps(out))
