@@ -216,15 +216,11 @@ def fig_geometry():
     ax.axhline(0, color="0.65", lw=0.8, ls=(0, (6, 6)), zorder=1)
     ax.scatter(rx[:, 0], rx[:, 1], s=26, c="#2e7d7d", zorder=3)
     ax.scatter([0], [0], s=110, marker="*", c="#c25a1e", zorder=4)
-    # Annotated in place rather than in a legend. On an equal-aspect plot this
-    # flat there is no room inside the axes for a legend box, and putting one
-    # below collides with the x label.
-    ax.annotate("transmitter", (0, 0), textcoords="offset points",
-                xytext=(0, 13), ha="center", fontsize=8, color="#c25a1e")
-    ax.annotate(f"{len(rx)} receivers", (rx[:, 0].min(), 0),
-                textcoords="offset points", xytext=(4, 13), ha="left",
-                fontsize=8, color="#2e7d7d")
-    ax.set_xlabel("along the road (m)")
+    # The marks are named in the axis label. On an equal-aspect plot this flat
+    # there is no room inside the axes for a legend, annotations collide with the
+    # title, and a legend below collides with the label itself.
+    ax.set_xlabel(f"along the road (m).   filled circles: {len(rx)} receivers"
+                  f"     star: the transmitter")
     ax.set_ylabel("across (m)")
     ax.set_aspect("equal")
     ax.set_ylim(-hw * 3.4, hw * 3.4)
