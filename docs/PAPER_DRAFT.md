@@ -260,6 +260,11 @@ validation and test partitions, with attacks deliberately harder than the
 Extension's. It is generated in Eclipse MOSAIC and carries application layer
 message logs.
 
+**We evaluate on it.** Section 4 reports our application layer detector on
+NextGen's highway scenario, and the result reproduces there and is sharper than
+on the earlier release: a self inconsistent position lie is caught at 0.9570 and
+a self consistent one at 0.1460, against 0.9644 and 0.3382 on the original.
+
 We state the relationship plainly because it decides what this paper is for.
 **Attack breadth and traffic realism at the application layer are settled by
 NextGen and are not contributions claimed here.** What NextGen does not carry
@@ -510,6 +515,21 @@ the zero there.
 | VeReMi, FIXED position (control) | **0.9644** | 0.9575 |
 | VeReMi, constant OFFSET | **0.3382** | 0.3149 |
 | this corpus, constant OFFSET | **0.0290** | 0.0496 |
+
+Repeated on **VeReMi NextGen**, the current release of that lineage, on its
+highway scenario with 476 receivers and 95 attacking senders:
+
+| arm | F1 | MCC |
+|---|---|---|
+| NextGen, self inconsistent position lie (control) | **0.9570** | 0.9478 |
+| NextGen, self consistent constant offset | **0.1460** | 0.1315 |
+| this corpus, constant offset | **0.0352** | 0.0535 |
+
+**The ordering is not a property of one dataset generation.** The control works
+on both, the self consistent lie is missed on both, and the gap is wider on the
+current benchmark than on the old one, a factor of 6.6 against 2.9. A detector
+evaluated on NextGen that reports one aggregate over its position attacks is
+averaging a lie the application layer can see with one it cannot.
 
 **The control works**, so the seventeen features are capable and the low
 numbers are not a broken feature set.

@@ -168,6 +168,64 @@ def load_receiver(path, truth, receiver_id):
     return df
 
 
+# VeReMi NextGen (Hermann, Remmers, Eisermann, Erb and Kargl, IEEE VNC 2026)
+# is a different shape from either earlier release. One JSON array per receiver
+# rather than JSON lines, every record carrying both the receiver's and the
+# sender's state, and an `attacker` flag in the record itself rather than a
+# separate ground truth join. `pos` is what the sender REPORTED, already
+# attacked where it is an attacker, and `pos_noise` is the sensor error that
+# both benign and attacking senders carry: their magnitudes are both about 4 m,
+# which is how the two are told apart.
+NEXTGEN_CONST_OFFSET = 2
+
+
+def load_nextgen(root, limit=None):
+    """One NextGen scenario directory into the same schema as load_veremi."""
+    root = pathlib.Path(root)
+    files = sorted(p for p in root.rglob("veh_*.json") if p.is_file())
+    if not files:
+        raise SystemExit(f"no veh_*.json receiver logs under {root}")
+    if limit:
+        files = files[:limit]
+    rows = []
+    for rid, path in enumerate(files):
+        try:
+            recs = json.load(open(path))
+        except json.JSONDecodeError:
+            continue
+        for d in recs:
+            s, r = d.get("sender"), d.get("receiver")
+            if not s or not r:
+                continue
+            try:
+                sp = [float(v) for v in s["pos"].split(",")]
+                rp = [float(v) for v in r["pos"].split(",")]
+                rows.append((
+                    float(d["rcvTime"]) / 1e6,          # ns to ms
+                    int(str(d["sender_id"]).split("_")[-1]),
+                    int(d["messageID"]),
+                    sp[0], sp[1], rp[0], rp[1],
+                    float(s["spd"]),
+                    float(s["hed"]) % 360.0,
+                    NEXTGEN_CONST_OFFSET if int(d.get("attacker", 0)) else 0,
+                    rid,
+                ))
+            except (KeyError, ValueError, IndexError, TypeError):
+                continue
+    if not rows:
+        raise SystemExit("every NextGen receiver log was empty after parsing")
+    df = pd.DataFrame(rows, columns=[
+        "rxTimeMs", "claimedStationId", "msgUid", "claimedX", "claimedY",
+        "rxX", "rxY", "claimedSpeed", "claimedHeading", "label_attackId",
+        "rxNodeId"])
+    n_att = df[df.label_attackId != 0].claimedStationId.nunique()
+    print(f"{len(df):,} receptions from {df.rxNodeId.nunique()} receivers, "
+          f"{df.claimedStationId.nunique()} senders")
+    print(f"VeReMi NextGen, {n_att} attacking senders labelled in the records "
+          f"themselves rather than joined from a ground truth file")
+    return df
+
+
 def load_veremi(root, limit=None):
     """Every receiver log under one VeReMi simulation directory."""
     root = pathlib.Path(root)
@@ -302,6 +360,11 @@ def main():
                     help="skip VeReMi and instead prove the feature "
                          "definitions here match build_features.py, by "
                          "recomputing them from this project's own receive log")
+    ap.add_argument("--nextgen", action="store_true",
+                    help="the directories are VeReMi NextGen scenarios (one "
+                         "JSON array per receiver, the attacker flag inside "
+                         "each record) rather than the original or Extension "
+                         "layout")
     ap.add_argument("--limit-receivers", type=int, default=None)
     ap.add_argument("--sample", type=int, default=400000)
     ap.add_argument("--folds", type=int, default=3)
@@ -318,10 +381,11 @@ def main():
     from sklearn.model_selection import StratifiedGroupKFold
     from sklearn.metrics import f1_score, matthews_corrcoef
 
-    print("VeReMi")
+    print("VeReMi NextGen" if a.nextgen else "VeReMi")
     frames = []
     for i, d in enumerate(a.veremi_dir):
-        f = load_veremi(d, a.limit_receivers)
+        f = (load_nextgen(d, a.limit_receivers) if a.nextgen
+             else load_veremi(d, a.limit_receivers))
         # Namespace per simulation. Two VeReMi runs both number their vehicles
         # from zero, so merging them naively would put different vehicles under
         # one identifier and break every grouped fold, which is the same trap
@@ -330,6 +394,31 @@ def main():
         f["claimedStationId"] += i * 100000
         f["msgUid"] += i * 10000000
         frames.append(f)
+    # Two scenarios built on the same traffic trace are the same experiment
+    # twice. NextGen's attack variants are all generated from one InTAS run, so
+    # the same vehicle appears at the same position in every one of them, and
+    # namespacing their identifiers to avoid a clash makes one vehicle look
+    # like two and puts its twin on the other side of a grouped fold. That is
+    # verbatim train and test overlap, and it is the same defect that
+    # offset_floor.py refuses on this project's own campaigns.
+    if len(frames) > 1:
+        prints = []
+        for f in frames:
+            b = f[f.label_attackId == 0]
+            prints.append(set(map(tuple, b[["claimedX", "claimedY"]]
+                                  .round(2).drop_duplicates()
+                                  .head(4000).to_numpy())))
+        for i in range(len(prints)):
+            for j in range(i + 1, len(prints)):
+                shared = prints[i] & prints[j]
+                if len(shared) > 20:
+                    raise SystemExit(
+                        f"REFUSED: simulations {i} and {j} share "
+                        f"{len(shared)} benign positions to the centimetre, so "
+                        f"they are the same traffic trace with different\n"
+                        f"attacks applied. Merging them and renumbering the "
+                        f"vehicles would put one vehicle's twin on the other "
+                        f"side of a grouped fold. Run each scenario on its own.")
     raw = pd.concat(frames, ignore_index=True)
     if len(a.veremi_dir) > 1:
         print(f"\nmerged {len(a.veremi_dir)} simulations: {len(raw):,} "
