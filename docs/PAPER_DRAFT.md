@@ -732,11 +732,27 @@ doing nothing, and at 200 m it is worse than the centreline, because the
 information a receiver carries falls as the inverse square of its distance while
 the geometry it adds does not keep up.
 
-So placement is a genuine design parameter, it has a derived rule, and it is
-worth about a fifth of the error. **It is not a cure.** Even at the optimum the
-geometry is 2.4 times weaker across the road than along it and the attacker
-keeps its preferred direction. The complementary claim below is therefore
-structural rather than a repair for a badly placed array.
+**We then generated that deployment and measured it**, on the same three traffic
+realisations so that placement is the only difference. The prediction holds: the
+across road bound falls 19.1 percent against a predicted 19.6, and the
+anisotropy lands at 2.4 against a predicted 2.38. Recomputing the bound under a
+hypothetical placement therefore predicts what a campaign delivers, which means
+placements can be compared without generating each one.
+
+**And the estimator collects none of it.** Measured localisation error is 65.3 m
+on the centreline and 66.6 m at forty metres, unchanged within seed variation,
+and the best lie is still eighty degrees off axis. The fit sits a factor of two
+above the bound in both placements, so its own inefficiency rather than the array
+geometry is what limits it, and improving a floor it was never touching changes
+nothing.
+
+So placement is a genuine design parameter with a derived rule, worth about a
+fifth of the error in principle and nothing in practice with this estimator.
+**It is not a cure**, and the complementary claim below is structural rather
+than a repair for a badly placed array. It also says where the remaining
+headroom is: the gap between the bound and the fit is a factor of two and the
+gap between placements is a fifth, so a better estimator is worth more than a
+better array.
 
 **Such a claim is in the field beside the carriageway.** A map check rejects it
 at no cost and with no radio evidence at all. Held within 12 m of the
