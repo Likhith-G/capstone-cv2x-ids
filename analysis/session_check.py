@@ -278,6 +278,27 @@ def check_paper_traceable():
           else "all figures found or rounded from one")
 
 
+def check_simulation_sync():
+    """The repo's module and the ns-3 working copy must be identical.
+
+    `simulation/cv2xids/` is what gets published and `contrib/cv2xids/` is what
+    gets built and produces the data. If they drift, the published module is not
+    the one that generated the published results, and nothing would say so: the
+    corpus is already built, every figure still verifies against its log, and the
+    defect only surfaces when somebody else tries to regenerate.
+    """
+    src = REPO / "simulation" / "cv2xids"
+    built = pathlib.Path.home() / "ns3-v2x" / "ns-3-dev" / "contrib" / "cv2xids"
+    if not built.exists():
+        check("simulation module in sync", True, "ns-3 tree not present, skipped")
+        return
+    code, out = sh(f"diff -rq --exclude=doc --exclude='.*' {src} {built}")
+    lines = [l for l in out.splitlines() if l.strip()]
+    check("simulation module in sync with the ns-3 tree", not lines,
+          f"{len(lines)} difference(s): {lines[0][:60]}" if lines
+          else "repo copy and built copy are identical")
+
+
 def check_blockers():
     """Every open blocker carries a test that says when it is no longer open.
 
@@ -322,6 +343,7 @@ def main():
     check_memory()
     check_status()
     check_paper_traceable()
+    check_simulation_sync()
     check_blockers()
 
     print()
