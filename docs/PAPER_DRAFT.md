@@ -832,7 +832,11 @@ from the eleven cross receiver consistency statistics, which do not reach
 significance at this receiver count. Averaging is doing nearly all the work
 here. At 39 receivers the same statistics are worth 0.0334, so the claim is
 that they matter where receivers are plentiful and one region is not where they
-are.
+are. Section 5's bound says why rather than leaving it as an observation: the
+across road localisation bound is 36 m at corpus scale and 6.2 km inside one
+region, because eight receivers clustered around one unit barely identify four
+parameters. The consistency statistics are worth little in a region because
+there is little information in a region to be had.
 
 **Logit calibration is the only aggregation rule that helps**, +0.0147 macro F1
 and +0.0080 MCC, both at p = 0.0078 across eight seeds. Correcting for unequal
