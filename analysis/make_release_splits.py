@@ -12,11 +12,22 @@ VeReMi NextGen ships predefined training, validation and test sets and names
 their absence as a specific limitation of earlier datasets. Research report 24
 lists it among this dataset's honest disadvantages. This closes it.
 
-**The partition is by STATION, not by window and not by seed.**
+**The partition is by PHYSICAL TRANSMITTER, not by claimed identity, not by
+window and not by seed.**
 
-By station rather than window, because one station produces thousands of windows
-and a window-level split puts the same vehicle on both sides of the boundary.
-That is the leakage rule the whole pipeline is built around.
+By transmitter rather than claimed identity, because sybil is the attack whose
+whole nature is that one vehicle claims to be several. Twenty one physical sybil
+nodes here emit four claimed identities each, so grouping on the claimed
+identifier would scatter one vehicle's four identities across train, validation
+and test and let a detector memorise its radio signature in training and be
+scored on the same vehicle in test. The first version of this script did exactly
+that. The corpus has 783 claimed identities and 720 physical transmitters, and
+the difference is entirely sybil.
+
+By transmitter rather than window, because one station produces thousands of
+windows and a window level split puts the same vehicle on both sides of the
+boundary. That is the leakage rule the whole pipeline is built around, and the
+project's own StratifiedGroupKFold groups on the same column.
 
 By station rather than seed, because a seed-level split is not viable here and
 the reason is worth recording: five of the eight seeds are missing at least one
@@ -41,22 +52,37 @@ import sys
 import numpy as np
 import pandas as pd
 
-STATION = ["key_seed", "key_claimedStationId"]
+# The physical transmitter. NOT key_claimedStationId: see the module docstring.
+STATION = ["key_seed", "label_txNodeId"]
 DEFAULT_FRACTIONS = (0.60, 0.20, 0.20)
 SPLIT_SEED = 20260906
 
 
 def station_table(df):
-    """One row per physical station, carrying its class and its window count."""
+    """One row per physical transmitter, with its class and window count."""
     g = df.groupby(STATION)
     out = g.label_attackId.first().rename("label_attackId").reset_index()
     out["windows"] = g.size().values
+    out["claimed_ids"] = g.key_claimedStationId.nunique().values
     return out
+
+
+def expand(st, df):
+    """Map the partition back onto every claimed identity.
+
+    Rows carry a claimed identifier, not a transmitter, so a user applies the
+    manifest by merging on the claimed one. The SPLIT is decided per physical
+    transmitter and then copied to each of its identities, which is what keeps a
+    sybil node whole.
+    """
+    ids = (df[["key_seed", "label_txNodeId", "key_claimedStationId"]]
+           .drop_duplicates())
+    return ids.merge(st, on=STATION, how="left")
 
 
 def audit(st):
     tab = st.pivot_table(index="key_seed", columns="label_attackId",
-                         values="key_claimedStationId", aggfunc="count",
+                         values="label_txNodeId", aggfunc="count",
                          fill_value=0)
     print("stations per class per seed\n")
     print(tab.to_string())
@@ -101,7 +127,7 @@ def assign(st, fractions, seed):
 def report(st):
     print("stations per class per partition\n")
     tab = st.pivot_table(index="label_attackId", columns="split",
-                         values="key_claimedStationId", aggfunc="count",
+                         values="label_txNodeId", aggfunc="count",
                          fill_value=0)
     tab = tab.reindex(columns=["train", "validation", "test"], fill_value=0)
     tab["total"] = tab.sum(axis=1)
@@ -147,7 +173,8 @@ def main():
     if "label_clean" in df.columns:
         df = df[df.label_clean == 1]
     st = station_table(df)
-    print(f"{len(df):,} windows, {len(st)} stations, "
+    print(f"{len(df):,} windows, {len(st)} physical transmitters carrying "
+          f"{int(st.claimed_ids.sum())} claimed identities, "
           f"{st.label_attackId.nunique()} classes\n")
 
     if a.audit:
@@ -158,7 +185,7 @@ def main():
     ok = report(st)
 
     if a.out:
-        st.sort_values(STATION).to_csv(a.out, index=False)
+        expand(st, df).sort_values(STATION).to_csv(a.out, index=False)
         print(f"\nmanifest -> {a.out}")
         print(f"seed {a.seed}, fractions {tuple(a.fractions)}. Both are part of "
               f"the partition's\nidentity: reproducing it needs this file or "
