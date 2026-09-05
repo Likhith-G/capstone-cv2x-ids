@@ -1261,6 +1261,13 @@ continual and local adaptation and against the one global model this
 architecture produces. Personalisation is what the result asks for and we have
 not built it.
 
+**It holds in the other direction too**, which matters because a negative result
+measured once can be a property of which way round the test was run. Congested
+into sparse, on the same protocol: 0.1513 macro F1 for the federation against
+0.2227 trained on the wrong density and 0.3205 on the right one, and 0.2625 with
+twice the rows. Both directions agree, and in both of them the federation is the
+worst arm rather than a compromise between the two.
+
 **Privacy costs three times what the architecture gains.** Clipping alone costs
 0.0341 before any noise, and at the tightest bound measured, an epsilon of 8.3,
 macro F1 falls from 0.4775 to 0.3063. The obstacle is the size of the
@@ -1389,8 +1396,8 @@ than as a courtesy.
 
 ## 15. What would come next
 
-Not in this paper, and worth naming so the boundary is deliberate. The first
-two are cheap and the last two are not.
+Not in this paper, and worth naming so the boundary is deliberate. The first is
+cheap and the rest are not.
 
 **Narrowing the floor further.** It is located to an 18 m interval from 44
 attacker stations. Halving that again needs roughly four times as many, which is
@@ -1399,10 +1406,6 @@ because two runs sharing a scenario cannot be pooled. That is more simulation
 than the result is worth, and the interval is already narrow enough to say the
 floor sits near the middle of the fifty metre bracket it replaced rather than at
 either end.
-
-**The reverse direction of the federated test**, congested into sparse. One
-direction is measured and the symmetric claim is not, which is cheap to close
-and would change no conclusion.
 
 **Personalisation, which is what our own negative result asks for.** Section 12
 shows a federation spanning two densities doing worse than a model trained on
