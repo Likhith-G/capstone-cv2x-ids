@@ -202,6 +202,17 @@ not used by anything above it. See [`capstone/README.md`](capstone/README.md).
 
 ---
 
+## The dataset card
+
+[`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) is the document to read before
+using the data: the five scenarios and what each varies, every class with its
+vehicle count, the frozen partition, all 61 columns described, and the
+limitations stated rather than left to be found. It is generated from the corpus
+by `analysis/make_dataset_card.py`, so its counts cannot drift from the data, and
+a column with no description fails the run rather than being quietly omitted.
+
+---
+
 ## Licence
 
 **GPL-2.0-only**, in [`LICENSE`](LICENSE). `simulation/cv2xids/` is an ns-3

@@ -62,8 +62,6 @@ docs/research/
 docs/STATUS.md
 docs/LESSONS.md
 
-# Generated dataset card, regenerated from the corpus by make_dataset_card.py
-docs/DATASET_CARD.md
 
 # Booth design notes: working material, and it reasons about a supervisor suggestion
 docs/BOOTH.md
