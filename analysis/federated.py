@@ -135,7 +135,7 @@ def local_train(model, global_vec, X, y, method, cfg, class_counts, global_proto
     return flat(model).clone(), steps, protos
 
 
-def run_method(method, clients, test, cfg, seed):
+def run_method(method, clients, test, cfg, seed, detail=False):
     torch.manual_seed(seed)
     np.random.seed(seed)
     g = MLP(cfg["d_in"], cfg["n_classes"])
@@ -203,8 +203,23 @@ def run_method(method, clients, test, cfg, seed):
     # on and what hyperparameter selection uses, so that adding MCC reports a
     # second number without moving any existing one.
     truth = test[1].numpy()
-    return (f1_score(truth, pred, average="macro"),
-            matthews_corrcoef(truth, pred))
+    f1 = f1_score(truth, pred, average="macro")
+    mcc = matthews_corrcoef(truth, pred)
+    if not detail:
+        return f1, mcc
+    # A scalar hides which failure happened. A run whose weights blew up, a run
+    # that collapsed onto two classes and a run that is merely weak all score
+    # low and want different fixes, so report what the model actually did.
+    # Off by default: every existing caller unpacks exactly two values.
+    return f1, mcc, {
+        "finite": bool(torch.isfinite(gvec).all().item()),
+        "weight_norm": float(gvec.norm().item()),
+        "predicted_classes": int(len(np.unique(pred))),
+        "per_class_f1": [round(float(v), 3) for v in
+                         f1_score(truth, pred, average=None,
+                                  labels=list(range(cfg["n_classes"])),
+                                  zero_division=0)],
+    }
 
 
 def dp_epsilon(z, rounds, delta=1e-5):

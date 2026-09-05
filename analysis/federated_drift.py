@@ -88,6 +88,16 @@ def main():
     ap.add_argument("--local-epochs", type=int, default=2)
     ap.add_argument("--method", default="fedavg")
     ap.add_argument("--min-rows", type=int, default=200)
+    ap.add_argument("--lr", type=float, default=0.05,
+                    help="SGD learning rate. 0.05 with momentum 0.9 is an "
+                         "effective step near 0.5, which a single pooled "
+                         "client takes thousands of times per round")
+    ap.add_argument("--arms", help="comma separated subset to TRAIN. Every arm "
+                                   "is still packed, so the row samples do not "
+                                   "move when a subset is selected")
+    ap.add_argument("--per-seed", action="store_true",
+                    help="print each seed's score and what the model did, "
+                         "which is what separates a collapsed run from a weak one")
     ap.add_argument("--observer-role", default=VEHICLE)
     a = ap.parse_args()
 
@@ -164,13 +174,22 @@ def main():
     }
     # Same configuration as federated.py's panel, so this arm is the same
     # learner the aggregation comparison uses and the two are readable together.
-    cfg = dict(d_in=len(feats), n_classes=len(shared), embed_dim=32, lr=0.05,
+    cfg = dict(d_in=len(feats), n_classes=len(shared), embed_dim=32, lr=a.lr,
                batch_size=128, local_epochs=a.local_epochs, rounds=a.rounds,
                participation=0.5, mu=0.01, tau=1.0, lam=0.1)
 
+    want = set(a.arms.split(",")) if a.arms else None
+    if want and not want <= set(arms):
+        raise SystemExit(f"unknown arms {sorted(want - set(arms))}, "
+                         f"choose from {sorted(arms)}")
     results = {}
     for name, (keep, mult, pool) in arms.items():
         cap = budget * mult
+        # Packed for EVERY arm, including ones this run will not train.
+        # pack_clients draws its thinning from one RandomState shared across the
+        # whole loop, so skipping an arm's packing shifts the row sample of
+        # every arm after it. That would silently move the numbers a subset run
+        # is meant to reproduce, which is worse than the cost of packing.
         clients = pack_clients(X, codes, obs, keep, a.min_rows, cap, rng)
         if not clients:
             print(f"{name}: no clients with {a.min_rows} rows, skipped")
@@ -183,12 +202,27 @@ def main():
             xs = torch.cat([c[0] for c in clients])
             ys = torch.cat([c[1] for c in clients])
             clients = [(xs, ys, torch.bincount(ys, minlength=len(shared)))]
+        if want is not None and name not in want:
+            continue
         n_rows = sum(len(c[0]) for c in clients)
+        if a.per_seed:
+            # What this arm is actually training on, per class. A class that
+            # scores zero on one seed and not another is only interesting
+            # alongside how many rows of it the arm holds.
+            held = torch.stack([c[2] for c in clients]).sum(0).tolist()
+            print(f"\n{name}: {len(clients)} clients, {n_rows:,} rows, "
+                  f"rows per class {held}")
         f1s, mccs = [], []
         for s in range(a.seeds):
-            f1, mcc = run_method(a.method, clients, test, cfg, s)
+            f1, mcc, d = run_method(a.method, clients, test, cfg, s, detail=True)
             f1s.append(f1)
             mccs.append(mcc)
+            if a.per_seed:
+                flag = "" if d["finite"] else "   WEIGHTS NOT FINITE"
+                print(f"   seed {s}  F1 {f1:.4f}  MCC {mcc:+.4f}  "
+                      f"predicts {d['predicted_classes']:2d} of {len(shared)} "
+                      f"classes   |w| {d['weight_norm']:8.2f}{flag}")
+                print(f"            per class F1 {d['per_class_f1']}")
         results[name] = (np.mean(f1s), np.std(f1s), np.mean(mccs), np.std(mccs))
         print(f"{name:12s} {len(clients):4d} clients {n_rows:8,} rows   "
               f"macro F1 {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}   "
