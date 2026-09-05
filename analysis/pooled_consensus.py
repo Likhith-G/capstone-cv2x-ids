@@ -124,13 +124,41 @@ def true_positions(run_dir, tags, window_ms=1000.0):
 
 
 # --------------------------------------------------------------- consensus ---
-def _resid(p, ox, oy, rsrp):
-    """rsrp_i = A - 10 n log10(dist_i). p = (x, y, A, n)."""
+# Range bins for the optional calibrated mean correction. Identical to the ones
+# in estimator_study.py, so a result here is comparable to RESULTS.md 3h3.
+DEBIAS_EDGES = np.array([0, 60, 100, 200, 400, 700, 1000, 1500, 1e9])
+
+
+def calibrate_mean(d, resid):
+    """Mean residual of the single slope law against range, from benign traffic.
+
+    RESULTS.md 3h3: the law leaves a systematic residual whose mean changes sign
+    with range, and removing it takes the road constrained localisation error
+    from 18.1 m to 12.8 m with no cost in the tail (3h4). A deployment measures
+    this once offline on traffic it has no reason to doubt, exactly as it
+    measures the law itself, and then freezes it.
+    """
+    mu = np.zeros(len(DEBIAS_EDGES) - 1)
+    for i in range(len(mu)):
+        m = (d >= DEBIAS_EDGES[i]) & (d < DEBIAS_EDGES[i + 1])
+        mu[i] = np.mean(resid[m]) if m.sum() > 200 else 0.0
+    return mu
+
+
+def _pick(d, mu):
+    return mu[np.clip(np.digitize(d, DEBIAS_EDGES) - 1, 0, len(mu) - 1)]
+
+
+def _resid(p, ox, oy, rsrp, mu=None):
+    """rsrp_i = A - 10 n log10(dist_i) [+ mu(dist_i)]. p = (x, y, A, n)."""
     d = np.maximum(np.hypot(ox - p[0], oy - p[1]), 1.0)
-    return rsrp - (p[2] - 10.0 * p[3] * np.log10(d))
+    pred = p[2] - 10.0 * p[3] * np.log10(d)
+    if mu is not None:
+        pred = pred + _pick(d, mu)
+    return rsrp - pred
 
 
-def free_fit(fx, fy, fr, road_halfwidth=None):
+def free_fit(fx, fy, fr, road_halfwidth=None, mu=None):
     """Best single position explaining these measurements, and its residual.
 
     With `road_halfwidth`, the across-road coordinate is bounded to the
@@ -145,18 +173,18 @@ def free_fit(fx, fy, fr, road_halfwidth=None):
     i0 = int(np.argmax(fr))
     p0 = np.array([fx[i0], fy[i0], float(np.max(fr)) + 20.0, 2.5])
     if road_halfwidth is None:
-        sol = least_squares(_resid, p0, args=(fx, fy, fr), method="lm",
+        sol = least_squares(_resid, p0, args=(fx, fy, fr, mu), method="lm",
                             max_nfev=400)
     else:
         lo = np.array([-np.inf, -road_halfwidth, -np.inf, 0.5])
         hi = np.array([np.inf, road_halfwidth, np.inf, 6.0])
         p0 = np.clip(p0, lo + 1e-6, hi - 1e-6)
-        sol = least_squares(_resid, p0, args=(fx, fy, fr), method="trf",
+        sol = least_squares(_resid, p0, args=(fx, fy, fr, mu), method="trf",
                             bounds=(lo, hi), max_nfev=400)
     return sol
 
 
-def consensus_block(ox, oy, rsrp, cx, cy, rng, road_halfwidth=None):
+def consensus_block(ox, oy, rsrp, cx, cy, rng, road_halfwidth=None, mu=None):
     """Cross-observer consensus statistics for one triple.
 
     Returns the localisation estimate too, so --validate can score it.
@@ -174,15 +202,22 @@ def consensus_block(ox, oy, rsrp, cx, cy, rng, road_halfwidth=None):
     dc = np.maximum(np.hypot(ox - cx, oy - cy), 1.0)
     L = 10.0 * np.log10(dc)
     A_ = np.c_[np.ones(n), -L]
-    beta, *_ = np.linalg.lstsq(A_, rsrp, rcond=None)
-    r_claim = rsrp - A_ @ beta
+    # With the correction on, the claim is scored under the same law the free
+    # fit uses, evaluated at the range the claim implies. For an honest station
+    # that range is the true one and the correction fits. For a liar it is not,
+    # so the correction is applied at the wrong range and the claim is left
+    # looking worse. That asymmetry is the point: it should sharpen detection
+    # by more than it sharpens localisation.
+    y_claim = rsrp if mu is None else rsrp - _pick(dc, mu)
+    beta, *_ = np.linalg.lstsq(A_, y_claim, rcond=None)
+    r_claim = y_claim - A_ @ beta
     claim_rmse = float(np.sqrt(np.mean(r_claim ** 2)))
     ss_tot = float(np.sum((rsrp - rsrp.mean()) ** 2))
     claim_r2 = 1.0 - float(np.sum(r_claim ** 2)) / ss_tot if ss_tot > 0 else 0.0
 
     # Free-position fit: the best any single position can do on the same data.
     try:
-        sol = free_fit(fx, fy, fr, road_halfwidth)
+        sol = free_fit(fx, fy, fr, road_halfwidth, mu)
         px, py = float(sol.x[0]), float(sol.x[1])
         expo = float(sol.x[3])
         free_rmse = float(np.sqrt(np.mean(sol.fun ** 2)))

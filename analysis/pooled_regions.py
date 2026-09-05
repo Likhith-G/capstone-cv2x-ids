@@ -29,6 +29,7 @@ import numpy as np
 import pandas as pd
 
 from pooled_consensus import (observer_geometry, consensus_block, MIN_OBS,
+                              true_positions, calibrate_mean, DEBIAS_EDGES,
                               ROAD_HALFWIDTH)
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
@@ -63,6 +64,14 @@ def main():
                          "sweep and the operating point, so it has to use the "
                          "same estimator as the pooling section or those "
                          "sections describe a different detector")
+    ap.add_argument("--debias", action="store_true",
+                    help="apply the calibrated mean correction of RESULTS.md "
+                         "3h3 to the propagation law, in both the free fit and "
+                         "the claim fit. Off by default so the published tables "
+                         "keep their meaning. The correction is calibrated here "
+                         "on benign traffic in this run, against the position "
+                         "that traffic claims, which for a benign station is "
+                         "where it actually is")
     a = ap.parse_args()
     rng = np.random.default_rng(0)
 
@@ -89,6 +98,29 @@ def main():
         df.loc[m, "region"] = g.region.values[d.argmin(axis=1)]
     df["key_region"] = df.key_seed.astype(str) + "_r" + df.region.astype(str)
 
+    mu = None
+    if a.debias:
+        # Calibrated on benign traffic only, against its own claimed position,
+        # which is what a deployment can actually do offline.
+        truth = true_positions(a.run_dir, a.tags)
+        b = df[df.label_attackId == 0].merge(
+            truth, how="inner",
+            on=["key_seed", "key_claimedStationId", "key_window"])
+        b = b[b.phy_rsrp_mean.notna()]
+        d = np.hypot(b.rxX - b.trueX, b.rxY - b.trueY).values
+        keep = d > 1.0
+        d, r = d[keep], b.phy_rsrp_mean.values[keep]
+        L = 10.0 * np.log10(d)
+        X = np.c_[np.ones(len(L)), -L]
+        beta, *_ = np.linalg.lstsq(X, r, rcond=None)
+        mu = calibrate_mean(d, r - X @ beta)
+        print(f"calibrated mean correction on {len(d):,} benign observations")
+        for i in range(len(mu)):
+            hi = DEBIAS_EDGES[i + 1]
+            hs = "inf" if hi > 1e8 else f"{hi:.0f}"
+            print(f"  {DEBIAS_EDGES[i]:>6.0f} to {hs:<6s} {mu[i]:+7.3f} dB")
+        print()
+
     rows, single, meta = [], [], []
     for k, v in df.groupby(KEY + ["key_region"], sort=False):
         v = v[v.phy_rsrp_mean.notna()]
@@ -97,7 +129,7 @@ def main():
         cx, cy = float(v.claimedX.iloc[0]), float(v.claimedY.iloc[0])
         cb, _ = consensus_block(v.rxX.values, v.rxY.values,
                                 v.phy_rsrp_mean.values, cx, cy, rng,
-                                road_halfwidth=a.road_halfwidth)
+                                road_halfwidth=a.road_halfwidth, mu=mu)
         rows.append(np.concatenate([v[feats].mean().values,
                                     [cb[c] for c in sorted(cb)]]))
         # One receiver from the SAME region and unit, so a paired comparison
