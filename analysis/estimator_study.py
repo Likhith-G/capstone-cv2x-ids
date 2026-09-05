@@ -204,15 +204,30 @@ def main():
             x, y = fit(ox, oy, rs, sd, mu, w, r, b_, a.road_halfwidth)
             err[name].append(np.hypot(x - tx, y - ty))
 
-    print(f"\n{'estimator':32s} {'median error':>13s} {'against ols':>12s} "
-          f"{'75th pct':>10s}")
+    # RMS is reported beside the median because the Cramer-Rao bound constrains
+    # the SECOND MOMENT of an unbiased estimator and says nothing about its
+    # median. RESULTS.md 3h4 read a median of 20.1 m against a bound of 25.9 m
+    # and called it impossible; it is not, if the error distribution is heavy
+    # tailed enough that most fits are excellent and a few are very bad. The
+    # median can then sit below a Gaussian of the bound's covariance while the
+    # variance still respects it. Reporting only the median hides exactly that.
+    print(f"\n{'estimator':32s} {'median':>9s} {'vs ols':>8s} {'RMS':>10s} "
+          f"{'75th':>8s} {'90th':>8s} {'RMS/med':>8s}")
     base = np.nanmedian(err["ols, what the project uses"])
     for name in arms:
         e = np.array(err[name], dtype=float)
         e = e[np.isfinite(e)]
-        m = np.median(e)
-        print(f"{name:32s} {m:11.1f} m {m / base:11.2f}x "
-              f"{np.percentile(e, 75):8.1f} m")
+        m = float(np.median(e))
+        rms = float(np.sqrt(np.mean(e ** 2)))
+        print(f"{name:32s} {m:7.1f} m {m / base:7.2f}x {rms:8.1f} m "
+              f"{np.percentile(e, 75):6.1f} m {np.percentile(e, 90):6.1f} m "
+              f"{rms / m:8.2f}")
+    print("""
+Read the RMS column against the bound, not the median column. A ratio of RMS to
+median far above the 1.13 a two dimensional Gaussian gives means the error
+distribution is heavy tailed, and a heavy tailed estimator can have a median
+below the bound's Gaussian median while its variance still respects the bound.
+""")
     # What the debiasing leaves behind is the noise the bound should be computed
     # against. Quoting the original bound beside a debiased estimator compares
     # an estimator that has removed a deterministic term against a bound that
