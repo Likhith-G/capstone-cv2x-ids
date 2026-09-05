@@ -271,6 +271,11 @@ def main():
     ap.add_argument("--validate", action="store_true",
                     help="score the localisation against true positions")
     ap.add_argument("--out", default=None, help="write the pooled table here")
+    ap.add_argument("--debias", action="store_true",
+                    help="apply the calibrated mean correction of RESULTS.md "
+                         "3h3 to the propagation law, in both the free fit and "
+                         "the claim fit. Off by default so the published tables "
+                         "keep their meaning")
     ap.add_argument("--observer-role", choices=["vehicle", "rsu"], default=None,
                     help="pool over receivers of this role only. Needed when "
                          "the pooled table will be compared against a corpus "
@@ -309,6 +314,27 @@ def main():
     key = ["key_seed", "key_claimedStationId", "key_window"]
     df = df.sort_values(key).reset_index(drop=True)
 
+    mu = None
+    if a.debias:
+        truth = true_positions(a.run_dir, a.tags)
+        b = df[df.label_attackId == 0].merge(
+            truth, how="inner",
+            on=["key_seed", "key_claimedStationId", "key_window"])
+        b = b[b.phy_rsrp_mean.notna()]
+        dd = np.hypot(b.rxX - b.trueX, b.rxY - b.trueY).values
+        keep = dd > 1.0
+        dd, rr = dd[keep], b.phy_rsrp_mean.values[keep]
+        L_ = 10.0 * np.log10(dd)
+        X_ = np.c_[np.ones(len(L_)), -L_]
+        beta_, *_ = np.linalg.lstsq(X_, rr, rcond=None)
+        mu = calibrate_mean(dd, rr - X_ @ beta_)
+        print(f"calibrated mean correction on {len(dd):,} benign observations")
+        for i in range(len(mu)):
+            hi = DEBIAS_EDGES[i + 1]
+            hs = "inf" if hi > 1e8 else f"{hi:.0f}"
+            print(f"  {DEBIAS_EDGES[i]:>6.0f} to {hs:<6s} {mu[i]:+7.3f} dB")
+        print()
+
     # ---- build the arms on one identical set of triples --------------------
     def build(k_obs, seed=0):
         """Pool each triple over at most k_obs receivers. The SET OF TRIPLES is
@@ -328,7 +354,8 @@ def main():
             cx, cy = float(v.claimedX.iloc[0]), float(v.claimedY.iloc[0])
             cb, (px, py) = consensus_block(v.rxX.values, v.rxY.values,
                                            v.phy_rsrp_mean.values, cx, cy, r,
-                                           road_halfwidth=a.road_halfwidth)
+                                           road_halfwidth=a.road_halfwidth,
+                                           mu=mu)
             pick = v.iloc[r.integers(len(v))]
             rs.append(pick[feats].values)
             rm.append(v[feats].mean().values)
