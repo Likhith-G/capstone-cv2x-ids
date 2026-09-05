@@ -197,3 +197,15 @@ capstone-cv2x-ids/
 simulation over a 5G uplink, its feature selection, classification and federated
 learning workstreams, and the progress report. It is kept for reference and is
 not used by anything above it. See [`capstone/README.md`](capstone/README.md).
+
+---
+
+## Licence
+
+**GPL-2.0-only**, in [`LICENSE`](LICENSE). `simulation/cv2xids/` is an ns-3
+contrib module and links against ns-3, so it is a derivative work of GPL-2.0-only
+software and carries the same terms. That is an obligation rather than a
+preference. [`LICENSES.md`](LICENSES.md) explains what covers what, records the
+third-party components and their terms, and states the intent for the dataset
+itself, which is not in this repository and which software licences are the wrong
+instrument for.
