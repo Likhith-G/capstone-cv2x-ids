@@ -36,15 +36,17 @@
   .clear .state{color:var(--lie)}
   .void .state{color:var(--dim)}
 
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);
          border-left:1px solid var(--line)}
   @media(max-width:760px){.stats{border-left:none;border-top:1px solid var(--line)}}
   .stat{padding:18px 16px;border-right:1px solid var(--line)}
-  .stat:last-child{border-right:none}
+  .stat:nth-child(even){border-right:none}
   .stat .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
            text-transform:uppercase;color:var(--faint)}
   .stat .v{font-family:var(--mono);font-size:23px;font-variant-numeric:tabular-nums;
            margin-top:3px}
+  .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .stat.best .v{color:var(--lie)}
 
   .stage{position:relative;background:var(--ground)}
   canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
@@ -116,6 +118,7 @@
         <div class="stat"><div class="k">You lied by</div><div class="v" id="disp">&ndash;</div></div>
         <div class="stat"><div class="k">Consistency ratio</div><div class="v" id="ratio">&ndash;</div></div>
         <div class="stat"><div class="k">Flags above</div><div class="v" id="thr">&ndash;</div></div>
+        <div class="stat best"><div class="k">Smallest lie you got away with</div><div class="v" id="best">&ndash;</div></div>
       </div>
     </div>
 
@@ -142,8 +145,8 @@
     <p class="sub">In order. Each one only makes sense after the one before it.</p>
     <ol>
       <li><b>Lie with one receiver listening</b><span>Go as far as you like. Nothing happens. One receiver does not do this badly, it cannot do it at all.</span></li>
-      <li><b>Switch the other receivers on</b><span>Now there is a boundary. Find the smallest lie you still get away with and you have found the detection floor yourself. Watch the flag threshold fall as you add receivers: it is 4.95 with five and 1.21 with all of them, because honest cars stop looking suspicious too.</span></li>
-      <li><b>Lie sideways instead of along the road</b><span>You get away with much more. The receivers sit in a line, so across the road they can barely see.</span></li>
+      <li><b>Switch the other receivers on</b><span>Now there is a boundary. The panel keeps your smallest successful lie, so this is a game: get it as low as you can. Find the smallest lie you still get away with and you have found the detection floor yourself. Watch the flag threshold fall as you add receivers: it is 4.95 with five and 1.21 with all of them, because honest cars stop looking suspicious too.</span></li>
+      <li><b>Lie sideways instead of along the road</b><span>You get away with much more. The receivers sit in a line, so across the road they can barely see. Distance is not the whole story: a hundred metres sideways can be safer than fifty along.</span></li>
       <li><b>Turn on the map constraint</b><span>The detector now knows a car cannot be off the carriageway. The sideways trick stops working.</span></li>
     </ol>
   </section>
@@ -167,6 +170,12 @@ const SURFACE = {"note": "Every value here was computed by analysis/make_booth_s
 const cv = document.getElementById("road"), ctx = cv.getContext("2d");
 const el = id => document.getElementById(id);
 let arm = "all", mapOn = false, heat = true;
+/* Smallest undetected lie, per receiver count and map setting, because a record
+   set with eight receivers is a different achievement from one set with all
+   thirty six. Kept in memory only: a booth laptop is shared, and a stranger's
+   score is not worth persisting onto it. */
+const best = {};
+const bestKey = () => `${arm}|${mapOn}`;
 let claim = {dx: 0, dy: 0};
 
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -188,6 +197,11 @@ function ratioAt(dx, dy, key){
   const j = clampi(Math.round((dy - Y0) * YS), GY.length);
   const i = clampi(Math.round((dx - X0) * XS), GX.length);
   return s.grid[j][i];
+}
+
+function showBest(){
+  const v = best[bestKey()];
+  el("best").textContent = v === undefined ? "keep trying" : v.toFixed(0) + " m";
 }
 
 function evaluate(){
@@ -232,6 +246,8 @@ function evaluate(){
       + "fits somewhere else, by more than 95 in 100 honest cars ever do.";
     box.classList.add("caught");
   } else {
+    const k = bestKey();
+    if (disp > 1 && (best[k] === undefined || disp < best[k])) best[k] = disp;
     el("state").textContent = "Got away with it";
     el("why").textContent = disp < 8
       ? "Barely a lie. Push further."
@@ -321,7 +337,7 @@ function draw(){
   ctx.textAlign = "left";
 }
 
-function render(){ draw(); evaluate(); }
+function render(){ draw(); evaluate(); showBest(); }
 
 /* controls */
 const arms = Object.keys(SURFACE.surfaces)
