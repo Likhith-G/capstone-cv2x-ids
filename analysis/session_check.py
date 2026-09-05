@@ -57,7 +57,8 @@ ARCHIVAL_MEMORY = ["project_capstone_connected_cars.md",
 # silently passed documents holding 31 dashes. Checking in Python avoids the
 # whole class of shell quoting error.
 DASH_DOCS = ["RESULTS.md", "PAPER_DRAFT.md", "PAPER_CLAIMS.md", "METHODS_DRAFT.md",
-             "STATUS.md", "LESSONS.md", "CRITIQUE.md", "MASTER_INDEX.md"]
+             "STATUS.md", "LESSONS.md", "CRITIQUE.md", "PLAN.md",
+             "CAPSTONE_PLAN.md"]
 
 # Process names that mean work is still in flight. Compacting or handing off
 # while one of these runs loses the session that knows what it was for.

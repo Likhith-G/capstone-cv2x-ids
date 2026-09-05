@@ -44,7 +44,6 @@ docs/BUILD_LOG_V2.md
 docs/DEFECT_SCOPE.md
 docs/DEFECTS_V2.md
 docs/RUNS_MANIFEST.md
-docs/MASTER_INDEX.md
 docs/PAPER_CLAIMS.md
 docs/PLAN_V2.md
 docs/PLAN_V3.md
@@ -53,7 +52,9 @@ docs/RESULTS.md
 docs/REGENERATION_PLAN.md
 docs/METHODS_DRAFT.md
 docs/CRITIQUE.md
-docs/PLAN_NEXT.md
+docs/PLAN.md
+docs/CAPSTONE_PLAN.md
+docs/archive/
 docs/research/
 
 # Session state files. Volatile status and durable lessons; both name defects
