@@ -122,9 +122,17 @@ def main():
     print("\npartition")
     sp = pd.read_csv(b / "release_splits.csv")
     key = ["key_seed", "label_txNodeId"]
-    # A merge rather than a MultiIndex map. The map took most of half an hour on
-    # eight million rows, and a check nobody will wait for is a check nobody runs.
-    m = df.merge(sp.drop_duplicates(key)[key + ["split"]], on=key, how="left")
+    # Neither a MultiIndex map nor a merge. The map took most of half an hour on
+    # eight million rows; the merge copies the whole sixty two column frame and
+    # drove this machine to seven gigabytes of swap, which is how a long job gets
+    # killed. A dict lookup over one composite key column touches one column and
+    # allocates one Series.
+    sp1 = sp.drop_duplicates(key)
+    lut = dict(zip(sp1.key_seed.astype(str) + "|" + sp1.label_txNodeId.astype(str),
+                   sp1.split))
+    m = df
+    m["split"] = (df.key_seed.astype(str) + "|" +
+                  df.label_txNodeId.astype(str)).map(lut)
     check("every row lands in exactly one partition", int(m.split.isna().sum()) == 0,
           f"{int(m.split.isna().sum())} unassigned")
     shares = (m.split.value_counts(normalize=True) * 100).round(1).to_dict()
