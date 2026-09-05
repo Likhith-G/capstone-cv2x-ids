@@ -229,8 +229,9 @@ a reader might reasonably expect and would be wrong to infer.
 - **That the pooled architecture is robust to drift.** The drift measurement is
   on the single observer detector, because the cross receiver features live in
   a separate table.
-- **That the floor is located precisely.** It lies between 30 and 80 m; the
-  band that would pin it down holds three attacker stations.
+- **That the floor is located precisely.** It is located to an interval and
+  not to a figure: 50 percent detection at 47.2 m, 95 percent interval 39.3 to
+  57.4 m. Quoting the crossing without the interval would overstate it.
 
 ---
 
@@ -601,8 +602,17 @@ flagged in most of its windows.
 18.2 m from the truth, detection begins between 30 and 50 m and is complete by
 80 m. A lie has to exceed the estimator's own uncertainty before there is
 anything to see, which is why the estimator moves this line and better features
-do not. Its existence is solid; its location is known only to within 30 to
-80 m, because the bracketing band holds three attacker stations.
+do not.
+
+**We locate it on a second campaign built to sample the transition.** The bands
+above rest on three attacker stations where it matters; the second corpus widens
+both offset draws so that 44 attackers span 4 to 233 m with eleven in the 30 to
+50 m band, at the same benign false alarm rate. Fitting detection against log
+displacement across every station rather than binning gives **50 percent
+detection at 47.2 m, with a 95 percent interval of 39.3 to 57.4 m**, and the
+band that used to hold one station now holds eleven and reads 0.36. The crossing
+falls where the bands say it should. We quote the crossing with its interval,
+because a crossing alone would overstate what 44 stations can settle.
 
 ### Why a single receiver is not merely bad at this
 
@@ -897,15 +907,13 @@ detection floor and the strongest evasion, so a different road could move both.
 Not in this paper, and worth naming so the boundary is deliberate. The first
 two are cheap and the last two are not.
 
-**Locating the floor properly.** The banded table brackets it between 30 and
-80 m because the band that contains it holds three attacker stations. Fitting
-detection against log displacement across every station instead, rather than
-binning, roughly halves that uncertainty, and a campaign sampling the band
-densely is what supplies the stations for it. It will not place the floor to
-within a few metres: on simulated data with a known crossing the estimator's
-interval is about 28 m wide at 30 attacker stations and 23 m at 100, so
-narrowing it further needs several hundred, which is more simulation than the
-result is worth.
+**Narrowing the floor further.** It is located to an 18 m interval from 44
+attacker stations. Halving that again needs roughly four times as many, which is
+several more campaigns, and the campaigns have to use seeds no existing one uses
+because two runs sharing a scenario cannot be pooled. That is more simulation
+than the result is worth, and the interval is already narrow enough to say the
+floor sits near the middle of the fifty metre bracket it replaced rather than at
+either end.
 
 **Does the pooled architecture transfer?** The drift measurement is on the
 single observer detector, because the cross receiver features live in a
