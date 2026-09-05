@@ -68,6 +68,52 @@ misbehaviour.
 
 ---
 
+## What it shows
+
+Four results, in the order they build. Every number here is pinned to the log
+that produced it by `analysis/verify_results.py`, which checks 134 figures and
+must report no failures.
+
+**A single receiver cannot see a position lie.** Not at any magnitude this
+dataset contains. On the three constant-offset classes the best score reached by
+any of four learner families, being a random forest, gradient boosting, an MLP
+and logistic regression over identical rows and folds, is 0.010, 0.052 and 0.167.
+That is not one model failing. The measurement model itself is the reason: it has
+four free parameters, two of position and two of propagation, and one receiver
+supplies one equation per window at the same geometry every time.
+
+**Pooling received power across receivers recovers it, and there is a floor.**
+Detection against displacement crosses 50 percent at **47.2 m**, with a 95
+percent interval of 39.3 to 57.4 m, measured on a campaign built to sample the
+transition rather than inferred from the ends of a curve.
+
+![Detection against displacement](docs/figures/floor.png)
+
+**The geometry predicts where an attacker will lie.** Receivers strung along a
+straight road are close to collinear, so the error ellipse is long across the
+road. An attacker who understands the estimator should lie along that weak axis,
+and one found by brute-force search over 72 directions does, at 75 to 85 degrees
+off the road axis. Constraining the fit to the carriageway removes that axis and
+takes localisation error from 65 m to 18 m.
+
+![The bound against the measured attack direction](docs/figures/direction.png)
+
+**It holds on somebody else's data.** Run against VeReMi NextGen, the current
+public benchmark, the same detector scores 0.9570 on a self-inconsistent position
+lie, 0.1460 on a self-consistent constant offset, and 0.0352 on the constant
+offsets here. The ordering reproduces and is sharper there. NextGen carries no
+radio layer, so the cross-layer gap survives the comparison.
+
+**On the headline classification numbers**, fused macro F1 is 0.5145 across all
+eleven classes and 0.5659 across the ten that have a physical signature, with a
+Matthews correlation of 0.6635. Those are not high scores and they are not meant
+to be. A 1-NN classifier reaches only 0.3466 on this corpus, which is the
+evidence that the task is not being won by memorisation, and the numbers fell
+when benign vehicles were given realistic positioning error rather than being
+allowed to claim their exact position.
+
+---
+
 ## Pipeline
 
 [`simulation/`](simulation/) is the ns-3 contrib module that generates the

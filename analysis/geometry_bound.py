@@ -52,6 +52,51 @@ def fit_law(d, rsrp):
     return float(beta[0]), float(beta[1]), rsrp - X @ beta
 
 
+def fit_law_curved(d, rsrp):
+    """The single slope law plus a calibrated log-distance correction.
+
+    Returns A, n, b, residual. A and n are the BASE law and are untouched. b is
+    the correction against [1, L, L^2, L^3] with L = log10(d), and the residual
+    is what is left after removing the whole fitted correction.
+
+    RESULTS.md 3h3 found the single slope law leaves a residual whose mean
+    changes sign with range, and that removing a calibrated mean cuts the road
+    constrained localisation error by 30 percent. The bound in this file was
+    computed under the uncorrected law, with that deterministic term absorbed
+    into sigma as though it were noise, so it inherits the misspecification.
+
+    The correction is calibrated once offline on benign traffic and frozen,
+    which is the same standing this file already gives A and n. It costs no per
+    unit parameters: A and n stay free per unit, so a correction of the form
+    b0 + b1 L is absorbed by them and only the curvature is identifiable. The
+    per unit fit keeps four free parameters and the identifiability floor stays
+    at five receivers.
+
+    Two ways of computing this are wrong and both were tried here first.
+
+    **Do not refit the whole law on [1, -10L, L^2, L^3].** It fits the same
+    curve, but the four columns are badly collinear over this range and the
+    solver splits the curve between them arbitrarily. It returned a path loss
+    exponent of -3.5, and power does not rise with distance. Every section
+    downstream that reads n as physical then produced nonsense, including range
+    ambiguities of -53 m. Fitting the correction on the base residual instead
+    keeps A and n physical and makes the correction additive on top of them.
+
+    **Do not subtract only the quadratic and cubic terms.** The base residual is
+    orthogonal to span{1, L}, but L^2 and L^3 are not, so a joint regression
+    puts the parts of them lying in span{1, L} into b0 and b1. Dropping those
+    and subtracting only b2 L^2 + b3 L^3 removes something never fitted and
+    leaves a residual larger than the one it started from: sigma went from 3.8
+    to 26.7 dB, which a least squares projection cannot do. Subtract the whole
+    fit.
+    """
+    A, n_exp, resid = fit_law(d, rsrp)
+    L = np.log10(np.maximum(d, 1.0))
+    X = np.c_[np.ones(len(L)), L, L ** 2, L ** 3]
+    b, *_ = np.linalg.lstsq(X, resid, rcond=None)
+    return A, n_exp, b, resid - X @ b
+
+
 def variance_split(df, resid):
     """Split the residual into a per link part and a per sample part.
 
@@ -72,22 +117,50 @@ def variance_split(df, resid):
     return within, between, len(m)
 
 
-def fisher(ox, oy, px, py, n_exp, sigma, profile=True):
-    """Fisher information for position, with A and n profiled out.
+def fisher(ox, oy, px, py, n_exp, sigma, profile=True, curve=None):
+    """Position information after eliminating A and n, the EQUIVALENT FIM.
 
-    d mean_i / d p = -(10 n / ln10) * u_i / d_i, u_i the unit vector from
+    d mean_i / d p = (d mean_i / d d_i) * u_i, with u_i the unit vector from
     receiver i to the position. Stacking those rows gives the design matrix for
     position; the nuisance columns are the derivatives with respect to A and n.
-    Profiling means projecting the position columns off the nuisance columns,
-    which is what the estimator does when it fits A and n freely.
+
+    **Terminology.** Eliminating the nuisance block is the Schur complement of
+    the full Fisher matrix, which the localisation literature calls the
+    equivalent or efficient FIM (Shen and Win). It is NOT profiling in the
+    profile-likelihood sense, because no likelihood is maximised over the
+    nuisance parameters here; the argument keeps its name only so existing
+    callers and logs stay valid. Research report 23 flagged the misuse.
+
+    `curve` is the optional log-distance curvature from `fit_law_curved`. With
+    the corrected mean the range sensitivity gains a term:
+
+        mean = A - 10 n L + b0 + b1 L + b2 L^2 + b3 L^3,   L = log10(d)
+        d mean / d d = (-10 n + b1 + 2 b2 L + 3 b3 L^2) / (d ln10)
+
+    b0 drops out of the derivative and b1 does not, so the whole coefficient
+    vector is needed here even though b0 and b1 are absorbed by the per unit A
+    and n when the fit runs.
+
+    which reduces to the single slope expression when c is None or zero. The
+    correction changes the bound twice over and in opposite directions: sigma
+    falls, because a deterministic term is no longer being counted as noise,
+    while the sensitivity itself is re-weighted across range. Neither effect
+    can be had by rescaling the old bound, which is why 3h3 says no rescaled
+    figure should be quoted.
     """
     dx, dy = px - ox, py - oy
     d = np.maximum(np.hypot(dx, dy), 1.0)
-    k = -(10.0 * n_exp / LN10) / d
+    if curve is None:
+        k = -(10.0 * n_exp / LN10) / d
+    else:
+        L = np.log10(d)
+        b = curve
+        k = (-10.0 * n_exp + b[1] + 2.0 * b[2] * L + 3.0 * b[3] * L ** 2) / (d * LN10)
     Gp = np.c_[k * (dx / d), k * (dy / d)]          # position columns
     if profile:
         Gn = np.c_[np.ones(len(d)), -10.0 * np.log10(d)]   # dA, dn columns
-        # residual of the position columns after regressing out the nuisance
+        # Schur complement: residual of the position columns after regressing
+        # out the nuisance columns. A and n stay free per unit either way.
         beta, *_ = np.linalg.lstsq(Gn, Gp, rcond=None)
         Gp = Gp - Gn @ beta
     return (Gp.T @ Gp) / (sigma ** 2)
@@ -156,6 +229,16 @@ def main():
                          "geometric diversity improves with offset while the "
                          "information each receiver carries falls as the "
                          "inverse square of its distance")
+    ap.add_argument("--corrected", action="store_true",
+                    help="recompute the bound under the CORRECTED propagation "
+                         "law of RESULTS.md 3h3, which adds log-distance "
+                         "curvature to the mean. The published bound absorbs "
+                         "that deterministic term into sigma as though it were "
+                         "noise, which inflates the bound, and the corrected "
+                         "estimator reaches 20.1 m against a published bound of "
+                         "28.0 m. An unbiased estimator cannot beat its own "
+                         "bound, so the published one is wrong. Off by default "
+                         "so every pinned figure keeps its meaning")
     ap.add_argument("--regions", action="store_true",
                     help="scope each pooled unit to one roadside unit region, "
                          "receivers assigned to their nearest unit exactly as "
@@ -204,6 +287,32 @@ def main():
     ben = ben[ben.d > 1.0]
     A, n_exp, resid = fit_law(ben.d.values, ben.phy_rsrp_mean.values)
     sigma = float(np.std(resid))
+
+    curve = None
+    sigma_corr = sigma
+    if a.corrected:
+        _, _, curve, residc = fit_law_curved(ben.d.values,
+                                             ben.phy_rsrp_mean.values)
+        sigma_corr = float(np.std(residc))
+        print("CORRECTED LAW, RESULTS.md 3h3\n")
+        print("  The published bound treats a deterministic range dependent term")
+        print("  as noise. Correcting it moves the bound two ways at once: sigma")
+        print("  falls, and the range sensitivity is reweighted across distance.\n")
+        print(f"  {'residual sigma, single slope':34s} {sigma:8.3f} dB")
+        print(f"  {'residual sigma, curvature removed':34s} {sigma_corr:8.3f} dB")
+        for j, nm in enumerate(("constant", "against L", "against L squared",
+                                "against L cubed")):
+            print(f"  {'correction ' + nm:34s} {curve[j]:8.3f} dB")
+        print(f"\n  Sigma falls by {100*(1-sigma_corr/sigma):.1f} percent, so that "
+              f"fraction of what the bound\n  was charged as noise was signal.\n")
+        print("  A and n are UNCHANGED and stay physical. The curvature is fitted")
+        print("  on the base residual rather than by refitting the whole law,")
+        print("  because the four columns are collinear over this range and a")
+        print("  joint refit splits the curve arbitrarily between them.\n")
+        print("  Only curvature is identifiable. A constant and a linear term in")
+        print("  log distance are absorbed by A and n, which stay free per unit,")
+        print("  so the per unit fit still has exactly four free parameters and")
+        print("  the identifiability floor stays at five receivers.\n")
 
     ben["link"] = (ben.key_seed.astype(str) + ":" +
                    ben.key_rxNodeId.astype(str) + ":" +
@@ -275,7 +384,7 @@ all, and the measurement agrees.
     # measurement carries the full residual. The bound below therefore uses the
     # total sigma. The persistent component is what matters for a SINGLE
     # receiver averaging over time, and it is quoted separately for that.
-    sig_eff = sigma
+    sig_eff = sigma_corr
     print(f"the ellipse below uses the total residual, {sig_eff:.3f} dB, because "
           f"a pooled fit\nsees one window at each of several independent links. "
           f"The persistent component\n{between:.3f} dB is the floor a single "
@@ -327,7 +436,7 @@ all, and the measurement agrees.
                 v = gg.get_group(k)
                 J = fisher(v.rxX.values, v.rxY.values,
                            float(v.trueX.iloc[0]), float(v.trueY.iloc[0]),
-                           n_exp, sigma, profile=True)
+                           n_exp, sigma, profile=True, curve=curve)
                 try:
                     C = np.linalg.inv(J)
                 except np.linalg.LinAlgError:
@@ -363,9 +472,9 @@ distance, so a unit set too far back contributes better geometry and less of it.
         v = g.get_group(k)
         ox, oy = v.rxX.values, v.rxY.values
         px, py = float(v.trueX.iloc[0]), float(v.trueY.iloc[0])
-        J = fisher(ox, oy, px, py, n_exp, sig_eff, profile=True)
+        J = fisher(ox, oy, px, py, n_exp, sig_eff, profile=True, curve=curve)
         maj, mnr, ang = ellipse(J)
-        Jk = fisher(ox, oy, px, py, n_exp, sig_eff, profile=False)
+        Jk = fisher(ox, oy, px, py, n_exp, sig_eff, profile=False, curve=curve)
         majk, mnrk, _ = ellipse(Jk)
         # Road constrained: the across-road coordinate is known to lie in a
         # 2*halfwidth band, so the estimator cannot spend error there. The

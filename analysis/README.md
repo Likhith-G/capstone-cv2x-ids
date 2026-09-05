@@ -184,6 +184,7 @@ invalidate every grouped fold.
 | `federated_drift.py` | does federating across two densities recover what the density change costs |
 | `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
 | `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
+| `correction_transfer.py` | whether the calibrated propagation correction is a property of range or shrinkage onto one corpus: calibrate on A, apply to B, and check each bin's mean is flat in along-road position |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `session_check.py` | the project's own bookkeeping: nothing running, git clean and untrailered, disk headroom, no dead paths, memory indexed, every declared blocker still real |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
