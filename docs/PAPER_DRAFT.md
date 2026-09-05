@@ -172,10 +172,14 @@ visible. This paper measures how far that idea goes, and finds the answer is
 further than a single receiver can reach and less far than a cooperative scheme
 might promise.
 
-**What is new.** The first labelled multiclass intrusion detection dataset
-generated over 3GPP NR sidelink Mode 2, combining sidelink physical and MAC
-layer measurements with application layer misbehaviour in one schema. Every
-vehicular 5G intrusion detection dataset located runs over the Uu uplink.
+**What is new.** To the best of our knowledge, as of September 2026, the first
+publicly released dataset of labelled V2X misbehaviour generated over 3GPP NR V2X
+PC5 sidelink Mode 2 that co-registers standards compliant ETSI messages with
+receiver observed physical and MAC layer measurements. Every vehicular 5G
+intrusion detection dataset we located runs over the Uu uplink, and the public
+V2X datasets that do carry a radio measurement are IEEE 802.11p rather than
+C-V2X. The claim is deliberately dated and hedged: a literature search cannot
+exclude an unannounced release.
 
 **What is more useful than what is new.** The dataset exists to support a
 measurement rather than to be a contribution on its own. Position falsification
@@ -189,12 +193,15 @@ VeReMi-scale offsets of 250 m is being asked an easy question.
    do not share a failure mode**: four learner families, a calibrated
    implementation of the field's standard plausibility checks, and the
    measurement model itself, which is unidentifiable at a single receiver.
-2. **A derivation of that floor from the receiver geometry, which predicts the
-   adversary.** The Cramer Rao ellipse for the array points 79.3 degrees off
-   the road axis, and an attacker searching 72 directions with no knowledge of
-   it lies at 75 to 85. The bound also says the free position fit is barely
-   identifiable inside one roadside unit region, so geometric spread rather
-   than receiver count is what makes cooperative verification work.
+2. **The array's weak information axis, stated as an attack rule and validated
+   against an independent search.** The error ellipse for the array points 79.3
+   degrees off the road axis and an attacker searching 72 directions with no
+   knowledge of it lies at 75 to 85. Error ellipses for position verification
+   are not new, see section 2; what we add is the rule that an estimator aware
+   attacker at fixed displacement should take the weakest eigenvector, and a
+   measured angle agreeing with it. The bound also shows the free position fit
+   is barely identifiable inside one roadside unit region, which is a controlled
+   measurement of a standard geometric result rather than a new one.
 3. **The measurement that cooperative detection has to fuse measurements rather
    than verdicts**, on the magnitude band where it matters: 0.019 at one
    receiver, 0.412 pooled, and exactly 0.000 for both voting schemes.
@@ -208,7 +215,12 @@ VeReMi-scale offsets of 250 m is being asked an easy question.
    the operating point a persistence rule reaches.
 6. A labelled NR sidelink misbehaviour dataset with realistic benign
    positioning error and a graded position falsification ladder, whose bands are
-   chosen against that error so the set brackets the detection threshold. It is
+   chosen against that error so the set brackets the detection threshold. To the
+   best of our knowledge, as of September 2026, it is the first publicly released
+   dataset of labelled V2X misbehaviour generated over 3GPP NR V2X PC5 sidelink
+   Mode 2 that co-registers standards compliant ETSI messages with receiver
+   observed physical and MAC layer measurements, including per SCI sidelink
+   reference signal received power. It is
    the instrument the results above are measured with rather than the headline,
    because application layer breadth and traffic realism are settled by VeReMi
    NextGen and neither is claimed here.
@@ -232,6 +244,16 @@ a reader might reasonably expect and would be wrong to infer.
 - **That the floor is located precisely.** It is located to an interval and
   not to a figure: 50 percent detection at 47.2 m, 95 percent interval 39.3 to
   57.4 m. Quoting the crossing without the interval would overstate it.
+- **That a better estimator buys proportionate detection.** It does not. A
+  calibrated correction improving the road constrained localisation median by 29
+  percent moved the located floor by 10 percent and the persistence operating
+  point not at all. The estimator matters where the floor is and nowhere else.
+- **Any priority over cooperative position verification, error ellipses for it,
+  estimator aware adversaries, or evaluation against displacement.** All four
+  have prior art, named in section 2.
+- **That angular spread mattering more than receiver count is a new result.** It
+  is standard Fisher information and geometric dilution of precision. What is
+  ours is the size of the effect in this setting.
 
 ---
 
@@ -280,6 +302,15 @@ claimed here.
 
 **5G-NIDD** and **5GCID** carry 5G network layer measurements with multiclass
 labels and are not vehicular.
+
+**Cross layer intrusion detection outside V2X has already run the comparison
+this paper runs inside it, and must be cited.** A 2026 study of Open RAN
+(arXiv:2606.22450) evaluates application layer flow records against radio
+telemetry against the two fused, which is structurally the ablation of section 4.
+It is a cellular access network rather than a vehicular one, and it fuses flow
+records rather than message semantics, so the comparison here remains the first
+we are aware of **for vehicular misbehaviour**. The qualifier is not decoration:
+without it the claim is false.
 
 **Melo's 5G-enabled vehicular datasets** are the closest prior work and must be
 cited and differentiated explicitly. They use NS-3 with 5G-LENA over four maps
@@ -337,6 +368,48 @@ receivers is an identifiability floor set by the four free parameters of the
 fit, a real roadside unit region carries a median of eight, and the cross
 receiver consistency block is worth 0.0025 macro F1 at eight receivers against
 0.0334 at thirty nine.
+
+**The third is prior art on the bound itself, and it constrains what section 5
+may claim.** Yan, Malaney, Nevat and Peters (IEEE TVT 63(7), 2014) construct a
+Fisher information matrix for position from received signal strength, invert it
+into a Cramer-Rao error ellipse, and test whether an estimate falls outside a
+threshold scaled ellipse around the claimed position, choosing that threshold by
+mutual information. The work is explicitly motivated by intelligent transport
+systems, and the same group extends it to Rician fading (IEEE TVT 65(7), 2016).
+**So this paper does not claim the first information theoretic limit for
+detecting falsified vehicular positions, and must not be read as doing so.**
+
+Ihsan, Malaney and Yan (arXiv:1904.05610, 2019) go further in the direction that
+matters most here. Their attacker chooses its claimed position by minimising the
+Kullback-Leibler divergence between the received power distribution expected at
+the claim and the one its true position generates, subject to a minimum
+displacement, and they report that the geometry of their three verifying units
+makes the optimised claims cluster. They also evaluate detection at several
+displacement magnitudes. **So neither an estimator aware adversary nor an
+evaluation against displacement is new.**
+
+What is left, and it is narrower than the headline those papers might suggest, is
+three things. First, **non-identifiability at a single receiver**: with the
+intercept and path loss exponent unknown, one receiver at one geometry cannot
+estimate position at any observation length, which is a rank deficiency rather
+than a large variance and is not the regime those papers analyse. Second, **the
+weak axis stated as a rule and checked against an independent search**: that an
+estimator aware attacker at fixed displacement should choose the eigenvector of
+the smallest eigenvalue of the position information matrix follows locally from
+the same geometry, but we found no source stating it as such or comparing a
+predicted angle against a brute forced one. Third, **a displacement resolved
+detection floor measured against a nonzero benign positioning error
+distribution**; prior work imposes minimum displacement constraints on the
+attacker rather than sweeping magnitude against real benign variance.
+
+**On the receiver geometry result, we claim less than we first wrote.** That
+angular spread rather than receiver count governs a position fit is standard
+Fisher information and geometric dilution of precision, and vehicular cooperative
+positioning already uses that quantity to weight neighbours. What we contribute
+is the controlled measurement in this setting and its size: at equal receiver
+count the across-road bound is 36.4 m corpus wide against 6.2 km inside a single
+roadside unit region. That is an empirical consequence for misbehaviour
+detection, not a new result in estimation theory.
 
 What we did not find in the 2019 to 2026 literature is any measurement of the
 detection cost of exchanging verdicts rather than measurements, and no
@@ -667,7 +740,10 @@ measurement agrees.
 ### What the geometry allows
 
 Computing the Cramer Rao bound on position from the same law, with the
-propagation parameters profiled out because the estimator fits them freely, puts
+propagation parameters eliminated as nuisance because the estimator fits them
+freely, which is the equivalent or efficient Fisher information (the Schur
+complement of the nuisance block, Shen and Win) rather than a profile
+likelihood, puts
 a floor under any unbiased estimator on this receiver array. The measured
 localisation error sits above it by a factor of 2.3, 65.2 m median radial
 against 28.0 m, so the fit is within about a factor of two of what the geometry

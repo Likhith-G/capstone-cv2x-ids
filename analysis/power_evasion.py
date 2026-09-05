@@ -44,6 +44,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from pooled_consensus import (observer_geometry, true_positions,
+                              calibrate_mean, DEBIAS_EDGES, _pick,
                               consensus_block, free_fit, MIN_OBS)
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
@@ -59,32 +60,37 @@ def fit_global_law(d, rsrp):
     return float(beta[0]), float(beta[1])
 
 
-def free_rmse_of(ox, oy, rsrp, road_halfwidth):
+def free_rmse_of(ox, oy, rsrp, road_halfwidth, mu=None):
     """Residual of the best single position, constrained or not."""
     try:
-        sol = free_fit(ox, oy, rsrp, road_halfwidth)
+        sol = free_fit(ox, oy, rsrp, road_halfwidth, mu)
         return (float(np.sqrt(np.mean(sol.fun ** 2))),
                 float(sol.x[0]), float(sol.x[1]))
     except Exception:
         return np.nan, np.nan, np.nan
 
 
-def pooled_rmse(ox, oy, rsrp, cx, cy):
+def pooled_rmse(ox, oy, rsrp, cx, cy, mu=None):
     """Residual of the two-parameter propagation fit given a claimed position.
 
     Intercept and exponent are free, which is what makes a constant transmit
     power offset invisible to this statistic and why an adaptive attacker has
     to move the claim rather than the power.
+
+    With `mu`, the calibrated mean correction is applied at the CLAIMED range,
+    which is where the asymmetry lives: an honest station's claimed range is its
+    true one and a liar's is not.
     """
     d = np.maximum(np.hypot(ox - cx, oy - cy), 1.0)
     L = 10.0 * np.log10(d)
     X = np.c_[np.ones(len(L)), -L]
-    beta, *_ = np.linalg.lstsq(X, rsrp, rcond=None)
-    return float(np.sqrt(np.mean((rsrp - X @ beta) ** 2)))
+    y = rsrp if mu is None else rsrp - _pick(d, mu)
+    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+    return float(np.sqrt(np.mean((y - X @ beta) ** 2)))
 
 
 def best_response(ox, oy, rsrp, tx, ty, displacement, n_angles,
-                  max_lateral=None):
+                  max_lateral=None, mu=None):
     """The smallest pooled residual an attacker can leave while still lying by
     `displacement` metres, and the direction it lied in.
 
@@ -112,7 +118,7 @@ def best_response(ox, oy, rsrp, tx, ty, displacement, n_angles,
         # actually get away with".
         if max_lateral is not None and abs(cy) > max_lateral:
             continue
-        v = pooled_rmse(ox, oy, rsrp, cx, cy)
+        v = pooled_rmse(ox, oy, rsrp, cx, cy, mu)
         if v < best:
             best, best_th = v, th
     return best, best_th
@@ -146,6 +152,9 @@ def main():
                          "per triple per displacement, so the full corpus is "
                          "hours; a few thousand triples already give a spread "
                          "far tighter than the effect being measured")
+    ap.add_argument("--debias", action="store_true",
+                    help="apply the calibrated mean correction of RESULTS.md "
+                         "3h3 to the propagation law. Off by default")
     ap.add_argument("--br-angles", type=int, default=72,
                     help="directions searched per displacement. The attacker "
                          "is given a fine search because the bound is supposed "
@@ -242,6 +251,18 @@ def run_best_response(df, a, levels):
     ben = d[d.label_attackId == 0]
     print(f"\nestimator-aware best response, on {ben.key_window.count():,} "
           f"benign observations")
+
+    mu = None
+    if getattr(a, "debias", False):
+        dd = np.hypot(ben.rxX - ben.trueX, ben.rxY - ben.trueY).values
+        keep = dd > 1.0
+        dd, rr = dd[keep], ben.phy_rsrp_mean.values[keep]
+        L_ = 10.0 * np.log10(dd)
+        X_ = np.c_[np.ones(len(L_)), -L_]
+        b_, *_ = np.linalg.lstsq(X_, rr, rcond=None)
+        mu = calibrate_mean(dd, rr - X_ @ b_)
+        print("calibrated mean correction applied, RESULTS.md 3h3, dB per bin:")
+        print("  " + "  ".join(f"{v:+.2f}" for v in mu) + "\n")
     print("The attacker knows the receiver positions, the propagation model "
           "and the statistic,\nand picks the direction of its lie to minimise "
           "the pooled residual. No attacker\nconstrained to lie by this much "
@@ -281,7 +302,7 @@ def run_best_response(df, a, levels):
         r = g.phy_rsrp_mean.values
         tx, ty = float(g.trueX.iloc[0]), float(g.trueY.iloc[0])
         blk, est = consensus_block(ox, oy, r, tx, ty, rng,
-                                   road_halfwidth=a.br_estimator_road)
+                                   road_halfwidth=a.br_estimator_road, mu=mu)
         free = blk["pool_free_rmse"]
         if not np.isfinite(free) or free <= 0 or not np.isfinite(est[0]):
             continue
@@ -290,7 +311,7 @@ def run_best_response(df, a, levels):
         honest_ratio.append(blk["pool_claim_rmse"] / free)
         for lv in levels:
             br, th = best_response(ox, oy, r, tx, ty, lv, a.br_angles,
-                                   a.br_lateral)
+                                   a.br_lateral, mu=mu)
             if not np.isfinite(br):
                 # No direction at this displacement keeps the claim on the
                 # road, so an attacker that must stay plausible cannot lie this
