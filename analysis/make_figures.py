@@ -114,6 +114,61 @@ def fig_direction():
     save(fig, "direction")
 
 
+def fig_floor():
+    """The paper's central claim in one picture.
+
+    A single receiver flat at zero across every magnitude the dataset contains,
+    pooling rising through the transition, the benign positioning error marked
+    so the reader can see the floor is not an artefact of a small lie, and the
+    fitted crossing with its interval so the floor is a measurement rather than
+    a bracket.
+    """
+    log = "campaign_floor/logs/offset_floor_located.log"
+    text = (RUNS / log).read_text()
+
+    def arm(header):
+        block = text.split(header, 1)[1].split("benign positioning", 1)[0]
+        rows = re.findall(r"^\s+(\d+) to (\d+) m\s+\d+\s+[\d,]+\s+[\d.]+\s+([\d.]+)",
+                          block, re.M)
+        over = re.findall(r"^\s+over (\d+) m\s+\d+\s+[\d,]+\s+[\d.]+\s+([\d.]+)",
+                          block, re.M)
+        pts = [((float(a) + float(b)) / 2, float(c)) for a, b, c in rows]
+        if over:
+            pts.append((float(over[0][0]) * 1.6, float(over[0][1])))
+        if not pts:
+            sys.exit(f"FAILED: no bands parsed under '{header}' in {log}")
+        return zip(*pts)
+
+    sx, sy = arm("single observer, fused")
+    px, py = arm("pooled across receivers, all features")
+    cross = grab(log, r"50 percent detection at\s+([\d.]+) m", "the crossing")[0]
+    lo, hi = grab(log, r"95 percent interval\s+([\d.]+) to ([\d.]+) m",
+                  "the crossing interval")[0]
+    p95 = grab(log, r"95th ([\d.]+) m", "the benign error")[0]
+
+    fig, ax = plt.subplots(figsize=(5.6, 3.4))
+    ax.axvspan(0, float(p95), color="#999999", alpha=0.20)
+    ax.annotate("benign positioning\nerror, 95th pct",
+                xy=(float(p95), 0.62), xytext=(9.5, 0.60), fontsize=8,
+                color="#555555")
+    ax.axvspan(float(lo), float(hi), color="#a0522d", alpha=0.16)
+    ax.axvline(float(cross), color="#a0522d", lw=1.4, ls="--")
+    ax.annotate(f"floor at {float(cross):.0f} m\n[{float(lo):.0f}, {float(hi):.0f}]",
+                xy=(float(cross), 0.5), xytext=(float(cross) * 1.35, 0.30),
+                fontsize=8.5, color="#a0522d")
+    ax.plot(px, py, "o-", color="#1f4e79", lw=1.9, label="pooled across receivers")
+    ax.plot(sx, sy, "s--", color="#777777", lw=1.4, ms=4,
+            label="single receiver")
+    ax.set_xscale("log")
+    ax.set_xlabel("displacement of the claimed position (m, log scale)")
+    ax.set_ylabel("share of attackers caught")
+    ax.set_ylim(-0.05, 1.08)
+    ax.set_title("A single receiver never crosses the floor", fontsize=10)
+    ax.legend(fontsize=8, loc="upper left", frameon=False)
+    ax.grid(alpha=0.25, which="both")
+    save(fig, "floor")
+
+
 def fig_calibration():
     """Block error rate against SINR. Credibility rather than contribution:
     nothing was tuned to produce it and it reproduces across corpora."""
@@ -138,8 +193,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None)
     a = ap.parse_args()
-    figs = {"placement": fig_placement, "direction": fig_direction,
-            "calibration": fig_calibration}
+    figs = {"floor": fig_floor, "placement": fig_placement,
+            "direction": fig_direction, "calibration": fig_calibration}
     for name, fn in figs.items():
         if a.only and name not in a.only:
             continue
