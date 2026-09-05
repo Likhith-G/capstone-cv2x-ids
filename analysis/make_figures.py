@@ -13,6 +13,7 @@ Written to docs/figures/ as PDF for the paper and PNG for looking at.
 import argparse
 import pathlib
 import re
+import numpy as np
 import sys
 
 import matplotlib
@@ -187,12 +188,62 @@ def fig_calibration():
     save(fig, "calibration")
 
 
+def fig_geometry():
+    """Why the array is weak across the road, drawn rather than asserted.
+
+    The whole adversarial argument rests on the receivers being nearly collinear,
+    and the paper asserts it in prose. A reader should be able to see it. Drawn
+    from the same response surface the booth demo uses, so it is one real pooled
+    unit rather than a schematic: 36 receivers that actually heard one station in
+    one window.
+
+    Both axes are metres and the aspect is EQUAL, deliberately. Stretching the
+    across-road axis would make the geometry look better conditioned than it is,
+    which is precisely the thing being shown.
+    """
+    import json
+    src = pathlib.Path.home() / "ns3-v2x/runs/campaign_gnss/booth_surface.json"
+    if not src.exists():
+        print("skipped geometry: run make_booth_surface.py first")
+        return
+    d = json.loads(src.read_text())
+    tx, ty = d["true_position"]["x"], d["true_position"]["y"]
+    rx = np.array([[r["x"] - tx, r["y"] - ty] for r in d["receivers"]])
+
+    fig, ax = plt.subplots(figsize=(7.2, 1.9))
+    hw = d["road_halfwidth"]
+    ax.axhspan(-hw, hw, color="0.92", zorder=0)
+    ax.axhline(0, color="0.65", lw=0.8, ls=(0, (6, 6)), zorder=1)
+    ax.scatter(rx[:, 0], rx[:, 1], s=26, c="#2e7d7d", zorder=3)
+    ax.scatter([0], [0], s=110, marker="*", c="#c25a1e", zorder=4)
+    # Annotated in place rather than in a legend. On an equal-aspect plot this
+    # flat there is no room inside the axes for a legend box, and putting one
+    # below collides with the x label.
+    ax.annotate("transmitter", (0, 0), textcoords="offset points",
+                xytext=(0, 13), ha="center", fontsize=8, color="#c25a1e")
+    ax.annotate(f"{len(rx)} receivers", (rx[:, 0].min(), 0),
+                textcoords="offset points", xytext=(4, 13), ha="left",
+                fontsize=8, color="#2e7d7d")
+    ax.set_xlabel("along the road (m)")
+    ax.set_ylabel("across (m)")
+    ax.set_aspect("equal")
+    ax.set_ylim(-hw * 3.4, hw * 3.4)
+    # Below the axes, because an equal-aspect plot of a 2.5 km spread against a
+    # 50 m one leaves no room inside it, and shrinking the across axis to make
+    # room would hide the very thing the figure exists to show.
+    ax.set_title(f"Receivers span {np.ptp(rx[:,0]):,.0f} m along the road and "
+                 f"{np.ptp(rx[:,1]):.0f} m across it", fontsize=9.5, pad=6)
+    ax.grid(alpha=0.25, axis="x")
+    save(fig, "geometry")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None)
     a = ap.parse_args()
     figs = {"floor": fig_floor, "placement": fig_placement,
-            "direction": fig_direction, "calibration": fig_calibration}
+            "direction": fig_direction, "calibration": fig_calibration,
+            "geometry": fig_geometry}
     for name, fn in figs.items():
         if a.only and name not in a.only:
             continue
