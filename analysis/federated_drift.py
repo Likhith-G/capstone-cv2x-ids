@@ -142,11 +142,19 @@ def main():
     # and confound breadth with volume, which is the mistake the drift
     # comparison in 3c was rebuilt to avoid. The extra-data case is reported
     # separately as mixed-2x, so the two effects can be read apart.
+    # The centralised arm pools the SAME mixed rows into a single client, which
+    # makes federated averaging equivalent to training on the pooled data. It is
+    # the ceiling federation is trying to reach without moving the data, and it
+    # is what separates two very different explanations of a poor mixed result:
+    # that rows from the other density do not help, or that they would help and
+    # federation cannot exploit them. This file's own docstring called that the
+    # point and the arm was never in the dict.
     arms = {
-        "transfer": (src_obs, 1),
-        "in-dist": (list(tgt_train), 1),
-        "mixed": (src_obs + list(tgt_train), 1),
-        "mixed-2x": (src_obs + list(tgt_train), 2),
+        "transfer": (src_obs, 1, False),
+        "in-dist": (list(tgt_train), 1, False),
+        "mixed": (src_obs + list(tgt_train), 1, False),
+        "mixed-2x": (src_obs + list(tgt_train), 2, False),
+        "centralised": (src_obs + list(tgt_train), 1, True),
     }
     # Same configuration as federated.py's panel, so this arm is the same
     # learner the aggregation comparison uses and the two are readable together.
@@ -155,12 +163,20 @@ def main():
                participation=0.5, mu=0.01, tau=1.0, lam=0.1)
 
     results = {}
-    for name, (keep, mult) in arms.items():
+    for name, (keep, mult, pool) in arms.items():
         cap = budget * mult
         clients = pack_clients(X, codes, obs, keep, a.min_rows, cap, rng)
         if not clients:
             print(f"{name}: no clients with {a.min_rows} rows, skipped")
             continue
+        if pool:
+            # One client holding every row the mixed arm has. Same rows, same
+            # budget, no partitioning. pack_clients returns (x, y, class counts),
+            # so the counts are recomputed over the pooled labels rather than
+            # summed, which would be the same here but is not obviously so.
+            xs = torch.cat([c[0] for c in clients])
+            ys = torch.cat([c[1] for c in clients])
+            clients = [(xs, ys, torch.bincount(ys, minlength=len(shared)))]
         n_rows = sum(len(c[0]) for c in clients)
         f1s, mccs = [], []
         for s in range(a.seeds):
@@ -171,6 +187,28 @@ def main():
         print(f"{name:12s} {len(clients):4d} clients {n_rows:8,} rows   "
               f"macro F1 {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}   "
               f"MCC {np.mean(mccs):.4f} +/- {np.std(mccs):.4f}")
+
+    if "mixed" in results and "centralised" in results:
+        gap = results["centralised"][0] - results["mixed"][0]
+        print(f"\ncentralised against mixed, the SAME rows pooled into one "
+              f"client: {gap:+.4f}")
+        print("""
+This is the row that says whose failure it is. Both arms hold the same training
+rows from both densities; the centralised one holds them in a single client, so
+averaging over one model is training on the pooled data.
+
+**It is a ceiling rather than a step-matched control, and the difference matters
+when reading it.** The pooled client sees every row in every round where the
+federation samples half its clients, so centralised gets more optimisation as
+well as no partitioning. That makes it an upper bound on what federation could
+reach, which is the useful thing here, and not a clean measurement of what
+partitioning alone costs.
+
+If centralised beats mixed, the rows from the other density carry usable signal
+and federation is failing to exploit it, which argues for personalisation rather
+than for abandoning the breadth. If centralised is no better even as a ceiling,
+the rows genuinely do not transfer and no aggregation method was going to help.
+""")
 
     if "transfer" in results and "in-dist" in results:
         gap = results["in-dist"][0] - results["transfer"][0]
