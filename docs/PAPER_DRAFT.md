@@ -1261,17 +1261,22 @@ continual and local adaptation and against the one global model this
 architecture produces. Personalisation is what the result asks for and we have
 not built it.
 
-**Whose failure it is, measured rather than argued.** The obvious objection is
-that federation is being blamed for a property of the data, so we pooled the same
-rows into a single client and asked again. Mixing distributions costs 0.0240
-macro F1 when the rows are pooled and 0.1768 when they are federated across
-clients, at the same row budget, and an independent check with a different learner
-on a different split puts the central figure at 0.0091. **Both readings were
-partly right.** The rows from the other density genuinely do not help, and they
-cost something even centrally; federation then turns that mild cost into a severe
-one, and the gap between the two figures is what federation contributes.
-Personalisation addresses that gap. It does not make the other density's rows
-worth having.
+**Part of this is not federation's doing, and we say which part.** The obvious
+objection is that federation is being blamed for a property of the data, so we
+pooled the same rows into a single client and asked again. Mixing distributions
+carries a cost centrally too: 0.0240 macro F1 in one direction and 0.1660 in the
+other, with an independent check using a different learner on a different split
+at a fixed row budget putting it at 0.0091. **The other density's rows do not
+help, and no aggregation method was going to change that.**
+
+**Whether federation makes it worse is not resolved and we do not claim it.** The
+two directions disagree about the amplification, 7.4 times against 1.05, and the
+single arm behind that disagreement has a standard deviation of 52 percent of its
+own mean where every other arm is at one or two percent. One or more seeds
+diverged and a mean from that arm is not a measurement. The honest position is
+that this experiment separates the data's contribution from federation's in one
+direction and fails to in the other, and that resolving it means diagnosing the
+divergence rather than picking the direction that agrees with us.
 
 **It holds in the other direction too**, which matters because a negative result
 measured once can be a property of which way round the test was run. Congested
