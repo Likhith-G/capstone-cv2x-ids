@@ -754,6 +754,20 @@ headroom is: the gap between the bound and the fit is a factor of two and the
 gap between placements is a fifth, so a better estimator is worth more than a
 better array.
 
+**We looked, and the gap is a misspecified propagation model rather than an
+inefficient fit.** The residual of the single slope law has a mean that changes
+sign with range, from minus two decibels within a hundred metres to plus one and
+a half at two to four hundred and minus two and a half beyond a kilometre.
+Removing that mean, calibrated offline against claimed distances on traffic a
+receiver has no reason to doubt and costing no free parameters, takes the road
+constrained localisation error from 18.1 m to 12.8 m, held out across seeds.
+Inverse variance weighting on its own makes it worse, because down weighting a
+receiver for its noise discards the receivers closest in and those carry the
+most position information. **The numbers in this paper describe the
+uncalibrated single slope fit, which is also what the RSS checks in the
+literature assume**, and a measured thirty percent of the localisation error is
+recoverable by a calibration step a deployment can already perform.
+
 **Such a claim is in the field beside the carriageway.** A map check rejects it
 at no cost and with no radio evidence at all. Held within 12 m of the
 centreline, the attacker is forced longitudinal, the off axis angle falls to
