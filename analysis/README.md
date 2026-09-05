@@ -90,6 +90,18 @@ different answer from corpus-wide pooling.
 
     geometry_bound.py corpus.pkl --run-dir DIR --tags seed1 ... [--regions]
 
+`estimator_study.py` diagnoses the position fit before trying to improve it.
+Weighting only helps if the residuals are heteroscedastic, and the diagnostic
+found three faults rather than one: a single slope law leaves a mean that
+changes sign with range, the spread varies with range, and the tails are heavy.
+A wrong mean is not fixed by reweighting, and removing a calibrated mean is what
+actually works. `--calibrate-tags` fits the curve on some seeds and evaluates
+triples from the rest, which is the number to quote; without it the curve is
+fitted and evaluated on the same corpus and the script says so.
+
+    estimator_study.py corpus.pkl --run-dir DIR --tags seed1 ... \
+        --calibrate-tags seed1 seed2 seed3 seed4 [--road-halfwidth 12]
+
 `make_figures.py` renders to `docs/figures/` as PDF and PNG. It parses the logs
 rather than recomputing from the corpus, because a figure recomputed
 independently is how a plot comes to disagree with the table beside it, and a
@@ -171,6 +183,7 @@ invalidate every grouped fold.
 | `plausibility_baseline.py` | how the work stands against the field's standard checks rather than its own ablations |
 | `federated_drift.py` | does federating across two densities recover what the density change costs |
 | `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
+| `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
 
