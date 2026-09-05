@@ -60,11 +60,20 @@ DASH_DOCS = ["RESULTS.md", "PAPER_DRAFT.md", "PAPER_CLAIMS.md", "METHODS_DRAFT.m
              "STATUS.md", "LESSONS.md", "CRITIQUE.md", "PLAN.md",
              "CAPSTONE_PLAN.md"]
 
-# Process names that mean work is still in flight. Compacting or handing off
-# while one of these runs loses the session that knows what it was for.
-BUSY = ["cv2x-ids-scenario", "ns3", "build_features", "build_corpus", "federated.py",
-        "pooled_consensus", "offset_floor", "benchmark.py", "drift.py",
-        "geometry_bound", "estimator_study", "veremi_bridge", "regenerate.sh"]
+# Scripts that mean work is still in flight. Compacting or handing off while one
+# of these runs loses the session that knows what it was for.
+#
+# Matched against the .py or .sh file being run, not against the whole command
+# line. A bare "ns3" here matched every corpus path, since they all live under
+# ns3-v2x, so a shell merely waiting on a log looked like a running simulation.
+BUSY = ["build_features.py", "build_corpus.py", "federated.py", "drift.py",
+        "pooled_consensus.py", "offset_floor.py", "benchmark.py",
+        "geometry_bound.py", "estimator_study.py", "veremi_bridge.py",
+        "correction_transfer.py", "model_independence.py", "federated_drift.py",
+        "regenerate.sh"]
+
+# The ns-3 simulator binary, which is not a script and is matched on its own.
+SIM = "cv2x-ids-scenario"
 
 results = []
 
@@ -88,10 +97,21 @@ def check_processes():
     running = []
     _, out = sh("ps ax -o pid=,command=")
     for line in out.splitlines():
+        if "session_check" in line:
+            continue
+        # A waiter shell names the log it polls, and those paths contain script
+        # names too, so only count a line that actually INVOKES the script:
+        # the token has to be an argument in its own right, not a substring of
+        # a longer path, and it has to follow an interpreter or be the command.
+        toks = line.split()
+        invoked = {t.rsplit("/", 1)[-1] for t in toks}
         for pat in BUSY:
-            if pat in line and "session_check" not in line:
-                running.append(f"{pat}: {line.strip()[:70]}")
+            if pat in invoked and any(t.endswith(pat) for t in toks[:4]):
+                running.append(f"{pat} (pid {toks[0]})")
                 break
+        else:
+            if SIM in invoked:
+                running.append(f"{SIM} (pid {toks[0]})")
     check("nothing running", not running,
           "; ".join(running[:3]) if running else "no simulation or analysis in flight")
 
