@@ -121,17 +121,26 @@ def main():
     tgt_obs = pd.unique(both.loc[both.corpus == a.target_tag, "client"].values)
     rng.shuffle(tgt_obs)
     cut = int(0.7 * len(tgt_obs))
-    tgt_train, tgt_test = set(tgt_obs[:cut]), set(tgt_obs[cut:])
+    # Ordered lists, NOT sets. tgt_obs was just shuffled by a seeded
+    # RandomState, so its order is deterministic and reproducible. Putting it
+    # into a set throws that away: Python randomises string hashing per
+    # process, so list(a_set_of_strings) comes back in a different order every
+    # run. That order is the order pack_clients thins clients in, and thinning
+    # draws from the shared RandomState, so two runs of the identical command
+    # trained the mixed arms on different rows. Verified: two runs that
+    # differed only in learning rate reported different per class row counts
+    # for the same arm at the same total.
+    tgt_train, tgt_test = list(tgt_obs[:cut]), list(tgt_obs[cut:])
     src_obs = list(pd.unique(both.loc[both.corpus == a.source_tag, "client"].values))
 
     obs = both["client"].values
     X = both[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0).values.astype(np.float32)
     # The scaler sees training rows only, from both corpora, which is what a
     # federation spanning densities would have.
-    fit_mask = np.isin(obs, list(tgt_train) + src_obs)
+    fit_mask = np.isin(obs, tgt_train + src_obs)
     X = StandardScaler().fit(X[fit_mask]).transform(X).astype(np.float32)
 
-    test_mask = np.isin(obs, list(tgt_test))
+    test_mask = np.isin(obs, tgt_test)
     test = (torch.tensor(X[test_mask]),
             torch.tensor(codes[test_mask], dtype=torch.long))
     print(f"{len(src_obs)} source clients, {len(tgt_train)} target training "
@@ -161,16 +170,16 @@ def main():
     # point and the arm was never in the dict.
     arms = {
         "transfer": (src_obs, 1, False),
-        "in-dist": (list(tgt_train), 1, False),
-        "mixed": (src_obs + list(tgt_train), 1, False),
-        "mixed-2x": (src_obs + list(tgt_train), 2, False),
-        "centralised": (src_obs + list(tgt_train), 1, True),
+        "in-dist": (tgt_train, 1, False),
+        "mixed": (src_obs + tgt_train, 1, False),
+        "mixed-2x": (src_obs + tgt_train, 2, False),
+        "centralised": (src_obs + tgt_train, 1, True),
         # The control the ceiling needs. Without it, centralised-mixed can only
         # be compared against a FEDERATED in-dist arm, which conflates two
         # different things: whether mixing distributions helps, and whether
         # partitioning hurts. This arm is in-dist rows pooled the same way, so
         # the four form a two by two and each question has its own pair.
-        "centralised-in-dist": (list(tgt_train), 1, True),
+        "centralised-in-dist": (tgt_train, 1, True),
     }
     # Same configuration as federated.py's panel, so this arm is the same
     # learner the aggregation comparison uses and the two are readable together.
