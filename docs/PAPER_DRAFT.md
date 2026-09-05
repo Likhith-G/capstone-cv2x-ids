@@ -20,7 +20,7 @@ Candidates, in order of preference:
 
 The first is preferred because the paper's most defensible contribution is a
 bound rather than a score, and a title that promises a bound is one the results
-can keep. It also sets the reader's expectation correctly for section 6, which
+can keep. It also sets the reader's expectation correctly for section 11, which
 is the half of the paper that says what the method cannot do.
 
 ## Venue
@@ -82,6 +82,39 @@ Review is double blind and artefact evaluation happens only after acceptance.
 identifies the authors, before the submission is in.** The anonymised artefact
 has to be a separate deposit. And nothing in `docs/` that is gitignored may go
 into any release: those files name defects the team has not seen.
+
+---
+
+## Structure, and what it is mapped onto
+
+Research report 21 surveyed what actually gets accepted as resource led work at
+WiSec, NDSS, CCS, IEEE S&P and USENIX Security. Those venues run no separate
+dataset track, so a dataset there supports a scientific argument rather than
+standing alone, and the accepted papers converge on a ten part shape. This draft
+is ordered onto it.
+
+| the shape | here | budget for a 10 page core |
+|---|---|---|
+| problem and benchmark gap | 1, 2 | |
+| security model | 3 | |
+| design requirements | 4 | |
+| generation methodology | 5 | 4 to 4.5 pages, sections 4 to 7 |
+| label and provenance methodology | 6 | |
+| characterisation and quality control | 7 | |
+| benchmark task and evaluation protocol | 8 | |
+| baseline results and failure analysis | 9 | 1.8 to 2.2 pages, sections 8 and 9 |
+| the security insight the benchmark enables | 10, 11, 12 | the rest |
+| scope, limitations, ethics, release | 13, 14 | 0.5 to 0.75 pages |
+
+As proportions: 35 to 50 percent on generation, labels, characterisation and
+quality; 15 to 25 percent on baselines; 5 to 10 percent on limitations. **A novel
+detector is not required.** The single receiver unidentifiability result and the
+cooperative recovery already constitute a security finding, which is what the
+dataset is here to support.
+
+Sections 4 to 7 replaced a single "Dataset" section. The requirements in 4 are
+referenced by tag from 5 to 7, so a reader can check the instrument against the
+question rather than taking it on trust.
 
 ---
 
@@ -232,7 +265,7 @@ a reader might reasonably expect and would be wrong to infer.
 
 - **That federated training recovers the drift loss.** We tested it and it does
   not. A federation spanning both densities scores below a model trained on
-  either one alone, and doubling its data does not close the gap. Section 7
+  either one alone, and doubling its data does not close the gap. Section 12
   reports this as a finding rather than leaving it unexamined, and it argues for
   personalisation, which we have not built.
 - **That the cross layer detector catches radio layer attacks.** Both radio
@@ -282,7 +315,7 @@ validation and test partitions, with attacks deliberately harder than the
 Extension's. It is generated in Eclipse MOSAIC and carries application layer
 message logs.
 
-**We evaluate on it.** Section 4 reports our application layer detector on
+**We evaluate on it.** Section 9 reports our application layer detector on
 NextGen's highway scenario, and the result reproduces there and is sharper than
 on the earlier release: a self inconsistent position lie is caught at 0.9570 and
 a self consistent one at 0.1460, against 0.9644 and 0.3382 on the original.
@@ -306,7 +339,7 @@ labels and are not vehicular.
 **Cross layer intrusion detection outside V2X has already run the comparison
 this paper runs inside it, and must be cited.** A 2026 study of Open RAN
 (arXiv:2606.22450) evaluates application layer flow records against radio
-telemetry against the two fused, which is structurally the ablation of section 4.
+telemetry against the two fused, which is structurally the ablation of section 9.
 It is a cellular access network rather than a vehicular one, and it fuses flow
 records rather than message semantics, so the comparison here remains the first
 we are aware of **for vehicular misbehaviour**. The qualifier is not decoration:
@@ -369,7 +402,7 @@ fit, a real roadside unit region carries a median of eight, and the cross
 receiver consistency block is worth 0.0025 macro F1 at eight receivers against
 0.0334 at thirty nine.
 
-**The third is prior art on the bound itself, and it constrains what section 5
+**The third is prior art on the bound itself, and it constrains what section 10
 may claim.** Yan, Malaney, Nevat and Peters (IEEE TVT 63(7), 2014) construct a
 Fisher information matrix for position from received signal strength, invert it
 into a Cramer-Rao error ellipse, and test whether an estimate falls outside a
@@ -427,7 +460,7 @@ the arrangement this paper measures and finds wanting.
 
 ---
 
-## 2b. Threat model
+## 3. Threat model
 
 A security venue reads this before it reads any result, and the draft did not
 have one. Stated as capabilities the adversary has and does not have, because
@@ -446,8 +479,8 @@ detection exists as a field.
 | the contents of its own messages: position, speed, heading | the seven falsification classes, including a three magnitude position ladder |
 | its transmission rate and timing | the two denial of service classes, and the sporadic variant that attacks the persistence rule |
 | how many identities it presents, within one physical radio | the sybil class, four claimed identities per vehicle |
-| its transmit power | section 4 measures a check that this defeats outright, to chance, on every class |
-| its claimed position given full knowledge of the verifier | section 6, where it knows the receivers' positions, the propagation model and the statistic, and searches 72 directions |
+| its transmit power | section 9 measures a check that this defeats outright, to chance, on every class |
+| its claimed position given full knowledge of the verifier | section 11, where it knows the receivers' positions, the propagation model and the statistic, and searches 72 directions |
 
 **What it does not control, and these are the assumptions the results rest on.**
 
@@ -456,7 +489,7 @@ detection exists as a field.
   that single asymmetry.
 - **Other stations' credentials.** No key compromise, no impersonation of a
   specific victim, no certificate forgery.
-- **The receivers.** They are honest. Section 6c treats colluding receivers
+- **The receivers.** They are honest. RESULTS.md 6c treats colluding receivers
   separately and quantifies the cost of that assumption rather than assuming it
   away.
 - **The physical channel.** No jamming, no directional or beamformed
@@ -473,29 +506,114 @@ breaks confidentiality rather than integrity and a misbehaviour detector is the
 wrong instrument. Both appear on the standard V2X attack taxonomy, so their
 absence is a scope decision rather than an oversight.
 
-**What the adversary is assumed to know.** Section 4 assumes nothing. Section 6
+**What the adversary is assumed to know.** Section 9 assumes nothing. Section 11
 assumes everything: receiver positions, the propagation model, the statistic and
 the constraint. Those are deliberately generous, because a bound is only worth
 reporting if the adversary it bounds is stronger than any real one.
 
 ---
 
-## 3. Dataset
+## 4. Design requirements
 
-Generated with ns-3.42 and 5G-LENA at tag `v2x-1.1`, on a 6 km three lane
+What the dataset had to satisfy before any of it was generated, stated as
+requirements so that a reader can check the instrument against the question
+rather than taking it on trust. Each one exists because a dataset that fails it
+cannot answer section 3's threat model.
+
+**R1. The radio must be real, and it must be sidelink.** The question is what
+received power can establish about a claimed position, so the physical layer has
+to be measured rather than modelled at the application layer, and it has to be
+the link vehicles actually use. Every vehicular 5G intrusion dataset we located
+runs over the cellular uplink, where the receiver is a base station rather than
+another vehicle, and the geometry that makes cooperative verification possible
+does not exist.
+
+**R2. The benign class must have real positional variance.** A dataset whose
+honest vehicles report their exact coordinates makes any displacement separable
+in principle and asks position falsification an easier question than deployment
+ever will. This is the requirement most often missed, and it is the one that
+decides whether a detection floor can be observed at all.
+
+**R3. Attack magnitude must be an axis, not a label.** A detector evaluated at a
+single offset yields a score. A detector evaluated across a graded ladder that
+brackets the detectability threshold yields a limit. The bands must not overlap,
+or they cannot bracket anything.
+
+**R4. No feature may be computable only with information the receiver does not
+have.** Not as a review step but as a structural property of the pipeline, since
+a ground truth leak is the defect most likely to survive review and most likely
+to produce a headline score.
+
+**R5. Validation must be adversarial rather than confirmatory.** A suite that
+asks whether the expected signature is present passes on a degenerate dataset.
+It has to ask whether the signature is the *only* difference.
+
+**R6. Benign traffic must be a standards-compliant message mix.** If honest
+vehicles send only one message type, then message type is a label, and a detector
+learns the generator rather than the misbehaviour.
+
+---
+
+## 5. Generation
+
+ns-3.42 with the 5G-LENA `nr` module at tag `v2x-1.1`, on a 6 km three lane
 carriageway with 90 vehicles and 12 roadside units, over eight seeds of 60 s.
-Vehicles follow an intelligent driver model and exchange ETSI CAM, DENM, CPM
-and VAM messages under TS 102 687 reactive congestion control, directly over an
-NR V2X Mode 2 PC5 sidelink. 1,641,002 windows, 720 stations of which 519 are
-benign, eleven classes, 50 features in two blocks of 22 application layer and
-28 physical and MAC layer.
+Vehicles follow an intelligent driver model with three vehicle classes and
+exchange ETSI CAM, DENM, CPM and VAM messages under TS 102 687 reactive
+congestion control, directly over an NR V2X Mode 2 PC5 sidelink (**R1**, **R6**).
 
-The detection unit is one observer's view of one claimed station over one
-second. Ground truth never crosses the air interface: the transmitter writes
-what is true to one table, each receiver writes only what it received to
-another, and the two are joined offline on a message identifier. An assertion
-fails the run if any column named for a key or a label reaches the feature
-list.
+Each message type is emitted from its own triggering conditions rather than on a
+fixed schedule, so the message mix responds to what the vehicle is doing. Under a
+constant velocity mobility model the CAM trigger degenerates to a deterministic
+interval, which is one reason the mobility model is a car following one rather
+than a convenience.
+
+**One patch to the simulator, and it is what the dataset is for.** 5G-LENA
+computes a per-SCI sidelink reference signal received power and never exposes it.
+A three file additive patch surfaces it. Without that patch the strongest
+cross-layer feature does not exist and the dataset is application layer like
+every other one.
+
+**A limit of the simulator, stated here rather than in the limitations.** Mode 2
+resource grants are data driven, so a reserved resource is used only when there
+is data for it and no attacker can hoard the channel. Both radio layer attacks in
+the catalogue are therefore inert, which is a property of ns-3 rather than of
+C-V2X, and it means the cross layer result is radio features catching
+**application layer** misbehaviour.
+
+---
+
+## 6. Labels and provenance
+
+**Ground truth never crosses the air interface** (**R4**). The transmitter writes
+what is true to one table. Each receiver writes only what it received to another.
+The two are joined offline on a message identifier, after the fact, in a step no
+feature can see.
+
+The feature builder opens only receive side tables. One function is permitted to
+read the transmit log, and an assertion fails the run if any column named for a
+key or a label reaches the feature list. This is a structural guarantee rather
+than a review step: a feature a real receiver could not compute cannot enter the
+dataset by accident.
+
+**One narrow exception, named because it is the only one.** The binding between a
+decoded radio measurement and the message it carried is reconstructed from the
+transmit log, because a nearest-time join misattributes badly under load. That
+recovers an observable a real receiver has by construction, namely which radio
+sent the message it just decoded, rather than leaking one it does not.
+
+Every row also carries provenance columns, the seed, the receiver, the claimed
+station, the window and the true transmitter, kept as metadata for grouping and
+audit and never as features.
+
+---
+
+## 7. Characterisation and quality control
+
+1,641,002 windows, 720 physical transmitters of which 519 are benign, eleven
+classes, 50 features in two blocks of 22 application layer and 28 physical and
+MAC layer. The detection unit is one observer's view of one claimed station over
+one time window.
 
 ### Benign vehicles do not claim their exact position
 
@@ -503,22 +621,22 @@ Each carries a receiver error following the VeReMi Extension model: an initial
 offset drawn uniformly within 5 m per axis, each fix mixing that with the
 previous one plus noise proportional to the vehicle's own initial draw, and
 occasional multipath excursions at 0.005 per second. The realised benign error
-has a median of 4.00 m, a 95th percentile of 5.90 m and a maximum of 14.79 m.
+has a median of 4.00 m, a 95th percentile of 5.90 m and a maximum of 14.79 m
+(**R2**).
 
-This matters more than it looks. Without it the benign class has no positional
-variance, so any displacement greater than zero is separable in principle and a
-position attack is asked an easier question than deployment would ask it.
-The argument for it is from construction rather than from a before and after
-score, and deliberately so. An earlier corpus without the error model scored
-higher, but it also carried one class fewer, so the difference between the two
-numbers is not attributable to the error model alone and must not be presented as
-though it were.
+Without it the benign class has no positional variance, so any displacement
+greater than zero is separable in principle and a position attack is asked an
+easier question than deployment would ask it. The argument is from construction
+rather than from a before and after score, and deliberately so: an earlier corpus
+without the error model scored higher, but it also carried one class fewer, so
+the difference between the two numbers is not attributable to the error model
+alone and must not be presented as though it were.
 
 ### Position falsification is a ladder, not a class
 
-The three constant offset classes are one mechanism at three magnitudes, and
-the bands are chosen against the benign error so that the set brackets the
-point where detection becomes possible rather than sitting on one side of it:
+The three constant offset classes are one mechanism at three magnitudes, and the
+bands are chosen against the benign error so the set brackets the point where
+detection becomes possible rather than sitting on one side of it (**R3**):
 
 | class | realised displacement | relative to benign 95th percentile |
 |---|---|---|
@@ -527,35 +645,33 @@ point where detection becomes possible rather than sitting on one side of it:
 | large | 70.8 to 232.7 m | 12 to 39 times |
 
 Their realised displacements do not overlap, which is checked on the first seed
-before a campaign is used, because bands that overlap cannot bracket a
-threshold. The middle band is the one that matters and it was absent from every
-earlier corpus of this work and, as far as we found, from the misbehaviour
-datasets in general, which cluster at VeReMi's 250 m scale.
+before a campaign is used, because bands that overlap cannot bracket a threshold.
+The middle band is the one that matters and it was absent from every earlier
+corpus of this work and, as far as we found, from the misbehaviour datasets in
+general, which cluster at VeReMi's 250 m scale.
 
-### Integrity
+### The integrity gates are adversarial, not confirmatory
 
 Ten gates run before any model is trained, two of them once per class, and all
-pass: duplicate fraction 0.0000 and verbatim train and test overlap 0.0000 at
-measurement precision rather than float precision, 1-NN macro F1 0.3466, a
-depth three tree at 0.3288, best single feature separability 0.0686, and
-maximum absolute correlation with a label column 0.2717.
+pass (**R5**): duplicate fraction 0.0000 and verbatim train and test overlap
+0.0000, 1-NN macro F1 **0.3466**, a depth three tree at 0.3288, best single
+feature separability 0.0686, and maximum absolute correlation with a label column
+0.2717.
 
-Comparisons are made at measurement precision, rounding to one decibel, one
+The 1-NN figure is the one to read. A dataset that a nearest neighbour can solve
+has been memorised rather than learned, and the earlier pipeline this work
+replaces scored 1.000 on exactly that test while passing all 57 of its own
+integrity checks, because every one of them asked whether the expected signature
+was present and none asked whether it was the only difference.
+
+**Comparisons are made at measurement precision**, rounding to one decibel, one
 millisecond and one metre. At float precision no two continuous features ever
 match, so duplicate and overlap tests return zero whether or not the dataset is
-degenerate, which makes them worse than useless because they read as
-reassuring.
-
-**The one framing point to make here rather than in limitations.** Benign
-vehicles carry receiver error. Without it the benign class has no positional
-variance, any displacement at all is separable in principle, and a position
-attack is easier to detect than it could ever be in deployment. That is an
-argument from construction. Do not evidence it with a score against an earlier
-corpus, which differed in its class count as well as its error model.
+degenerate, which makes them worse than useless because they read as reassuring.
 
 ---
 
-## 3b. Benchmark task and evaluation protocol
+## 8. Benchmark task and evaluation protocol
 
 What a reader has to reproduce to compare against these numbers. Report 21 found
 that accepted resource led papers state this explicitly and the draft did not.
@@ -598,7 +714,7 @@ overlap by construction.
 
 ---
 
-## 4. A single receiver cannot see a position lie
+## 9. A single receiver cannot see a position lie
 
 250,000 windows sampled from the corpus, three folds grouped by transmitting
 station so no station appears on both sides, 100 trees.
@@ -741,7 +857,7 @@ comparison that is demonstrated rather than asserted.
 
 ---
 
-## 5. Pooling measurements, and the detection floor
+## 10. Pooling measurements, and the detection floor
 
 Shadowing is independent per link. A false position is common mode, because one
 claimed position must explain every receiver's measured power at once and
@@ -846,7 +962,7 @@ against 28.0 m, so the fit is within about a factor of two of what the geometry
 allows and its error is not an artefact of the fitting method.
 
 **And the bound is strongly anisotropic**: 36.4 m across the road against 12.3 m
-along it, a ratio of three, which is section 6.
+along it, a ratio of three, which is section 11.
 
 **The scale at which receivers cooperate matters more than how many of them
 there are.** Pooling corpus wide over a median of 39 receivers gives the 36.4 m
@@ -860,7 +976,7 @@ and a corpus wide pooling gain is not what one region delivers.
 
 ---
 
-## 6. The attacker that knows the estimator
+## 11. The attacker that knows the estimator
 
 Transmit power cannot beat the pooled check, because the fit removes a constant
 power offset analytically: a single power setting slides every receiver's
@@ -886,7 +1002,7 @@ equivalent freedom.
 **The direction explains it, and the geometry predicted it.** The best lies are
 75 to 85 degrees off the road axis, which is sideways, found by searching 72
 directions at each displacement with no model of why one should win. The
-Cramer Rao ellipse of section 5, computed from the propagation law and its
+Cramer Rao ellipse of section 10, computed from the propagation law and its
 residual with no attacker and no classifier anywhere in it, has its major axis
 at **79.3 degrees** from the road. Receivers strung along a straight road are
 nearly collinear, range only measurements barely constrain position
@@ -986,7 +1102,7 @@ RESULTS.md 6b2c.
 
 ---
 
-## 7. Deployment: drift, federation, and the operating point
+## 12. Deployment: drift, federation, and the operating point
 
 ### The detector does not survive a density it was not trained on
 
@@ -1055,7 +1171,7 @@ from the eleven cross receiver consistency statistics, which do not reach
 significance at this receiver count. Averaging is doing nearly all the work
 here. At 39 receivers the same statistics are worth 0.0334, so the claim is
 that they matter where receivers are plentiful and one region is not where they
-are. Section 5's bound says why rather than leaving it as an observation: the
+are. Section 10's bound says why rather than leaving it as an observation: the
 across road localisation bound is 36 m at corpus scale and 6.2 km inside one
 region, because eight receivers clustered around one unit barely identify four
 parameters. The consistency statistics are worth little in a region because
@@ -1102,7 +1218,7 @@ changes that.
 
 **Detection at the operating point follows the magnitude ladder**, 0.591 on the
 largest position offset, 0.458 on the mid magnitude one and 0.125 on the
-smallest, which is the detection floor of section 5 appearing outside a
+smallest, which is the detection floor of section 10 appearing outside a
 controlled comparison. Everything that is not a position lie sits above 0.93.
 
 **State the operating point as two numbers.** Stratified by contact time,
@@ -1131,7 +1247,7 @@ is not done.
 
 ---
 
-## 8. Limitations
+## 13. Limitations
 
 Eleven are listed in full in `RESULTS.md` section 9 and should not be
 compressed away. Three matter enough to state in the body rather than at the
@@ -1153,7 +1269,7 @@ but it is one the rest of the method does not have.
 
 **One road geometry.** Every figure here is for receivers strung along the
 length of a straight carriageway. Setting the roadside units back from the road
-is measured, in section 6, and is worth about a fifth of the localisation bound
+is measured, in section 11, and is worth about a fifth of the localisation bound
 before the inverse square loss of distance overtakes the geometric gain. That
 measurement is a recomputation of the bound on the same pooled units rather
 than a fresh campaign, so it captures the geometric effect and not the change in
@@ -1164,7 +1280,7 @@ detection floor and the strongest evasion, so a different road could move both.
 
 ---
 
-## 8b. Ethics, and availability
+## 14. Ethics, and availability
 
 The tenth section of the outline accepted resource led security papers converge
 on, and the draft had neither half of it.
@@ -1207,7 +1323,7 @@ than as a courtesy.
 
 ---
 
-## 9. What would come next
+## 15. What would come next
 
 Not in this paper, and worth naming so the boundary is deliberate. The first
 two are cheap and the last two are not.
@@ -1224,7 +1340,7 @@ either end.
 direction is measured and the symmetric claim is not, which is cheap to close
 and would change no conclusion.
 
-**Personalisation, which is what our own negative result asks for.** Section 7
+**Personalisation, which is what our own negative result asks for.** Section 12
 shows a federation spanning two densities doing worse than a model trained on
 either, so the one global model this architecture produces is the wrong shape
 for the non stationarity that motivates it. What the result points at is per
@@ -1235,7 +1351,7 @@ of this one.
 
 **A geometry that is not a straight road.** The lateral degeneracy behind both
 the detection floor and the strongest evasion is a property of receivers strung
-along a line. Moving them off the centreline is measured in section 6 and is
+along a line. Moving them off the centreline is measured in section 11 and is
 worth a fifth of the error, which is not enough to remove it. A junction or a
 curve would break the collinearity far more thoroughly, and measuring by how
 much would say whether the floor reported here is a property of the method or of
@@ -1258,10 +1374,10 @@ is a new campaign and a new scenario rather than a parameter.
 - Confirm VeReMi NextGen is cited and differentiated. It is the current state of
   that lineage, it settles application layer breadth, and a reviewer from that
   group will be reading.
-- Confirm section 6's figures come from the rerun across all eight seeds of the
+- Confirm section 11's figures come from the rerun across all eight seeds of the
   current corpus rather than the one seed of the superseded one they were
   first measured on.
-- Confirm the persistence operating point in section 7 is the rerun figure. The
+- Confirm the persistence operating point in section 12 is the rerun figure. The
   zero false alert result from the superseded corpus must not appear anywhere.
 - Confirm the VeReMi comparison states that the original release was used
   rather than the Extension, and why: the Extension is distributed through a
@@ -1285,6 +1401,6 @@ is a new campaign and a new scenario rather than a parameter.
 
 Worth re-reading before writing anything from memory, because each was
 confidently reported in an earlier draft of this work and each is now something
-else. They are listed in `MASTER_INDEX.md` section 2. The pattern matters more
+else. They are listed in `RESULTS.md`, each in the section it belongs to. The pattern matters more
 than any one of them: a number measured against a benign class with no
 positional variance was measuring the absence of variance.
