@@ -185,7 +185,16 @@ invalidate every grouped fold.
 | `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
 | `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
 | `verify_results.py` | every reported number still matches the log that produced it |
+| `session_check.py` | the project's own bookkeeping: nothing running, git clean and untrailered, disk headroom, no dead paths, memory indexed, every declared blocker still real |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
+
+`verify_results.py` checks the figures. `session_check.py` checks everything
+around them, and exists because the state that is narrated rather than measured
+is the state that drifts: three documents here carried a disk figure and all
+three were wrong. Run it before handing off or compacting.
+
+    python3 analysis/session_check.py            # full, includes verify_results.py
+    python3 analysis/session_check.py --quick    # skip the slow figure check
 
 Once a campaign has finished, `regenerate.sh` runs the whole sequence in one
 pass and writes each stage to its own log, so a single stage can be repeated

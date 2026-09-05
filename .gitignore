@@ -55,3 +55,8 @@ docs/METHODS_DRAFT.md
 docs/CRITIQUE.md
 docs/PLAN_NEXT.md
 docs/research/
+
+# Session state files. Volatile status and durable lessons; both name defects
+# and open decisions the team has not seen.
+docs/STATUS.md
+docs/LESSONS.md
