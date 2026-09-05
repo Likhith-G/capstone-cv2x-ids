@@ -87,21 +87,39 @@ def main():
     schema = json.loads((b / "schema.json").read_text())
     promised = [c["name"] for c in schema["columns"]]
     feats = [c["name"] for c in schema["columns"] if c["is_feature"]]
-    shards = sorted((b / "shards").glob("*.csv.gz"))
+    scen = json.loads((b / "SCENARIOS.json").read_text()) \
+        if (b / "SCENARIOS.json").exists() else {}
+    check("scenarios declared", bool(scen),
+          ", ".join(f"{k} ({v['kind']})" for k, v in scen.items()))
+    bench = [k for k, v in scen.items() if v["kind"] == "benchmark"] or list(scen)
+
+    shards = sorted((b / "shards").rglob("*.csv.gz"))
     check("shards present", len(shards) > 0, f"{len(shards)} found")
     t0 = time.time()
-    df = pd.concat([pd.read_csv(s) for s in shards], ignore_index=True)
+    parts = []
+    for s in shards:
+        d = pd.read_csv(s)
+        d["scenario"] = s.parent.name if s.parent.name != "shards" else "default"
+        parts.append(d)
+    df = pd.concat(parts, ignore_index=True)
     check("shards load", True, f"{len(df):,} rows in {time.time()-t0:.0f}s")
+    if scen:
+        counts = df.scenario.value_counts().to_dict()
+        ok = all(counts.get(k, 0) == v["rows"] for k, v in scen.items())
+        check("row counts match what SCENARIOS.json declares", ok,
+              "" if ok else str(counts))
     check("columns match the schema exactly",
-          list(df.columns) == promised,
+          [c for c in df.columns if c != "scenario"] == promised,
           f"{len(df.columns)} vs {len(promised)} promised")
     check("schema names a grouping column", "grouping_column_for_splits" in schema,
           schema.get("grouping_column_for_splits", ""))
 
     print("\npartition")
     sp = pd.read_csv(b / "release_splits.csv")
-    m = df.merge(sp[["key_seed", "key_claimedStationId", "split"]],
-                 on=["key_seed", "key_claimedStationId"], how="left")
+    key = ["key_seed", "label_txNodeId"]
+    lut = sp.drop_duplicates(key).set_index(key).split
+    m = df.copy()
+    m["split"] = m.set_index(key).index.map(lut)
     check("every row lands in exactly one partition", int(m.split.isna().sum()) == 0,
           f"{int(m.split.isna().sum())} unassigned")
     shares = (m.split.value_counts(normalize=True) * 100).round(1).to_dict()
@@ -110,15 +128,23 @@ def main():
     span = sp.groupby(["key_seed", "label_txNodeId"]).split.nunique()
     check("no transmitter in two partitions", int((span > 1).sum()) == 0,
           f"{int((span > 1).sum())} span partitions")
-    per = sp.drop_duplicates(["key_seed", "label_txNodeId"]) \
-            .pivot_table(index="label_attackId", columns="split",
-                         values="label_txNodeId", aggfunc="count", fill_value=0)
-    check("every class reaches every partition",
-          int((per == 0).sum().sum()) == 0,
-          f"{int((per == 0).sum().sum())} empty cells")
+    gaps = sum(len(v.get("coverage_gaps", [])) for v in scen.values()
+               if v["kind"] == "benchmark")
+    check("every class reaches every partition in every benchmark scenario",
+          gaps == 0, f"{gaps} gaps" if gaps else "")
+    supp = sum(len(v.get("coverage_gaps", [])) for v in scen.values()
+               if v["kind"] == "supplementary")
+    if supp:
+        print(f"       {supp} declared coverage gap(s) in supplementary "
+              f"scenarios, which is why they are labelled that way")
 
     print("\nbaseline, trained and scored using only what is in the bundle")
-    tr, te = m[m.split == "train"], m[m.split == "test"]
+    # Trained and scored on the BENCHMARK scenarios only. A supplementary one
+    # has coverage gaps under the shared partition and is not for headline
+    # scoring, which is the whole reason it is labelled.
+    bm = m[m.scenario.isin(bench)] if "scenario" in m else m
+    print(f"       benchmark scenarios: {', '.join(bench)}")
+    tr, te = bm[bm.split == "train"], bm[bm.split == "test"]
     clf = RandomForestClassifier(n_estimators=a.trees, n_jobs=a.jobs,
                                  class_weight=None, random_state=0)
     t0 = time.time()

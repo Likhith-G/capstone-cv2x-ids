@@ -106,6 +106,35 @@ DESC = {
     "phy_tbler_vs_rsrp": "Block error rate against the same baseline.",
 }
 
+SCENARIO_NOTES = {
+    "highway_sparse": ("what varies: nothing, this is the reference",
+        "6 km carriageway, 90 vehicles, about 2.5 per km per lane, so the channel "
+        "sits well below congestion and the decentralised congestion control "
+        "barely engages. The reference scenario and the one every headline figure "
+        "is measured on."),
+    "highway_dense": ("what varies: **density**",
+        "2 km carriageway, 240 vehicles, about 20 per km per lane, with congestion "
+        "control saturated. Any claim about behaviour under congestion has to come "
+        "from here, and the transfer between this and the sparse scenario is what "
+        "makes a drift evaluation possible."),
+    "magnitude_sweep": ("what varies: **attack magnitude coverage**",
+        "The same geometry as the reference with both position offset draws "
+        "widened, so attackers span 4 to 233 m with eleven of them inside the 30 "
+        "to 50 m band that the reference has only three in. Built to sample the "
+        "detectability transition rather than its ends. **Shares its vehicles with "
+        "the reference scenario**, see the warning below."),
+    "bursty_attackers": ("what varies: **attack strategy**",
+        "Attackers misbehave in bursts at a duty of about 0.2 rather than "
+        "continuously. This exists to attack persistence based alerting, which a "
+        "continuously lying attacker satisfies trivially, and it is the axis the "
+        "VASP framework calls persistent against sporadic."),
+    "offset_receivers": ("what varies: **receiver placement**",
+        "Roadside units moved off the centreline to a lateral offset, which "
+        "changes the conditioning of the receiver array without changing anything "
+        "else. The array's weakness across the road is the mechanism behind the "
+        "adversarial result, so a scenario that perturbs it is the control."),
+}
+
 BLOCKS = [("key_", "Keys and provenance", "Identify a row. **Never features.**"),
           ("label_", "Labels", "Ground truth from the transmit log. **Never features.**"),
           ("app_", "Application layer", "Computable from message contents alone, which is what a detector without radio access sees."),
@@ -116,6 +145,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("corpus")
     ap.add_argument("--splits", default=None, help="release_splits.csv from make_release_splits.py")
+    ap.add_argument("--scenarios", default=None,
+                    help="SCENARIOS.json from make_release.py")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
@@ -174,6 +205,49 @@ def main():
       f"{sum(c.startswith('phy_') for c in df.columns)} physical and MAC, "
       f"{sum(c.startswith(('key_','label_')) for c in df.columns)} keys and labels |")
     w(f"| seeds | {clean.key_seed.nunique()} |\n")
+
+    scen_path = pathlib.Path(a.splits).parent / "release" / "SCENARIOS.json" \
+        if a.splits else None
+    if a.scenarios and pathlib.Path(a.scenarios).exists():
+        import json as _json
+        scen = _json.loads(pathlib.Path(a.scenarios).read_text())
+        w("## Scenarios\n")
+        w("Five campaigns, each varying one factor. They ship together because a "
+          "detector that only works in one of them has not been shown to work.\n")
+        w("| scenario | role | windows | vehicles | seeds |")
+        w("|---|---|---|---|---|")
+        for k, v in scen.items():
+            w(f"| `{k}` | {v['kind']} | {v['rows']:,} | {v['transmitters']} | {v['seeds']} |")
+        tot = sum(v["rows"] for v in scen.values())
+        w(f"| **total** | | **{tot:,}** | | |\n")
+        for k, v in scen.items():
+            note = SCENARIO_NOTES.get(k)
+            if not note:
+                continue
+            w(f"**`{k}`**, {note[0]}. {note[1]}")
+            if v.get("coverage_gaps"):
+                w("")
+                w(f"  Marked *supplementary*: under the shared partition "
+                  f"{len(v['coverage_gaps'])} class and split combination(s) are "
+                  f"empty, so it supports auxiliary evaluation but not headline "
+                  f"scoring. Specifically: " + "; ".join(v["coverage_gaps"]) + ".")
+            w("")
+        w("### A warning that matters more than it looks\n")
+        w("**The campaigns were generated with the same random seeds, so some of "
+          "them contain the same physical vehicles.** `magnitude_sweep` and "
+          "`highway_sparse` are identical in this respect: at seed 1 they share "
+          "102 stations whose true positions agree to four decimal places. "
+          "`offset_receivers` diverges from the reference by at most 3.3 m and "
+          "`bursty_attackers` by at most 219 m, so both are close relatives rather "
+          "than independent draws. Only `highway_dense`, which uses a different "
+          "road length and vehicle count, is genuinely independent.\n")
+        w("**This is why the partition is global.** It is assigned once across the "
+          "union of all five scenarios, keyed on the physical transmitter, so a "
+          "vehicle sits in the same partition everywhere it appears. Training on "
+          "one scenario and scoring on another is therefore safe. **Do not "
+          "re-partition per scenario**, and do not assume two scenarios are "
+          "independent samples.\n")
+        w("---\n")
 
     w("## Classes\n")
     w("Station counts, not row counts. One station produces thousands of windows, "

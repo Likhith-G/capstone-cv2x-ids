@@ -334,6 +334,41 @@ what received power at several receivers can and cannot establish about a
 claimed position. Our dataset is the instrument that makes that question
 measurable, not the result.
 
+### Against the field, on the field's own axes
+
+Built from the comparison tables that appear in published work rather than from
+axes chosen here: Yakan's survey, the VeReMi Extension and DARE dataset
+descriptions, and VASP's Table III, which compares on attack count, attack
+strategy and attacked fields. VeReMi NextGen adds predefined splits and generator
+availability, and names their absence as a limitation of everything earlier.
+
+| | VeReMi 2018 | VeReMi Ext. 2020 | VASP 2023 | NextGen 2026 | this work |
+|---|---|---|---|---|---|
+| simulator | Veins, OMNeT++, SUMO | Veins, F2MD | Veins | Eclipse MOSAIC, InTAS | ns-3, 5G-LENA |
+| radio | 802.11p | 802.11p | 802.11p | 802.11p | **NR V2X PC5 sidelink** |
+| misbehaviour types | 5 | 19 | 68 | 15 | **10** |
+| attack strategy | persistent | persistent | persistent, sporadic | persistent | **persistent, sporadic** |
+| scenario coverage | urban | urban | urban | urban, highway, 3 driver profiles | highway, 5 scenarios varying 4 factors |
+| physical layer | RSSI | RSSI | none | none | **28 PHY and MAC features, incl. per-SCI RSRP** |
+| benign positioning error | none | modelled | none | modelled | **modelled and quantified** |
+| magnitude as an axis | no | no | no | no | **yes, three non-overlapping bands** |
+| adversarial integrity gates | no | no | no | no | **yes, ten** |
+| predefined splits | no | no | no | **yes** | **yes** |
+| public generator | yes | yes | yes | **yes** | **yes** |
+
+**Where we are behind, stated plainly.** Ten misbehaviour types against VASP's 68,
+VeReMi Extension's 19 and NextGen's 15. Highway only, where NextGen covers urban
+and highway with three driver profiles. Breadth of attack catalogue and traffic
+realism are settled by that work and are not claimed here.
+
+**Where the difference is a difference in kind rather than in degree.** The radio
+row is the one that matters: this is the only entry generated over a 3GPP
+sidelink, and the only one carrying receiver-observed physical and MAC layer
+measurements rather than at most a single received signal strength column. The
+three rows below it, a quantified benign positioning error, magnitude as an axis,
+and adversarial rather than confirmatory validation, are what let a detection
+floor be measured at all rather than a score be reported.
+
 **VASP** implements 68 BSM attacks, far more than this work, and is likewise
 application layer. Breadth of attack catalogue is explicitly not a contribution
 claimed here.

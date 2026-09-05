@@ -43,10 +43,22 @@ grouping removes identity leakage, not scenario correlation. The project's own
 StratifiedGroupKFold protocol accepts the same limit, and a seed-level split
 would remove it at the cost of class coverage.
 
+**One partition across every scenario, not one per scenario.** The campaigns in
+this project were generated with the same rngRun values, so the same physical
+vehicles appear in several of them at identical positions: campaign_gnss and
+campaign_floor share 90 transmitters at seed1, to four decimal places, carrying
+the same classes. A per-scenario partition would therefore let somebody train on
+one scenario and score on the same vehicles in another, which is the leakage this
+whole pipeline exists to prevent, shipped into a public benchmark. Assigning once
+on (key_seed, label_txNodeId) across the union makes cross-scenario evaluation
+safe by construction.
+
     make_release_splits.py corpus.pkl --out splits.csv
+    make_release_splits.py A/corpus.pkl B/corpus.pkl C/corpus.pkl --out splits.csv
     make_release_splits.py corpus.pkl --audit
 """
 import argparse
+import pathlib
 import sys
 
 import numpy as np
@@ -156,7 +168,9 @@ def report(st):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("corpus")
+    ap.add_argument("corpus", nargs="+",
+                    help="one or more corpora. The partition is assigned ONCE "
+                         "over their union, because they share vehicles")
     ap.add_argument("--out", default=None, help="write the manifest here as CSV")
     ap.add_argument("--audit", action="store_true",
                     help="print the per seed class coverage that justifies a "
@@ -169,11 +183,31 @@ def main():
                          "number stops being comparable")
     a = ap.parse_args()
 
-    df = pd.read_pickle(a.corpus)
-    if "label_clean" in df.columns:
-        df = df[df.label_clean == 1]
+    frames = []
+    for c in a.corpus:
+        d = pd.read_pickle(c)
+        if "label_clean" in d.columns:
+            d = d[d.label_clean == 1]
+        d = d[["key_seed", "label_txNodeId", "key_claimedStationId", "label_attackId"]]
+        print(f"  {pathlib.Path(c).parent.name:<22s} {len(d):>10,} windows")
+        frames.append(d)
+    df = pd.concat(frames, ignore_index=True)
     st = station_table(df)
-    print(f"{len(df):,} windows, {len(st)} physical transmitters carrying "
+
+    # A transmitter can carry DIFFERENT classes in different scenarios, because
+    # each campaign draws its own attacker assignment over the same vehicle
+    # population. That is not an error and it is not a reason to abandon a
+    # global partition: the partition exists to keep a vehicle identity on one
+    # side of the boundary, whatever role it plays on any given day.
+    multi = int((df.groupby(STATION).label_attackId.nunique() > 1).sum())
+    if multi:
+        print(f"  {multi} transmitter(s) play different classes in different "
+              f"scenarios, which is expected.\n  Each is stratified on the class "
+              f"it carries in the FIRST corpus it appears in, and per-scenario\n"
+              f"  class coverage is checked afterwards.")
+
+    print(f"\n{len(df):,} windows across {len(a.corpus)} scenario(s), "
+          f"{len(st)} physical transmitters carrying "
           f"{int(st.claimed_ids.sum())} claimed identities, "
           f"{st.label_attackId.nunique()} classes\n")
 

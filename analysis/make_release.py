@@ -19,7 +19,21 @@ later it is a converter over these shards, not a regeneration.
 Somebody who wants a quick look takes one shard rather than the whole corpus, and
 somebody reproducing a fold takes the shards the partition names.
 
-    make_release.py corpus.pkl --splits release_splits.csv --out-dir release/
+**Several scenarios, one partition.** The campaigns vary density, attack
+magnitude, attack strategy and receiver placement, and they were generated with
+the same rngRun values, so some of them share vehicles: `floor` and `gnss` are
+identical to four decimal places at seed1. A per-scenario partition would let
+somebody train on one and score on the same vehicles in another. The partition is
+therefore assigned once across the union, keyed on the physical transmitter, and
+every scenario carries the same one.
+
+Scenarios are labelled `benchmark` or `supplementary`. A supplementary scenario
+has too few transmitters for the global partition to place every class in every
+split, so it can be used for auxiliary evaluation but not for headline scoring,
+and the gaps are listed rather than left to be discovered.
+
+    make_release.py --scenario name=path/to/corpus.pkl [--scenario ...] \
+        --splits release_splits.csv --out-dir release/
 """
 import argparse
 import datetime as dt
@@ -133,7 +147,9 @@ def write_zenodo(out, version):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("corpus")
+    ap.add_argument("--scenario", action="append", required=True,
+                    metavar="NAME=CORPUS",
+                    help="repeatable. The first is the primary scenario")
     ap.add_argument("--splits", required=True)
     ap.add_argument("--card", default="docs/DATASET_CARD.md")
     ap.add_argument("--out-dir", required=True)
@@ -141,24 +157,55 @@ def main():
     a = ap.parse_args()
 
     out = pathlib.Path(a.out_dir)
-    (out / "shards").mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_pickle(a.corpus)
-    missing = [c for c in df.columns if c not in DESC]
-    if missing:
-        print(f"FAIL: {len(missing)} undescribed column(s): {missing[:4]}")
-        return 1
-    print(f"{len(df):,} rows, {len(df.columns)} columns\n")
+    sp = pd.read_csv(a.splits)
+    key = ["key_seed", "label_txNodeId"]
+    lut = sp.drop_duplicates(key).set_index(key).split
 
-    print("shards, one per seed")
-    for seed, g in df.groupby("key_seed", sort=True):
-        f = out / "shards" / f"cv2x_ids_{seed}.csv.gz"
-        g.to_csv(f, index=False, compression="gzip")
-        print(f"  {f.name:28s} {len(g):>9,} rows  {f.stat().st_size/2**20:7.1f} MB")
+    scen, first = {}, None
+    for spec in a.scenario:
+        name, _, path = spec.partition("=")
+        df = pd.read_pickle(path)
+        if "label_clean" in df.columns:
+            df = df[df.label_clean == 1]
+        missing = [c for c in df.columns if c not in DESC]
+        if missing:
+            print(f"FAIL: {name} has {len(missing)} undescribed column(s): {missing[:4]}")
+            return 1
+        if first is None:
+            first = df
 
+        # per scenario coverage under the SHARED partition
+        st = df.groupby(key).label_attackId.first().reset_index()
+        st["split"] = st.set_index(key).index.map(lut)
+        tab = st.pivot_table(index="label_attackId", columns="split",
+                             values="label_txNodeId", aggfunc="count",
+                             fill_value=0).reindex(
+                                 columns=["train", "validation", "test"], fill_value=0)
+        gaps = [f"class {c} has no transmitter in {s}"
+                for c, row in tab.iterrows() for s in tab.columns if row[s] == 0]
+        kind = "benchmark" if not gaps else "supplementary"
+
+        d = out / "shards" / name
+        d.mkdir(parents=True, exist_ok=True)
+        print(f"{name}  ({kind})  {len(df):,} rows, {len(st)} transmitters")
+        for seed, g in df.groupby("key_seed", sort=True):
+            f = d / f"cv2x_ids_{name}_{seed}.csv.gz"
+            g.to_csv(f, index=False, compression="gzip")
+            print(f"    {f.name:<40s} {len(g):>9,} rows  {f.stat().st_size/2**20:6.1f} MB")
+        for gp in gaps:
+            print(f"    coverage gap: {gp}")
+        scen[name] = {"kind": kind, "rows": int(len(df)),
+                      "transmitters": int(len(st)),
+                      "seeds": int(df.key_seed.nunique()),
+                      "coverage_gaps": gaps}
+
+    df = first
+    print()
     print("\nsupporting files")
-    (out / "sample.csv").write_text(
-        df.head(SAMPLE_ROWS).to_csv(index=False))
+    (out / "sample.csv").write_text(df.head(SAMPLE_ROWS).to_csv(index=False))
+    (out / "SCENARIOS.json").write_text(json.dumps(scen, indent=2))
     schema = write_schema(df, out / "schema.json")
     shutil.copy(a.splits, out / "release_splits.csv")
     if pathlib.Path(a.card).exists():
@@ -182,7 +229,7 @@ def main():
         f"corpus {pathlib.Path(a.corpus).name}\n"
         f"rows {len(df)}\ncolumns {len(df.columns)}\n")
 
-    for f in ("sample.csv", "schema.json", "release_splits.csv",
+    for f in ("sample.csv", "SCENARIOS.json", "schema.json", "release_splits.csv",
               "DATASET_CARD.md", "CITATION.cff", ".zenodo.json",
               "PROVENANCE.txt"):
         pth = out / f
