@@ -39,6 +39,16 @@ REPO = Path(__file__).resolve().parent.parent
 # Each entry is {"name": "Family, Given", "affiliation": ..., "orcid": ...},
 # orcid optional.
 CREATORS = []
+# Known so far, kept commented so the empty-list guard above still fires. A
+# half-filled list is worse than an empty one: it passes the guard and stages a
+# record that silently drops an author, which cannot be fixed after publication.
+#     {"name": "Gowda, Likhith",          # OR "Gowda, Likhith L", undecided.
+#      "affiliation": "RMIT University",  # Must match ORCID exactly, whichever.
+#      "orcid": "0009-0009-9265-5066"},
+#     {"name": "...",                     # Kanwardeep: citable name, affiliation
+#      "affiliation": "...",              # and ORCID all still unknown.
+#      "orcid": "..."},
+# Author ORDER is part of this and is not mine to choose.
 
 ENDPOINT = {
     "sandbox": "https://sandbox.zenodo.org/api",
