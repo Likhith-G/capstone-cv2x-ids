@@ -211,22 +211,40 @@ def main():
     # tailed enough that most fits are excellent and a few are very bad. The
     # median can then sit below a Gaussian of the bound's covariance while the
     # variance still respects it. Reporting only the median hides exactly that.
-    print(f"\n{'estimator':32s} {'median':>9s} {'vs ols':>8s} {'RMS':>10s} "
-          f"{'75th':>8s} {'90th':>8s} {'RMS/med':>8s}")
+    # A fit that places a transmitter further from the truth than the road is
+    # long has not estimated a position, it has diverged. Averaging one of those
+    # into an RMS destroys the statistic: under the road constraint the across
+    # coordinate is bounded and the along coordinate is not, so a poorly
+    # conditioned unit lets the solver slide along the road without limit, and
+    # every arm including the baseline then reports an RMS in the tens of
+    # kilometres. Count them and report the RMS of the rest.
+    DIVERGED = 6000.0                                   # the road length
+    print(f"\n{'estimator':32s} {'median':>9s} {'vs ols':>8s} {'75th':>8s} "
+          f"{'90th':>8s} {'RMS*':>9s} {'RMS/med':>8s} {'diverged':>10s}")
     base = np.nanmedian(err["ols, what the project uses"])
     for name in arms:
         e = np.array(err[name], dtype=float)
         e = e[np.isfinite(e)]
+        ok = e[e <= DIVERGED]
         m = float(np.median(e))
-        rms = float(np.sqrt(np.mean(e ** 2)))
-        print(f"{name:32s} {m:7.1f} m {m / base:7.2f}x {rms:8.1f} m "
+        rms = float(np.sqrt(np.mean(ok ** 2))) if len(ok) else float("nan")
+        div = 100.0 * (len(e) - len(ok)) / len(e)
+        print(f"{name:32s} {m:7.1f} m {m / base:7.2f}x "
               f"{np.percentile(e, 75):6.1f} m {np.percentile(e, 90):6.1f} m "
-              f"{rms / m:8.2f}")
-    print("""
-Read the RMS column against the bound, not the median column. A ratio of RMS to
-median far above the 1.13 a two dimensional Gaussian gives means the error
-distribution is heavy tailed, and a heavy tailed estimator can have a median
-below the bound's Gaussian median while its variance still respects the bound.
+              f"{rms:7.1f} m {rms / m:8.2f} {div:9.2f}%")
+    print(f"""
+*RMS is over fits within {DIVERGED:.0f} m of the truth, which is the road length.
+The diverged column is the percentage excluded, and those are solver failures
+rather than estimates.
+
+Read the RMS column against the bound and not the median column. The
+Cramer-Rao bound constrains the second moment; it says nothing about a median.
+A ratio of RMS to median far above the 1.13 a two dimensional Gaussian gives
+means the errors are heavy tailed, and a heavy tailed estimator can have a
+median below the bound's Gaussian median while its variance still respects it.
+
+For a detector the tail matters more than the median, because a catastrophic
+localisation failure on a benign station is what produces a false alert.
 """)
     # What the debiasing leaves behind is the noise the bound should be computed
     # against. Quoting the original bound beside a debiased estimator compares
