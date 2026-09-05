@@ -155,6 +155,12 @@ def main():
         "mixed": (src_obs + list(tgt_train), 1, False),
         "mixed-2x": (src_obs + list(tgt_train), 2, False),
         "centralised": (src_obs + list(tgt_train), 1, True),
+        # The control the ceiling needs. Without it, centralised-mixed can only
+        # be compared against a FEDERATED in-dist arm, which conflates two
+        # different things: whether mixing distributions helps, and whether
+        # partitioning hurts. This arm is in-dist rows pooled the same way, so
+        # the four form a two by two and each question has its own pair.
+        "centralised-in-dist": (list(tgt_train), 1, True),
     }
     # Same configuration as federated.py's panel, so this arm is the same
     # learner the aggregation comparison uses and the two are readable together.
@@ -192,6 +198,14 @@ def main():
         gap = results["centralised"][0] - results["mixed"][0]
         print(f"\ncentralised against mixed, the SAME rows pooled into one "
               f"client: {gap:+.4f}")
+        if "centralised-in-dist" in results:
+            mix = results["centralised"][0] - results["centralised-in-dist"][0]
+            fed = results["mixed"][0] - results["in-dist"][0]
+            print(f"does MIXING help, both arms pooled:        {mix:+.4f}")
+            print(f"does MIXING help, both arms federated:     {fed:+.4f}")
+            print("Read those two together. They ask the same question at the "
+                  "same budget,\nonce with the rows pooled and once with them "
+                  "partitioned across clients.")
         print("""
 This is the row that says whose failure it is. Both arms hold the same training
 rows from both densities; the centralised one holds them in a single client, so

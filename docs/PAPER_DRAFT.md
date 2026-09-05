@@ -1261,6 +1261,18 @@ continual and local adaptation and against the one global model this
 architecture produces. Personalisation is what the result asks for and we have
 not built it.
 
+**Whose failure it is, measured rather than argued.** The obvious objection is
+that federation is being blamed for a property of the data, so we pooled the same
+rows into a single client and asked again. Mixing distributions costs 0.0240
+macro F1 when the rows are pooled and 0.1768 when they are federated across
+clients, at the same row budget, and an independent check with a different learner
+on a different split puts the central figure at 0.0091. **Both readings were
+partly right.** The rows from the other density genuinely do not help, and they
+cost something even centrally; federation then turns that mild cost into a severe
+one, and the gap between the two figures is what federation contributes.
+Personalisation addresses that gap. It does not make the other density's rows
+worth having.
+
 **It holds in the other direction too**, which matters because a negative result
 measured once can be a property of which way round the test was run. Congested
 into sparse, on the same protocol: 0.1513 macro F1 for the federation against
