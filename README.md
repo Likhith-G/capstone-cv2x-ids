@@ -159,10 +159,12 @@ after eight.
 [`analysis/README.md`](analysis/README.md) documents every script and the
 methodology constraints the pipeline enforces.
 
-**Requirements.** NS-3.42 with 5G-LENA `nr` at tag `v2x-1.1`, built under
-Python 3.12. Analysis runs on Python 3.9 with `numpy`, `pandas`,
-`scikit-learn`, `scipy`, `matplotlib` and `torch`. The two interpreters are
-separate and should not be mixed.
+**Requirements, exact versions and measured runtimes** are in
+[`REPRODUCING.md`](REPRODUCING.md). Short version: ns-3 at the CTTC `v2x-1.1`
+fork built under Python 3.12, analysis on Python 3.9, and the two interpreters
+must not be mixed. Use an absolute interpreter path in anything you background,
+because a background shell resolves `python3` differently from an interactive
+one.
 
 Traces are not held in the repository. They are regenerated from source.
 
