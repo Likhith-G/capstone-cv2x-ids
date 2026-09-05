@@ -142,6 +142,10 @@ def main():
                     help="resume an existing draft instead of creating one")
     ap.add_argument("--dry-run", action="store_true",
                     help="list what would be uploaded and stop")
+    ap.add_argument("--token-file", type=Path,
+                    help="read the token from this file instead of the "
+                         "environment, so it never appears in a shell history "
+                         "or a transcript. Default ~/.zenodo_token_<target>")
     args = ap.parse_args()
 
     lister, upload_type = RECORDS[args.record]
@@ -163,9 +167,16 @@ def main():
                  "author list, and a record published with the wrong one cannot "
                  "be quietly fixed. Fill it in at the top of this file first.")
 
-    token = os.environ.get("ZENODO_TOKEN")
+    default_file = Path.home() / (".zenodo_token_" + args.target)
+    token_file = args.token_file or (default_file if default_file.exists() else None)
+    if token_file:
+        token = token_file.read_text().strip()
+        print("token read from %s" % token_file)
+    else:
+        token = os.environ.get("ZENODO_TOKEN")
     if not token:
-        sys.exit("set ZENODO_TOKEN. Create one at "
+        sys.exit("no token. Write one to %s, or set ZENODO_TOKEN. Create it at "
+                 % default_file +
                  "%s/account/settings/applications/tokens/new with the "
                  "deposit:write and deposit:actions scopes."
                  % ENDPOINT[args.target].replace("/api", ""))
