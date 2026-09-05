@@ -596,8 +596,32 @@ learns the generator rather than the misbehaviour.
 
 ## 5. Generation
 
-ns-3.42 with the 5G-LENA `nr` module at tag `v2x-1.1`, on a 6 km three lane
-carriageway with 90 vehicles and 12 roadside units, over eight seeds of 60 s.
+**Five scenarios, each varying one factor**, 7.9 million windows over 24 seeds.
+Every result in this paper is measured on the reference scenario unless it says
+otherwise; the others exist so that a detector shown to work here can be shown
+not to work elsewhere, which is what sections 12 and 10 do with them.
+
+| scenario | what varies | windows | seeds |
+|---|---|---|---|
+| `highway_sparse` | the reference, 2.5 veh/km/lane | 1,641,002 | 8 |
+| `highway_dense` | **density**, 20 veh/km/lane, congestion control saturated | 3,657,495 | 3 |
+| `magnitude_sweep` | **attack magnitude coverage**, both offset draws widened to sample the detectability transition | 1,220,021 | 6 |
+| `bursty_attackers` | **attack strategy**, misbehaviour at a duty of 0.2 rather than continuous | 792,709 | 4 |
+| `offset_receivers` | **receiver placement**, roadside units moved off the centreline | 605,481 | 3 |
+
+**The scenarios are not independent samples and the release says so.** They were
+generated with the same random seeds, so several contain the same physical
+vehicles: `magnitude_sweep` and `highway_sparse` share 102 stations at seed 1
+whose true positions agree to four decimal places. The partition is therefore
+assigned once across their union and keyed on the physical transmitter, so a
+vehicle sits on the same side of the boundary in every scenario and training on
+one while scoring on another is safe. Only `highway_dense`, which changes road
+length and vehicle count, is a genuinely independent draw, and it is the pair used
+for the density transfer in section 12 for exactly that reason.
+
+The reference scenario: ns-3.42 with the 5G-LENA `nr` module at tag `v2x-1.1`, on
+a 6 km three lane carriageway with 90 vehicles and 12 roadside units, over eight
+seeds of 60 s.
 Vehicles follow an intelligent driver model with three vehicle classes and
 exchange ETSI CAM, DENM, CPM and VAM messages under TS 102 687 reactive
 congestion control, directly over an NR V2X Mode 2 PC5 sidelink (**R1**, **R6**).
