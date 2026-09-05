@@ -63,21 +63,19 @@ def fig_placement():
                 f"anisotropy {aniso[0]:.2f}",
                 xy=(off[0], across[0]), xytext=(4, across[0] + 0.7),
                 fontsize=8, color="#555555")
-    ax.annotate(f"optimum at {off[best]:.0f} m\n{across[best]:.1f} m, "
-                f"anisotropy {aniso[best]:.2f}",
-                xy=(off[best], across[best]),
-                xytext=(off[best] + 26, across[best] + 0.4),
-                fontsize=8, ha="left",
-                arrowprops=dict(arrowstyle="->", lw=0.8, color="#333333"))
-    ax.annotate("further back is worse\nthan doing nothing",
-                xy=(off[-1], across[-1]), xytext=(off[-1] - 8, across[-1] - 5.4),
-                fontsize=8, ha="right", color="#a0522d",
+    ax.plot([40], [across[best]], "*", ms=16, color="#a0522d", zorder=5)
+    ax.annotate(f"optimum at {off[best]:.0f} m: {across[best]:.1f} m, "
+                f"anisotropy {aniso[best]:.2f}\n"
+                f"generated at this offset and measured,\n"
+                f"19.1 percent against 19.6 predicted",
+                xy=(40, across[best]), xytext=(60, across[best] + 2.2),
+                fontsize=8, color="#a0522d",
                 arrowprops=dict(arrowstyle="->", lw=0.8, color="#a0522d"))
     ax.set_xlabel("roadside unit lateral offset from the centreline (m)")
     ax.set_ylabel("Cramer-Rao bound,\nacross the road (m)")
     ax.set_title("Geometry improves with offset, information falls with distance",
                  fontsize=10)
-    ax.set_ylim(28.4, 42.2)
+    ax.set_ylim(28.9, 42.2)
     ax.grid(alpha=0.25)
     save(fig, "placement")
 
