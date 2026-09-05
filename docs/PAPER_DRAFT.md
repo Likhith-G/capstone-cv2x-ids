@@ -618,6 +618,11 @@ per window flag rate does climb with displacement, from 0.008 to 0.198, so it
 is not blind; it never becomes confident often enough for a station to be
 flagged in most of its windows.
 
+**The floor sits at roughly twice the localisation error, and the estimator
+moves it sublinearly.** RESULTS.md 6b2b: a 29 percent better estimator moved the
+crossing by 10 percent and the persistence operating point not at all, so this
+paragraph must not promise that a better estimator buys proportionate detection.
+
 **The floor sits at roughly twice the localisation error.** Estimates land
 18.2 m from the truth, detection begins between 30 and 50 m and is complete by
 80 m. A lie has to exceed the estimator's own uncertainty before there is
