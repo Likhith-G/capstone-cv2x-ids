@@ -139,7 +139,11 @@ def curve(det, offsets, floor95, label, edges, min_stations,
     print(f"\n  benign positioning error on the same scale: median "
           f"{floor95[0]:.2f} m, 95th {floor95[1]:.2f} m, max {floor95[2]:.2f} m")
 
-    keep = att[["offset", "flag_rate"]].copy()
+    # key_seed has to survive into the fit, because the clustered bootstrap
+    # resamples whole seeds and silently falls back to resampling stations if
+    # the column is missing.
+    cols_keep = ["offset", "flag_rate"] + (["key_seed"] if "key_seed" in att.columns else [])
+    keep = att[cols_keep].copy()
     keep["arm"] = label
     keep["corpus"] = corpus_tag or "this run"
     keep["benign_flag_rate"] = ben.flag_rate.mean()
@@ -257,14 +261,27 @@ def locate(att, label, n_boot=2000, seed=0):
             cb = bootstrap(clusters)
             if len(cb) > 100:
                 clo, chi = np.percentile(cb, [2.5, 97.5])
+                # Quote the wider of the two. A clustered resample is wider
+                # when stations inside a seed are correlated, which is the
+                # failure the check exists to catch. It can come back narrower
+                # instead, which is evidence there is no such correlation, and
+                # with only a handful of clusters it is coarse either way, so
+                # the wider interval is the safe one regardless of which it is.
                 wider = "the clustered one" if (chi - clo) > (hi - lo) else \
                         "the station one"
                 print(f"    resampling whole seeds instead of stations, "
                       f"{len(clusters)} seeds:")
                 print(f"      95 percent interval  {clo:8.1f} to {chi:.1f} m, "
                       f"width {chi - clo:.1f} m")
-                print(f"      quote {wider}, because stations inside a seed "
-                      f"share a scenario and a fold")
+                print(f"      quote {wider}: the wider of the two is the safe "
+                      f"one, and with {len(clusters)} clusters the clustered "
+                      f"estimate is coarse.")
+                if (chi - clo) <= (hi - lo):
+                    print("      the clustered interval came back NARROWER, "
+                          "which is evidence that\n      stations inside a seed "
+                          "are not correlated: detectability is set by a\n"
+                          "      station's own displacement rather than by which "
+                          "seed it came from")
     else:
         print(f"    too few bootstrap fits converged ({len(boots)}) for an "
               f"interval, so quote the point estimate as indicative only")
