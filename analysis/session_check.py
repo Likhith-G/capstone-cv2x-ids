@@ -237,6 +237,47 @@ def check_status():
              else f", over the {STATUS_MAX_LINES} cap. Move something to LESSONS.md or the archive"))
 
 
+# Figures the paper legitimately carries that RESULTS.md does not, because they
+# are somebody else's published result rather than a measurement made here. Any
+# other unmatched figure is a number the results file cannot back.
+EXTERNAL_FIGURES = {
+    "0.9376", "0.8838", "0.8788",   # So, Petit and Starobinski, WiSec 2019
+    "3.42",                          # the ns-3 version string
+}
+
+
+def check_paper_traceable():
+    """Every figure in the paper must be findable in RESULTS.md.
+
+    `verify_results.py` pins the results file to its logs. Nothing pinned the
+    paper to the results file, and a figure quoted only in the paper is one
+    nobody can check. This found a fused macro F1 of 0.5578 being used for a
+    before-and-after comparison against a corpus that also carried one class
+    fewer, so the difference was not attributable to the change it was offered as
+    evidence for.
+
+    Rounding is allowed: a paper may quote 0.072 for a measured 0.0724.
+    """
+    res = (REPO / "docs" / "RESULTS.md")
+    pap = (REPO / "docs" / "PAPER_DRAFT.md")
+    if not (res.exists() and pap.exists()):
+        return
+    rtext, ptext = res.read_text(), pap.read_text()
+    rnums = set(re.findall(r"\b\d+\.\d+\b", rtext))
+    missing = []
+    for n in sorted(set(re.findall(r"\b\d+\.\d{2,4}\b", ptext))):
+        if n in rnums or n in EXTERNAL_FIGURES:
+            continue
+        # a rounded quotation of a longer figure in the results file
+        if any(r.startswith(n) or f"{float(r):.{len(n.split('.')[1])}f}" == n
+               for r in rnums if r.startswith(n.split(".")[0] + ".")):
+            continue
+        missing.append(n)
+    check("every paper figure traces to RESULTS.md", not missing,
+          f"{len(missing)} untraceable: {missing[:4]}" if missing
+          else "all figures found or rounded from one")
+
+
 def check_blockers():
     """Every open blocker carries a test that says when it is no longer open.
 
@@ -280,6 +321,7 @@ def main():
     check_dashes()
     check_memory()
     check_status()
+    check_paper_traceable()
     check_blockers()
 
     print()

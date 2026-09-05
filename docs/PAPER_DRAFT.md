@@ -382,8 +382,11 @@ has a median of 4.00 m, a 95th percentile of 5.90 m and a maximum of 14.79 m.
 This matters more than it looks. Without it the benign class has no positional
 variance, so any displacement greater than zero is separable in principle and a
 position attack is asked an easier question than deployment would ask it.
-Adding it moved fused macro F1 from 0.5578 over ten classes to **0.5145** over
-eleven, and the fall is the measurement rather than a regression.
+The argument for it is from construction rather than from a before and after
+score, and deliberately so. An earlier corpus without the error model scored
+higher, but it also carried one class fewer, so the difference between the two
+numbers is not attributable to the error model alone and must not be presented as
+though it were.
 
 ### Position falsification is a ladder, not a class
 
@@ -420,9 +423,9 @@ reassuring.
 **The one framing point to make here rather than in limitations.** Benign
 vehicles carry receiver error. Without it the benign class has no positional
 variance, any displacement at all is separable in principle, and a position
-attack is easier to detect than it could ever be in deployment. Adding it moved
-fused macro F1 from 0.5578 to 0.5145 over one more class, and the fall is the
-point.
+attack is easier to detect than it could ever be in deployment. That is an
+argument from construction. Do not evidence it with a score against an earlier
+corpus, which differed in its class count as well as its error model.
 
 ---
 
