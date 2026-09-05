@@ -185,6 +185,7 @@ invalidate every grouped fold.
 | `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
 | `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
 | `correction_transfer.py` | whether the calibrated propagation correction is a property of range or shrinkage onto one corpus: calibrate on A, apply to B, and check each bin's mean is flat in along-road position |
+| `make_release_splits.py` | the frozen train, validation and test partition shipped with the dataset, so another group can compare against these numbers. Station level and stratified, because five of eight seeds are missing an attack class and a seed level split would ship an unscoreable partition. `--audit` prints the coverage table that justifies it |
 | `verify_results.py` | every reported number still matches the log that produced it |
 | `session_check.py` | the project's own bookkeeping: nothing running, git clean and untrailered, disk headroom, no dead paths, memory indexed, every declared blocker still real |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
