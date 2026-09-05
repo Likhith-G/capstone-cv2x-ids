@@ -154,6 +154,10 @@ def main():
     ap.add_argument("--card", default="docs/DATASET_CARD.md")
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--version", default="1.0.0")
+    ap.add_argument("--skip-shards", action="store_true",
+                    help="regenerate the metadata and checksums without rewriting "
+                         "the shards. Writing 7.9 million rows of gzip takes about "
+                         "twenty minutes and a metadata bug should not cost that")
     a = ap.parse_args()
 
     out = pathlib.Path(a.out_dir)
@@ -192,6 +196,9 @@ def main():
         print(f"{name}  ({kind})  {len(df):,} rows, {len(st)} transmitters")
         for seed, g in df.groupby("key_seed", sort=True):
             f = d / f"cv2x_ids_{name}_{seed}.csv.gz"
+            if a.skip_shards and f.exists():
+                print(f"    {f.name:<40s} kept, {f.stat().st_size/2**20:6.1f} MB")
+                continue
             g.to_csv(f, index=False, compression="gzip")
             print(f"    {f.name:<40s} {len(g):>9,} rows  {f.stat().st_size/2**20:6.1f} MB")
         for gp in gaps:
@@ -215,9 +222,6 @@ def main():
 
     # Provenance: the exact commit the release was cut from. A dataset whose
     # generator cannot be identified is not reproducible whatever its card says.
-    code, commit = subprocess.run(
-        "git rev-parse HEAD", shell=True, capture_output=True, text=True,
-        cwd=pathlib.Path(__file__).resolve().parent.parent).returncode, ""
     commit = subprocess.run("git rev-parse HEAD", shell=True, capture_output=True,
                             text=True,
                             cwd=pathlib.Path(__file__).resolve().parent.parent
@@ -226,8 +230,9 @@ def main():
         f"CV2X-IDS {a.version}\n"
         f"assembled {dt.datetime.now():%Y-%m-%d %H:%M}\n"
         f"generator commit {commit}\n"
-        f"corpus {pathlib.Path(a.corpus).name}\n"
-        f"rows {len(df)}\ncolumns {len(df.columns)}\n")
+        f"scenarios {', '.join(scen)}\n"
+        f"rows {sum(v['rows'] for v in scen.values())}\n"
+        f"columns {len(df.columns)}\n")
 
     for f in ("sample.csv", "SCENARIOS.json", "schema.json", "release_splits.csv",
               "DATASET_CARD.md", "CITATION.cff", ".zenodo.json",
