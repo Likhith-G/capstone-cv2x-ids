@@ -427,6 +427,59 @@ the arrangement this paper measures and finds wanting.
 
 ---
 
+## 2b. Threat model
+
+A security venue reads this before it reads any result, and the draft did not
+have one. Stated as capabilities the adversary has and does not have, because
+every result in the paper is conditional on this boundary.
+
+**What the adversary is.** An *insider*. It holds a valid pseudonym certificate,
+so every message it sends carries a correct ETSI TS 103 097 signature and passes
+every cryptographic check a receiver can perform. This is the case the
+cryptography is not built to address, and it is the whole reason misbehaviour
+detection exists as a field.
+
+**What it controls.**
+
+| capability | how the dataset exercises it |
+|---|---|
+| the contents of its own messages: position, speed, heading | the seven falsification classes, including a three magnitude position ladder |
+| its transmission rate and timing | the two denial of service classes, and the sporadic variant that attacks the persistence rule |
+| how many identities it presents, within one physical radio | the sybil class, four claimed identities per vehicle |
+| its transmit power | section 4 measures a check that this defeats outright, to chance, on every class |
+| its claimed position given full knowledge of the verifier | section 6, where it knows the receivers' positions, the propagation model and the statistic, and searches 72 directions |
+
+**What it does not control, and these are the assumptions the results rest on.**
+
+- **Where it physically is.** It can lie about its position; it cannot be
+  somewhere else. Every result in this paper is ultimately an exploitation of
+  that single asymmetry.
+- **Other stations' credentials.** No key compromise, no impersonation of a
+  specific victim, no certificate forgery.
+- **The receivers.** They are honest. Section 6c treats colluding receivers
+  separately and quantifies the cost of that assumption rather than assuming it
+  away.
+- **The physical channel.** No jamming, no directional or beamformed
+  transmission, no signal replay at the waveform level. The pooled statistic's
+  invariance to transmit power holds for isotropic antennas and would not hold
+  against a transmitter that beamforms, which is stated in the limitations
+  rather than hidden.
+
+**Deliberately out of scope, and named rather than ignored.** Jamming, because a
+jammer denies service rather than lying and is a different detection problem
+reached through loss and interference rather than message contents, and nothing
+in this feature set is aimed at it. Eavesdropping, because a passive observer
+breaks confidentiality rather than integrity and a misbehaviour detector is the
+wrong instrument. Both appear on the standard V2X attack taxonomy, so their
+absence is a scope decision rather than an oversight.
+
+**What the adversary is assumed to know.** Section 4 assumes nothing. Section 6
+assumes everything: receiver positions, the propagation model, the statistic and
+the constraint. Those are deliberately generous, because a bound is only worth
+reporting if the adversary it bounds is stronger than any real one.
+
+---
+
 ## 3. Dataset
 
 Generated with ns-3.42 and 5G-LENA at tag `v2x-1.1`, on a 6 km three lane
@@ -499,6 +552,49 @@ variance, any displacement at all is separable in principle, and a position
 attack is easier to detect than it could ever be in deployment. That is an
 argument from construction. Do not evidence it with a score against an earlier
 corpus, which differed in its class count as well as its error model.
+
+---
+
+## 3b. Benchmark task and evaluation protocol
+
+What a reader has to reproduce to compare against these numbers. Report 21 found
+that accepted resource led papers state this explicitly and the draft did not.
+
+**The task.** Eleven class classification of one receiver's view of one claimed
+station over one time window. Binary detection is reported alongside but is not
+the task: a detector that flags a station without saying what it is leaves an
+operator with nothing to act on, and the classes differ enormously in
+detectability, which a binary score hides.
+
+**The partition.** Frozen and shipped, `release_splits.csv`. Grouped by
+**physical transmitter**, not by claimed identity: sybil is one vehicle claiming
+to be several, so grouping on the claimed identifier scatters one vehicle across
+partitions and lets a detector be scored on a vehicle it trained on. 720
+transmitters split 60, 20, 20 with stratification by class, so every class
+reaches every partition. Window shares land at 60.0, 20.1 and 19.9 percent.
+
+**What must be reported, and why each.**
+
+| metric | why it is required |
+|---|---|
+| macro F1 **and** the Matthews correlation | the two disagree here, and reporting one hides the disagreement. The federated panel's only near significant result is significant on one and not the other |
+| per class scores **with station counts** | one station produces thousands of windows, so a per class score over rows can rest on two or three vehicles. Three classes have fewer than twenty stations |
+| false positive rate at **true prevalence** | not on the balanced set. Real traffic is overwhelmingly benign and a balanced set's precision says nothing about deployment |
+| detection latency including **window fill** | not the forward pass alone. A decision cannot arrive before the window it needs has finished |
+
+**Baselines a comparison must beat, and they are not trivial.** A 1-NN
+classifier, which scores 0.3466 here and is the check that the task is not being
+won by memorisation. The application only and radio only single layer blocks,
+which are the ablation that makes a cross layer claim mean anything. And a
+calibrated implementation of the field's standard plausibility checks, thresholded
+on benign traffic at a stated false positive rate rather than at a chosen
+constant.
+
+**What must not be done.** Do not split by window, do not group by claimed
+identity, do not report a per class score without its station count, and do not
+merge the three constant offset classes with anything that reads a class label as
+a magnitude: they are one mechanism at three magnitudes and their bands do not
+overlap by construction.
 
 ---
 
@@ -1052,6 +1148,49 @@ what a relocated unit would hear. A junction or a curve would break the
 collinearity far more thoroughly than any lateral offset can, and that is not
 measured at all. The lateral degeneracy is the mechanism behind both the
 detection floor and the strongest evasion, so a different road could move both.
+
+---
+
+## 8b. Ethics, and availability
+
+The tenth section of the outline accepted resource led security papers converge
+on, and the draft had neither half of it.
+
+**Ethics.** Every attack in this dataset is simulated. Nothing was transmitted on
+a real channel, no vehicle was interfered with, and no human subject or personal
+datum is involved. That is not incidental: it is the answer to the obvious
+objection that real C-V2X traces now exist and this work simulates anyway. They
+do exist, and they carry no labelled misbehaviour, because labelling an attack
+requires carrying it out and nobody carries out position falsification on a
+public road. Simulation is what makes the labels possible, and the cost of that
+choice is stated in the limitations rather than argued away.
+
+The dual use question is worth answering directly. The attacks here are already
+described in the public literature and in the standards that specify the checks
+against them; nothing in this dataset teaches an adversary a technique it does
+not have. What it provides is a common instrument for measuring detection, which
+is the side of the exchange that currently lacks one.
+
+**Availability.** Three linked records, so most users take only the benchmark
+while the provenance layer stays complete:
+
+| record | contents |
+|---|---|
+| derived benchmark corpus | windowed features, the frozen partition, schema, codebook, dataset card, checksums and a small sample |
+| raw simulation layer | the compressed simulator tables, partitioned by seed and run, with a manifest |
+| generator artefact | the ns-3 scenario, the 5G-LENA patch, the extraction pipeline, the verifier and the baseline configurations |
+
+The data is **CC BY 4.0**. The generator is an ns-3 contrib module and links
+against ns-3, so it is **GPL-2.0-only**, which is an obligation rather than a
+choice. The version specific identifier goes in the paper because it freezes
+exactly what these results used; the concept identifier goes in the
+documentation.
+
+**Reproducibility.** Every figure reported is pinned to the line of the log that
+produced it by a checker that ships with the code and must report no failures,
+and the environment, the seeds and the measured per stage runtimes are
+documented. That checker is offered as an artefact evaluation credential rather
+than as a courtesy.
 
 ---
 
