@@ -1251,9 +1251,9 @@ fact that clients see different class mixtures.
 than assuming either way.** Federation is introduced above as the answer to
 non-stationarity, so the obvious test is whether a federation spanning both
 densities recovers what the density change costs. On identical held out clients
-and an identical row budget it does not: 0.1305 macro F1 against 0.1774 for a
-model trained on the wrong density alone and 0.2966 for one trained on the
-right one. Given twice the rows it reaches 0.2243, still below a single density
+and an identical row budget it does not: 0.1268 macro F1 against 0.1927 for a
+model trained on the wrong density alone and 0.2998 for one trained on the
+right one. Given twice the rows it reaches 0.2285, still below a single density
 model trained on half as much data. **Twice as much data from the wrong
 distribution loses to half as much from the right one.** A single global model
 pulled between two distributions serves neither, so non stationarity argues for
@@ -1261,27 +1261,39 @@ continual and local adaptation and against the one global model this
 architecture produces. Personalisation is what the result asks for and we have
 not built it.
 
-**Part of this is not federation's doing, and we say which part.** The obvious
+**Part of this is not federation's doing, and we separate the two.** The obvious
 objection is that federation is being blamed for a property of the data, so we
 pooled the same rows into a single client and asked again. Mixing distributions
-carries a cost centrally too: 0.0240 macro F1 in one direction and 0.1660 in the
-other, with an independent check using a different learner on a different split
-at a fixed row budget putting it at 0.0091. **The other density's rows do not
-help, and no aggregation method was going to change that.**
+does carry a cost centrally: 0.0198 macro F1 in one direction and 0.0103 in the
+other, at 9.0 and 6.9 standard errors, with an independent check using a
+different learner on a different split at a fixed row budget putting it at
+0.0091. **The other density's rows do not help, and no aggregation method was
+going to change that.**
 
-**Whether federation makes it worse is not resolved and we do not claim it.** The
-two directions disagree about the amplification, 7.4 times against 1.05, and the
-single arm behind that disagreement has a standard deviation of 52 percent of its
-own mean where every other arm is at one or two percent. One or more seeds
-diverged and a mean from that arm is not a measurement. The honest position is
-that this experiment separates the data's contribution from federation's in one
-direction and fails to in the other, and that resolving it means diagnosing the
-divergence rather than picking the direction that agrees with us.
+**Federation's share of the cost is the larger one, by at least eight times in
+both directions.** Mixing costs the federation 0.1730 in one direction and 0.1705
+in the other, which is the most stable pair of numbers in this experiment:
+reversing which corpus is the source and which the target, so that no target
+corpus, test client or training row is shared between the two runs, moves it by
+0.0025. Against a central cost an order of magnitude smaller, that puts
+federation's penalty at 8.74 +/- 1.12 times the central one in one direction and
+16.55 +/- 2.77 in the other.
+
+**We claim the bound and not the factor.** Those two intervals do not overlap, so
+there is no single amplification number to report and averaging them would invent
+one. The pooled arm is also a ceiling rather than a step matched control: a single
+client sees every row in every round where the federation samples half its clients
+and takes roughly eight hundred times the sequential gradient steps, so it is
+deliberately generous to pooling. A confound that inflates the ratio and still
+leaves it above eight in both directions bounds the claim from below, which is why
+the bound is sayable where the factor is not. The experiment that would turn the
+ceiling into a measurement matches sequential steps rather than rounds, and we
+have not run it.
 
 **It holds in the other direction too**, which matters because a negative result
 measured once can be a property of which way round the test was run. Congested
-into sparse, on the same protocol: 0.1513 macro F1 for the federation against
-0.2227 trained on the wrong density and 0.3205 on the right one, and 0.2625 with
+into sparse, on the same protocol: 0.1560 macro F1 for the federation against
+0.2293 trained on the wrong density and 0.3265 on the right one, and 0.2656 with
 twice the rows. Both directions agree, and in both of them the federation is the
 worst arm rather than a compromise between the two.
 
