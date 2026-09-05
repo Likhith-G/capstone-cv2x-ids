@@ -63,14 +63,18 @@ DASH_DOCS = ["RESULTS.md", "PAPER_DRAFT.md", "PAPER_CLAIMS.md", "METHODS_DRAFT.m
 # Scripts that mean work is still in flight. Compacting or handing off while one
 # of these runs loses the session that knows what it was for.
 #
-# Matched against the .py or .sh file being run, not against the whole command
-# line. A bare "ns3" here matched every corpus path, since they all live under
-# ns3-v2x, so a shell merely waiting on a log looked like a running simulation.
-BUSY = ["build_features.py", "build_corpus.py", "federated.py", "drift.py",
-        "pooled_consensus.py", "offset_floor.py", "benchmark.py",
-        "geometry_bound.py", "estimator_study.py", "veremi_bridge.py",
-        "correction_transfer.py", "model_independence.py", "federated_drift.py",
-        "regenerate.sh"]
+# Derived from what is actually in analysis/ rather than hand listed. The hand
+# listed version silently omitted pooled_regions.py and reported "nothing
+# running" while that script was mid-run, which is worse than no check: a check
+# that can be quietly incomplete gives false comfort. Deriving it means a new
+# script is covered the moment it exists.
+#
+# Matched against the .py or .sh file being invoked, not against the whole
+# command line. A bare "ns3" here matched every corpus path, since they all live
+# under ns3-v2x, so a shell merely waiting on a log looked like a simulation.
+BUSY = sorted(p.name for p in (REPO / "analysis").glob("*.py")
+              if p.name not in ("session_check.py", "verify_results.py"))
+BUSY += sorted(p.name for p in (REPO / "analysis").glob("*.sh"))
 
 # The ns-3 simulator binary, which is not a script and is matched on its own.
 SIM = "cv2x-ids-scenario"
