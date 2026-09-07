@@ -1295,7 +1295,7 @@ learning rates the ratio spans 6.53 +/- 0.70 to 30.45 +/- 6.93, with intervals
 nowhere near overlapping, so there is no single amplification number to report
 and averaging them would invent one. What holds everywhere is the sign and the
 order: federation's cost of mixing exceeds the central cost in every arm we
-measured, by at least six times.
+measured, by a factor between about six and thirty.
 
 **It holds in the other direction too**, which matters because a negative result
 measured once can be a property of which way round the test was run. Congested
