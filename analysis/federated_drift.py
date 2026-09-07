@@ -168,18 +168,39 @@ def main():
     # that rows from the other density do not help, or that they would help and
     # federation cannot exploit them. This file's own docstring called that the
     # point and the arm was never in the dict.
+    # (clients to keep, row budget multiplier, pool into one client,
+    #  local_epochs override or None to use the shared setting)
     arms = {
-        "transfer": (src_obs, 1, False),
-        "in-dist": (tgt_train, 1, False),
-        "mixed": (src_obs + tgt_train, 1, False),
-        "mixed-2x": (src_obs + tgt_train, 2, False),
-        "centralised": (src_obs + tgt_train, 1, True),
+        "transfer": (src_obs, 1, False, None),
+        "in-dist": (tgt_train, 1, False, None),
+        "mixed": (src_obs + tgt_train, 1, False, None),
+        "mixed-2x": (src_obs + tgt_train, 2, False, None),
+        "centralised": (src_obs + tgt_train, 1, True, None),
         # The control the ceiling needs. Without it, centralised-mixed can only
         # be compared against a FEDERATED in-dist arm, which conflates two
         # different things: whether mixing distributions helps, and whether
         # partitioning hurts. This arm is in-dist rows pooled the same way, so
         # the four form a two by two and each question has its own pair.
-        "centralised-in-dist": (tgt_train, 1, True),
+        "centralised-in-dist": (tgt_train, 1, True, None),
+        # EXPOSURE MATCHED pooled arms, appended rather than inserted so the
+        # arms above keep their row samples and the figures pinned against them
+        # stay valid.
+        #
+        # The unmatched pooled arms above see every row twice per round while
+        # the federation samples half its clients for two local epochs, so each
+        # row is visited about 50 times pooled against 25 federated. One local
+        # epoch on the pooled side matches that exposure to under a tenth of a
+        # percent, and the arms below are the comparison to quote for what
+        # partitioning costs.
+        #
+        # What is deliberately NOT matched is sequential depth: the pooled
+        # client still takes about 1,630 gradient steps between averages against
+        # four for a federated client. That is not a confound to strip out, it
+        # is what partitioning IS. Holding every row and taking shallow steps on
+        # it is not a thing a federation can do, so equalising it would measure
+        # a system nobody can build. Hence exposure matched, never step matched.
+        "centralised-matched": (src_obs + tgt_train, 1, True, 1),
+        "centralised-in-dist-matched": (tgt_train, 1, True, 1),
     }
     # Same configuration as federated.py's panel, so this arm is the same
     # learner the aggregation comparison uses and the two are readable together.
@@ -191,26 +212,38 @@ def main():
     if want and not want <= set(arms):
         raise SystemExit(f"unknown arms {sorted(want - set(arms))}, "
                          f"choose from {sorted(arms)}")
-    results = {}
-    for name, (keep, mult, pool) in arms.items():
+    results, packed = {}, {}
+    for name, (keep, mult, pool, epochs) in arms.items():
         cap = budget * mult
-        # Packed for EVERY arm, including ones this run will not train.
-        # pack_clients draws its thinning from one RandomState shared across the
-        # whole loop, so skipping an arm's packing shifts the row sample of
-        # every arm after it. That would silently move the numbers a subset run
-        # is meant to reproduce, which is worse than the cost of packing.
-        clients = pack_clients(X, codes, obs, keep, a.min_rows, cap, rng)
-        if not clients:
-            print(f"{name}: no clients with {a.min_rows} rows, skipped")
-            continue
-        if pool:
-            # One client holding every row the mixed arm has. Same rows, same
-            # budget, no partitioning. pack_clients returns (x, y, class counts),
-            # so the counts are recomputed over the pooled labels rather than
-            # summed, which would be the same here but is not obviously so.
-            xs = torch.cat([c[0] for c in clients])
-            ys = torch.cat([c[1] for c in clients])
-            clients = [(xs, ys, torch.bincount(ys, minlength=len(shared)))]
+        base = name[:-8] if name.endswith("-matched") else None
+        if base and base in packed:
+            # A matched arm must hold the SAME rows as the arm it is matched
+            # against, or the comparison mixes a change of exposure with a
+            # change of sample. Reusing the pack also draws nothing from the
+            # RandomState, so every arm above keeps the rows its published
+            # figures were pinned against.
+            clients = packed[base]
+        else:
+            # Packed for EVERY arm, including ones this run will not train.
+            # pack_clients draws its thinning from one RandomState shared across
+            # the whole loop, so skipping an arm's packing shifts the row sample
+            # of every arm after it. That would silently move the numbers a
+            # subset run is meant to reproduce, which is worse than the cost of
+            # packing.
+            clients = pack_clients(X, codes, obs, keep, a.min_rows, cap, rng)
+            if not clients:
+                print(f"{name}: no clients with {a.min_rows} rows, skipped")
+                continue
+            if pool:
+                # One client holding every row the mixed arm has. Same rows,
+                # same budget, no partitioning. pack_clients returns (x, y,
+                # class counts), so the counts are recomputed over the pooled
+                # labels rather than summed, which would be the same here but is
+                # not obviously so.
+                xs = torch.cat([c[0] for c in clients])
+                ys = torch.cat([c[1] for c in clients])
+                clients = [(xs, ys, torch.bincount(ys, minlength=len(shared)))]
+        packed[name] = clients
         if want is not None and name not in want:
             continue
         n_rows = sum(len(c[0]) for c in clients)
@@ -221,9 +254,18 @@ def main():
             held = torch.stack([c[2] for c in clients]).sum(0).tolist()
             print(f"\n{name}: {len(clients)} clients, {n_rows:,} rows, "
                   f"rows per class {held}")
+        acfg = cfg if epochs is None else dict(cfg, local_epochs=epochs)
+        # Row visits per round, which is the quantity the matched arms equalise.
+        # A pooled client is always selected; a federated one is selected with
+        # probability `participation`. Printed so the match is checkable from
+        # the log rather than taken on trust.
+        share = 1.0 if len(clients) == 1 else acfg["participation"]
+        if a.per_seed:
+            print(f"   exposure {int(acfg['local_epochs'] * n_rows * share):,} "
+                  f"row visits per round, {acfg['local_epochs']} local epoch(s)")
         f1s, mccs = [], []
         for s in range(a.seeds):
-            f1, mcc, d = run_method(a.method, clients, test, cfg, s, detail=True)
+            f1, mcc, d = run_method(a.method, clients, test, acfg, s, detail=True)
             f1s.append(f1)
             mccs.append(mcc)
             if a.per_seed:
