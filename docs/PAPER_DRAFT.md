@@ -1281,7 +1281,7 @@ federation's penalty at 8.74 +/- 1.12 times the central one in one direction and
 
 **We claim the bound and not the factor.** Those two intervals do not overlap, so
 there is no single amplification number to report and averaging them would invent
-one. The pooled arm is also a ceiling rather than a step matched control: a single
+one. The pooled arm is also a ceiling rather than an exposure matched control: a single
 client sees every row in every round where the federation samples half its clients
 and takes roughly eight hundred times the sequential gradient steps, so it is
 deliberately generous to pooling. A confound that inflates the ratio and still
