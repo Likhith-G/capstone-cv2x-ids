@@ -1270,25 +1270,32 @@ different learner on a different split at a fixed row budget putting it at
 0.0091. **The other density's rows do not help, and no aggregation method was
 going to change that.**
 
-**Federation's share of the cost is the larger one, by at least eight times in
-both directions.** Mixing costs the federation 0.1730 in one direction and 0.1705
-in the other, which is the most stable pair of numbers in this experiment:
-reversing which corpus is the source and which the target, so that no target
-corpus, test client or training row is shared between the two runs, moves it by
-0.0025. Against a central cost an order of magnitude smaller, that puts
-federation's penalty at 8.74 +/- 1.12 times the central one in one direction and
-16.55 +/- 2.77 in the other.
+**Federation's share of the cost is much the larger one.** Mixing costs the
+federation 0.1730 in one direction and 0.1705 in the other, which is the most
+stable pair of numbers in this experiment: reversing which corpus is the source
+and which the target, so that no target corpus, test client or training row is
+shared between the two runs, moves it by 0.0025. Centrally the same mixing costs
+between 0.0056 and 0.0265 depending on direction and optimiser setting, at 4.7 to
+13.7 standard errors, so it is real and it is several times smaller.
 
-**We claim the bound and not the factor.** Those two intervals do not overlap, so
-there is no single amplification number to report and averaging them would invent
-one. The pooled arm is also a ceiling rather than an exposure matched control: a single
-client sees every row in every round where the federation samples half its clients
-and takes roughly eight hundred times the sequential gradient steps, so it is
-deliberately generous to pooling. A confound that inflates the ratio and still
-leaves it above eight in both directions bounds the claim from below, which is why
-the bound is sayable where the factor is not. The experiment that would turn the
-ceiling into a measurement matches sequential steps rather than rounds, and we
-have not run it.
+**The pooled comparison is exposure matched, because half of it was otherwise an
+artefact.** A pooled client that trains for two local epochs sees every row twice
+per round, while a federation sampling half its clients for two local epochs
+visits each row about half as often. Running the pooled arm at one local epoch
+matches row visits per round to under a tenth of a percent, and we report that
+control rather than the unmatched ceiling. What we deliberately do not match is
+sequential depth: the pooled client still takes about 1,630 gradient steps
+between averages against four for a federated client. That is not a confound to
+remove but what partitioning is, since holding every row and taking deep steps on
+it is not something a federation can do. The pooled column therefore measures
+what partitioning costs given that partitioning also shortens the steps.
+
+**We claim the direction and not the factor.** Across two directions and two
+learning rates the ratio spans 6.53 +/- 0.70 to 30.45 +/- 6.93, with intervals
+nowhere near overlapping, so there is no single amplification number to report
+and averaging them would invent one. What holds everywhere is the sign and the
+order: federation's cost of mixing exceeds the central cost in every arm we
+measured, by at least six times.
 
 **It holds in the other direction too**, which matters because a negative result
 measured once can be a property of which way round the test was run. Congested
