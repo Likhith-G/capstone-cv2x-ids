@@ -3,7 +3,7 @@
 Adversarial validation gates. These run BEFORE a dataset is frozen.
 
 An earlier integrity suite ran 57 checks, passed all 57, and certified a
-dataset in which 97.76 percent of test rows appeared verbatim in training and a
+dataset in which 96.39 percent of test rows appeared verbatim in training and a
 1-nearest neighbour classifier scored F1 = 1.0000. A suite that only checks what the
 generator intended will always pass. These gates instead try to show the
 dataset is trivial, and the run fails if any of them succeeds.
