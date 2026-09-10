@@ -42,7 +42,7 @@ feature in the dataset does not exist.** Make no other change to `nr`.
 
 ## Hardware the timings below were measured on
 
-Apple M2, 8 cores, **8 GB RAM**, macOS 27.
+Apple M2, 8 cores, macOS 27.
 
 The memory figure matters more than the core count. Two concurrent heavy jobs
 made this machine swap 5 GB and turned a 40 second simulation into 2.5 hours.
