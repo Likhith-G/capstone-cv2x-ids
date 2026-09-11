@@ -16,6 +16,7 @@ This is a local working tool. It reads `docs/RESULTS.md` and the run logs under
 `~/ns3-v2x/runs/`, neither of which is in the repository, so a fresh clone will
 report every check as a missing file. That is expected.
 """
+import re
 import pathlib
 import sys
 
@@ -574,6 +575,50 @@ def check_references(bad):
     return bad
 
 
+def check_public_refs(bad):
+    """No published document may cite a document that is not published.
+
+    Most of this project's writing is deliberately unpublished: the results, the
+    defect analysis, the plans. That is fine until a file a stranger CAN open
+    cites one they cannot, at which point the repository is quietly full of dead
+    references that every check here passes, because the files exist on this
+    machine. The reader is the one who finds out.
+    """
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parent.parent
+    try:
+        tracked = set(subprocess.run(["git", "ls-files"], cwd=root, check=True,
+                                     capture_output=True, text=True
+                                     ).stdout.split())
+    except Exception as e:
+        print(f"FAIL public references        <- git ls-files failed: {e}")
+        return bad + 1
+    docs = sorted(f for f in tracked if f.endswith(".md"))
+    names = {pathlib.PurePath(f).name: f for f in tracked}
+    problems = []
+    for d in docs:
+        text = (root / d).read_text()
+        for m in re.finditer(r"[A-Za-z0-9_./-]*[A-Za-z0-9_-]+\.(?:md|py|csv|cff|json)",
+                             text):
+            ref = m.group(0)
+            base = pathlib.PurePath(ref).name
+            # a reference resolves if the path is tracked, or the bare filename
+            # names a tracked file, or nothing by that name exists here at all
+            # (an external work, a file inside the published data bundle)
+            if ref in tracked or base in names:
+                continue
+            if not (root / ref).exists() and not list(root.rglob(base)):
+                continue
+            problems.append(f"{d} cites {ref}, which is not published")
+    for pr in problems:
+        print(f"FAIL public references        <- {pr}")
+    if problems:
+        return bad + 1
+    print(f"ok   public references: {len(docs)} published documents cite "
+          f"nothing unpublished")
+    return bad
+
+
 def check_selfcount(total, bad):
     """The root README quotes how many figures this script checks. Keep it true.
 
@@ -716,7 +761,8 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 3)   # reference, readme, self-count
+             + len(CLAIMS_CONSISTENCY) + 4)   # refs, readme, self-count, public
+    bad = check_public_refs(bad)
     bad = check_selfcount(total, bad)
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
