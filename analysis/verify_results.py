@@ -575,6 +575,25 @@ def check_references(bad):
     return bad
 
 
+def check_script_count(bad):
+    """The README says how many scripts analysis/ holds. Count them.
+
+    Same drift as the figure count, which sat twenty out of date. A number in the
+    README that is maintained by remembering to update it is a number that will
+    be wrong, and this one moves every time a script is added.
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    n = len(list(here.glob("*.py"))) + len(list(here.glob("*.sh")))
+    readme = here.parent / "README.md"
+    want = f"{n} scripts"
+    if want not in readme.read_text():
+        print(f"FAIL script count              <- analysis/ holds {n} scripts "
+              f"and README.md does not say so")
+        return bad + 1
+    print(f"ok   script count: analysis/ holds {n} scripts")
+    return bad
+
+
 def check_no_tool_urls(bad):
     """Nothing published may point at the URL of a tool that helped build it.
 
@@ -828,7 +847,8 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 6)   # refs, readme, count, public, span, urls
+             + len(CLAIMS_CONSISTENCY) + 7)   # refs, readme, count, public, span, urls, scripts
+    bad = check_script_count(bad)
     bad = check_no_tool_urls(bad)
     bad = check_geometry_span(bad)
     bad = check_public_refs(bad)

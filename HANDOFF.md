@@ -77,7 +77,26 @@ looked and found nothing either. If it succeeds, that is a bigger result than
 anything else in the project, and it would need explaining against the geometry.
 Either outcome is worth having. There is no outcome here that wastes your time.
 
-### Pin this before you write any code
+### Start from the script, not from this description
+
+    python3 analysis/baseline_starter.py path/to/release --protocol cv
+
+That runs the published protocol exactly: all 50 features, grouped folds on the
+physical transmitter, all eleven classes, MCC and macro F1 and per class. It
+prints your three position-class scores beside the best any of the four existing
+families reached, and it exits non-zero if your score is high enough to be
+leakage.
+
+**Replace `build_model()` and change nothing else in the file.** Anything with
+`fit` and `predict` works. Doing it that way means the protocol cannot drift,
+and your row is comparable by construction rather than by careful reading.
+
+Run it once unmodified first. On 120,000 windows it reaches macro F1 0.4985 and
+MCC 0.6560 against the published 0.5145 and 0.6635, the difference being the
+smaller sample, and it puts `pos_const_offset` at 0.145 against the published
+forest's 0.146.
+
+### What that pins, and why each part matters
 
 To be the fifth family your run has to be comparable to the other four:
 
@@ -147,6 +166,8 @@ will save yourselves a fortnight.
 
 ### You are given
 
+- `analysis/baseline_starter.py`, **the thing to start from.** The protocol is
+  already correct in it.
 - `analysis/model_independence.py`, the harness the other four families ran in.
   Your row plugs into it.
 - `analysis/validate_dataset.py`, the ten integrity gates, if you want to check

@@ -54,7 +54,7 @@ size it was designed at.
 ## What we found
 
 Four results. Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 157 figures and must report no
+`analysis/verify_results.py`, which checks 158 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -229,10 +229,11 @@ property of the simulator rather than of C-V2X.
 [`simulation/`](simulation/) is the ns-3 contrib module that generates the traces.
 [`analysis/`](analysis/) takes them from raw simulator tables through to results.
 
-The five scripts that matter most, if you are reading the code for the first time:
+The six scripts that matter most, if you are reading the code for the first time:
 
 | | |
 |---|---|
+| `baseline_starter.py` | where to start if you are training something. The protocol is already correct in it |
 | `build_features.py` | windowing, and the 50 application and radio features |
 | `validate_dataset.py` | the ten adversarial integrity gates |
 | `benchmark.py` | application against radio against fused, the 0.5145 |
@@ -290,6 +291,7 @@ capstone-cv2x-ids/
 │   └── cv2xids/                 # ITS messaging, DCC, car following, attacks, traces
 │
 ├── analysis/                    # detection pipeline, 42 scripts
+│   ├── baseline_starter.py      # start here to train something
 │   ├── build_features.py        # windowing, application and radio features
 │   ├── validate_dataset.py      # ten adversarial integrity gates
 │   ├── benchmark.py             # application against radio against fused

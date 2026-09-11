@@ -55,6 +55,14 @@ were working from an intact copy.
     train = df[df.split == "train"]
     test  = df[df.split == "test"]
 
+**Or skip all of this and start from the script**, which does the load, the
+partition and the protocol correctly and prints a baseline:
+
+    python3 analysis/baseline_starter.py path/to/release
+
+Replace `build_model()` in it with whatever you are testing and change nothing
+else. The rest of this document explains what that script is doing and why.
+
 Columns are prefixed by what they are:
 
 | prefix | count | what it is |
@@ -63,6 +71,11 @@ Columns are prefixed by what they are:
 | `phy_` | 28 | physical and MAC layer, measured by the receiver's radio |
 | `key_` | 6 | identifiers. **Never a feature.** |
 | `label_` | 5 | ground truth. **Never a feature.** |
+
+`label_clean` marks a window that passes the label purity threshold. Every row
+in the release has it set, because impure windows were excluded when the bundle
+was built, so filtering on it changes nothing here. Filter anyway if you build
+your own corpus.
 
 The six keys are `key_rxNodeId`, `key_claimedStationId`, `key_window`,
 `key_txRnti_mode`, `key_observer_role` and `key_seed`. The five labels are
