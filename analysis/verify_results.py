@@ -575,6 +575,44 @@ def check_references(bad):
     return bad
 
 
+def check_no_tool_urls(bad):
+    """Nothing published may point at the URL of a tool that helped build it.
+
+    The poster's QR code once pointed at a session-scoped URL from an assistant
+    that had helped draft it. On an A0 sheet that is printed weeks ahead, a link
+    that belongs to a tool rather than to the project is a dead link by the time
+    anyone scans it, and it cannot be fixed on the day. The project's own domains
+    are the only acceptable destinations.
+    """
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parent.parent
+    banned = ("claude.ai", "chat.openai.com", "chatgpt.com",
+              "gemini.google.com", "copilot.microsoft.com")
+    try:
+        tracked = subprocess.run(["git", "ls-files"], cwd=root, check=True,
+                                 capture_output=True, text=True).stdout.split()
+    except Exception as e:
+        print(f"FAIL no tool URLs published    <- git ls-files failed: {e}")
+        return bad + 1
+    hits = []
+    for f in tracked:
+        if f == "analysis/verify_results.py":
+            continue          # this file names them in order to forbid them
+        try:
+            text = (root / f).read_text()
+        except (UnicodeDecodeError, FileNotFoundError):
+            continue
+        for host in banned:
+            if host in text:
+                hits.append(f"{f} points at {host}")
+    for h in hits:
+        print(f"FAIL no tool URLs published    <- {h}")
+    if hits:
+        return bad + 1
+    print(f"ok   no tool URLs published: {len(tracked)} tracked files clean")
+    return bad
+
+
 def check_geometry_span(bad):
     """The README quotes the receiver array's span. Recompute it from the source.
 
@@ -790,7 +828,8 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 5)   # refs, readme, count, public, span
+             + len(CLAIMS_CONSISTENCY) + 6)   # refs, readme, count, public, span, urls
+    bad = check_no_tool_urls(bad)
     bad = check_geometry_span(bad)
     bad = check_public_refs(bad)
     bad = check_selfcount(total, bad)

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CV2X-IDS</title>
+<meta name="description" content="A labelled dataset of vehicles lying to each other over C-V2X, and a study of what a receiver can and cannot catch.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#12171c; --panel:#1a222a; --rule:#2a343e;
+    --ink:#e6e9ec; --dim:#9aa5b0; --accent:#e08a52; --signal:#56a8a4;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); line-height:1.6;
+    padding:0 24px 80px;
+  }
+  .wrap{max-width:720px; margin:0 auto}
+  header{padding:72px 0 34px; border-bottom:1px solid var(--rule)}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 16px;
+  }
+  h1{
+    font-size:clamp(30px,6vw,46px); font-weight:600; letter-spacing:-.025em;
+    line-height:1.08; margin:0 0 18px; text-wrap:balance;
+  }
+  .thesis{font-size:18px; color:var(--dim); margin:0; max-width:56ch}
+  h2{
+    font-size:13px; font-family:var(--mono); font-weight:500; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--dim); margin:44px 0 14px;
+  }
+  .links{display:grid; gap:10px; grid-template-columns:1fr}
+  @media (min-width:620px){ .links{grid-template-columns:1fr 1fr} }
+  a.card{
+    display:block; text-decoration:none; color:inherit;
+    background:var(--panel); border:1px solid var(--rule); border-radius:6px;
+    padding:16px 18px; transition:border-color .15s ease;
+  }
+  a.card:hover,a.card:focus-visible{border-color:var(--accent); outline:none}
+  a.card .t{font-weight:600; font-size:15px; display:block; margin-bottom:3px}
+  a.card .d{font-size:13.5px; color:var(--dim); line-height:1.45}
+  a.card.lead{grid-column:1/-1; border-color:var(--signal)}
+  a.card.lead .t{color:var(--signal)}
+  .facts{
+    display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 0;
+    font-family:var(--mono); font-size:12px; color:var(--dim);
+  }
+  .facts span{border:1px solid var(--rule); border-radius:3px; padding:3px 9px}
+  .facts b{color:var(--ink); font-weight:500}
+  footer{
+    margin-top:48px; padding-top:20px; border-top:1px solid var(--rule);
+    font-size:13px; color:var(--dim);
+  }
+  footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">RMIT Engineering Capstone &middot; P003859Eng</p>
+    <h1>What received power can and cannot tell you about a lying vehicle</h1>
+    <p class="thesis">Cars broadcast their position several times a second, and every
+    message is cryptographically signed. The signature proves who sent it. It proves
+    nothing about whether it is true. This is a labelled dataset of vehicles lying to
+    each other over C-V2X, and a study of what a receiver can actually catch.</p>
+    <div class="facts">
+      <span><b>7,916,708</b> labelled windows</span>
+      <span><b>11</b> classes</span>
+      <span><b>50</b> features across two layers</span>
+      <span>detection floor <b>47.2 m</b></span>
+    </div>
+  </header>
+
+  <h2>Start here</h2>
+  <div class="links">
+    <a class="card lead" href="booth/">
+      <span class="t">Catch Me Lying &middot; the interactive demo</span>
+      <span class="d">You are the attacker. Choose where to claim you are, and see
+      whether the roadside receivers catch you. Runs in the browser, nothing to
+      install.</span>
+    </a>
+    <a class="card" href="https://github.com/Likhith-G/capstone-cv2x-ids">
+      <span class="t">The repository</span>
+      <span class="d">Simulator, detection pipeline, and every reported figure pinned
+      to the log that produced it.</span>
+    </a>
+    <a class="card" href="https://github.com/Likhith-G/capstone-cv2x-ids/blob/main/USING_THE_DATA.md">
+      <span class="t">Using the dataset</span>
+      <span class="d">How to load it, the frozen partition and why to keep it, what
+      to report, and what to beat.</span>
+    </a>
+    <a class="card" href="https://github.com/Likhith-G/capstone-cv2x-ids/blob/main/docs/DATASET_CARD.md">
+      <span class="t">Dataset card</span>
+      <span class="d">Every scenario, every class, all 61 columns, and the limitations
+      stated rather than left to be found.</span>
+    </a>
+    <a class="card" href="booth/poster.html">
+      <span class="t">The poster</span>
+      <span class="d">A0, laid out in millimetres so it prints at its designed size.</span>
+    </a>
+  </div>
+
+  <h2>The short version</h2>
+  <div class="links">
+    <a class="card" href="booth/" style="grid-column:1/-1">
+      <span class="t">A single receiver is blind to a position lie, and many receivers are not</span>
+      <span class="d">Four learner families reach 0.010, 0.052 and 0.167 on the three
+      constant-offset classes, because one receiver at a fixed geometry supplies one
+      equation for four unknowns. Pooling received power across receivers recovers
+      detection down to a floor at 47.2 m. The array's geometry then predicts the
+      direction an adaptive attacker will lie in, 79.3 degrees off the road axis
+      against 75 to 85 measured by independent search.</span>
+    </a>
+  </div>
+
+  <footer>
+    Supervisor A/Prof Ke (Desmond) Wang, research mentor Mr Kanwardeep Singh Gahlot.
+    Code is GPL-2.0-only. Figures and numbers on this page are pinned to their
+    generating logs by
+    <a href="https://github.com/Likhith-G/capstone-cv2x-ids/blob/main/analysis/verify_results.py">verify_results.py</a>.
+  </footer>
+
+</div>
+</body>
+</html>

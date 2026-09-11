@@ -28,6 +28,14 @@
   .thesis b{color:var(--ink);font-weight:600}
   .qr{flex:0 0 auto;text-align:center}
   .qr .box{background:#fff;padding:5mm;border-radius:3mm}
+  /* Shown only when the QR library did not load, which happens when the sheet is
+     rendered for print on a machine with no network. A blank white square would
+     print silently; the address does not. */
+  .qr .qrfallback{
+    display:flex;align-items:center;width:50mm;min-height:50mm;
+    font-family:var(--mono);font-size:4mm;line-height:1.5;font-weight:500;
+    color:#12171c;text-align:left;overflow-wrap:anywhere;
+  }
   .qr .cap{font-family:var(--mono);font-size:5mm;color:var(--dim);margin-top:4mm;
            letter-spacing:.06em;max-width:52mm;line-height:1.4}
 
@@ -76,7 +84,8 @@
       </p>
     </div>
     <div class="qr">
-      <div class="box" id="qr"></div>
+      <div class="box" id="qr"><span class="qrfallback"
+        >likhith-g.github.io/<wbr>capstone-cv2x-ids/<wbr>booth/</span></div>
       <div class="cap">Try it yourself.<br>You are the attacker.</div>
     </div>
   </div>
@@ -155,12 +164,29 @@
 </div>
 
 <script>
+  /* Where the demo lives. This is a GitHub Pages URL serving docs/ from main, so
+     it outlives any one session and belongs to the project rather than to a tool
+     that built it. Pages has to be switched on for the repository or this is a
+     404, and a dead code on a printed A0 poster cannot be fixed on the day, so
+     CHECK IT RESOLVES BEFORE SENDING THE POSTER TO PRINT. */
+  var DEMO = "https://likhith-g.github.io/capstone-cv2x-ids/booth/";
+
   /* The demo is the point of the poster, so the code has to survive being
-     photographed at an angle in bad light: high correction, generous quiet zone. */
-  new QRCode(document.getElementById("qr"), {
-    text: "https://claude.ai/code/artifact/6cbffd5c-7a2e-456c-b92a-2671c82c0697",
-    width: 190, height: 190,
-    colorDark: "#12171c", colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
+     photographed at an angle in bad light: high correction, generous quiet zone.
+     The library comes off a CDN and the poster is rendered to print, sometimes
+     on a machine with no network. Printing a blank white square would be worse
+     than printing no square, so the URL is written out in its place. */
+  /* The address is in the markup, not added here, so it survives a machine with
+     no network, a blocked CDN and a renderer that does not run scripts at all.
+     This only takes it away once a real code exists to replace it. */
+  var box = document.getElementById("qr");
+  if (typeof QRCode === "function") {
+    box.textContent = "";
+    new QRCode(box, {
+      text: DEMO,
+      width: 190, height: 190,
+      colorDark: "#12171c", colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
 </script>
