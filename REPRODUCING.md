@@ -44,7 +44,7 @@ feature in the dataset does not exist.** Make no other change to `nr`.
 
 Apple M2, 8 cores, macOS 27.
 
-The memory figure matters more than the core count. Two concurrent heavy jobs
+Available memory matters more than the core count. Two concurrent heavy jobs
 made this machine swap 5 GB and turned a 40 second simulation into 2.5 hours.
 **Run one heavy job at a time.** Disk matters too: keep at least 10 GB free, since
 a single 60 second seed produces about 750 MB of raw tables and a 101 MB corpus.

@@ -17,6 +17,31 @@ You both get the same thing, and you both have to use it unchanged:
 - `release_splits.csv`, the frozen partition inside it
 - `analysis/check_release.py`, the acceptance test
 
+### Getting it
+
+The full bundle is 1.6 GB, which is more than most ways of sending a file will
+take. Two options.
+
+**The whole thing**, 1.6 GB, over OneDrive or a shared drive. Preferred, because
+it is the only form the acceptance test covers completely.
+
+**One scenario**, if that is impractical. `highway_sparse` plus the eight small
+files beside it is **358 MB** and is enough for everything in section A, because
+it is the reference scenario where every published figure is measured. Copy the
+`shards/highway_sparse/` directory and all eight files at the top level of the
+bundle, then run the acceptance test in subset mode:
+
+    python3 analysis/check_release.py path/to/bundle --subset
+
+Subset mode accepts an absent scenario and still fails on a file that is present
+and does not match its checksum, because that is corruption rather than a partial
+copy. It reports which scenarios are absent so nobody reads the result as
+covering the whole release.
+
+### Then verify it
+
+    python3 analysis/check_release.py path/to/release
+
 **Run the acceptance test once and keep its output.** Send that output with any
 number you report. Two results computed on the same frozen partition can be put
 beside each other; two results on partitions each of you made up cannot, and there
@@ -93,6 +118,10 @@ best any of the four reached:
 | position offset, 71 to 233 m | 0.167 |
 
 **Those three numbers are the target.** The aggregate is almost beside the point.
+Note that the four rows above come from grouped cross-validation on 250,000
+windows, not from a single pass over the frozen split. Score the same way if you
+want your row to sit in that table; `USING_THE_DATA.md` explains the difference
+and why the acceptance test reports 0.5396 instead.
 A transformer that moves the aggregate from 0.51 to 0.53 and leaves the position
 classes at 0.01 has confirmed the bound. A transformer that moves the position
 classes is the finding.

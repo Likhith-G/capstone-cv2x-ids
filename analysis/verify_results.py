@@ -575,6 +575,35 @@ def check_references(bad):
     return bad
 
 
+def check_geometry_span(bad):
+    """The README quotes the receiver array's span. Recompute it from the source.
+
+    Every other figure in the README is pinned to a run log. This one is not,
+    because it is computed inside `make_figures.py` and printed onto the figure
+    rather than written to a log. A number in the most-read document in the
+    repository that nothing checks is exactly the drift this file exists to stop,
+    so it is recomputed here from the same file the figure is drawn from.
+    """
+    import json
+    src = pathlib.Path.home() / "ns3-v2x/runs/campaign_gnss/booth_surface.json"
+    readme = pathlib.Path(__file__).resolve().parent.parent / "README.md"
+    if not src.exists():
+        print("ok   geometry span: source absent, not checked")
+        return bad
+    d = json.loads(src.read_text())
+    tx, ty = d["true_position"]["x"], d["true_position"]["y"]
+    xs = [r["x"] - tx for r in d["receivers"]]
+    ys = [r["y"] - ty for r in d["receivers"]]
+    along, across = max(xs) - min(xs), max(ys) - min(ys)
+    want = f"{along:,.0f} m along the road and {across:.0f} m across it"
+    if want not in readme.read_text():
+        print(f"FAIL geometry span             <- README.md does not say "
+              f"'{want}'")
+        return bad + 1
+    print(f"ok   geometry span: {want}")
+    return bad
+
+
 def check_public_refs(bad):
     """No published document may cite a document that is not published.
 
@@ -761,7 +790,8 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 4)   # refs, readme, self-count, public
+             + len(CLAIMS_CONSISTENCY) + 5)   # refs, readme, count, public, span
+    bad = check_geometry_span(bad)
     bad = check_public_refs(bad)
     bad = check_selfcount(total, bad)
     print(f"\n{total - bad}/{total} verified")

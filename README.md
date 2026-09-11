@@ -46,7 +46,7 @@ This project builds the data to answer that, and then answers it.
 ## What we found
 
 Four results. Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 155 figures and must report no
+`analysis/verify_results.py`, which checks 156 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -75,10 +75,16 @@ and the boundary can be measured rather than guessed.
 
 ### 3. The geometry tells you where an attacker will lie
 
-Roadside receivers strung along a straight road are nearly in a line, which makes
-them poor at resolving position *across* the road. Working that out from the
-geometry alone predicts the error ellipse points **79.3 degrees** off the road
-axis. An attacker found independently by brute-force search over 72 directions
+Roadside receivers strung along a straight road are nearly in a line, and that is
+not a small effect. For a typical transmitter the receivers that hear it spread
+2,414 m along the road and 24 m across it, which is a hundred to one.
+
+![The receivers that hear one transmitter](docs/figures/geometry.png)
+
+A hundred-to-one array is poor at resolving position *across* the road, because
+every receiver is measuring from roughly the same direction. Working that out
+from the geometry alone predicts the error ellipse points **79.3 degrees** off
+the road axis. An attacker found independently by brute-force search over 72 directions
 lies at **75 to 85 degrees**, with no knowledge of the prediction.
 
 The countermeasure follows from the same reasoning. Constraining the position

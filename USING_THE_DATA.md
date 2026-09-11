@@ -161,6 +161,18 @@ Four learner families have been run over identical rows and folds: a random
 forest, gradient boosting, an MLP and logistic regression. The spread between the
 top three is about 0.013 macro F1, so nothing here rests on a lucky model choice.
 
+**You will see a slightly different number and that is expected.** The acceptance
+test trains a small forest on the frozen split using only what is in the bundle,
+and reaches **macro F1 0.5396, MCC 0.6918** on the reference scenario. The
+published 0.5145 comes from a stricter protocol: 250,000 windows under three
+grouped cross-validation folds rather than a single train-and-score on the frozen
+partition. Both are correct measurements of different protocols, and the gap
+between them is the ordinary optimism of scoring once rather than averaging folds.
+
+If you want to compare directly against 0.5145, use grouped cross-validation. If
+you want a fast number to iterate on, the frozen split is fine, and 0.5396 is what
+a baseline gets there.
+
 ## The rule that matters most
 
 **A 1-nearest-neighbour classifier scores 0.3466 on this corpus.**

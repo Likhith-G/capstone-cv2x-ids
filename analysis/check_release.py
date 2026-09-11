@@ -60,6 +60,13 @@ def main():
                     help="cap the training rows. The full set took half an hour, "
                          "and a check nobody waits for is a check nobody runs. "
                          "0 uses everything")
+    ap.add_argument("--subset", action="store_true",
+                    help="the bundle holds only some of the scenarios. A whole "
+                         "scenario is hundreds of megabytes and a collaborator "
+                         "often gets one rather than all five, so an absent "
+                         "scenario stops being a failure. A file that IS present "
+                         "and does not match its checksum still fails, because "
+                         "that is corruption rather than a partial copy")
     ap.add_argument("--jobs", type=int, default=3,
                     help="keep this small: an unbounded forest on this many rows "
                          "gets OOM killed on an 8 GB machine with no traceback")
@@ -73,7 +80,8 @@ def main():
     if not man.exists():
         return 1
     bad, missing = [], []
-    for line in man.read_text().splitlines():
+    named = man.read_text().splitlines()
+    for line in named:
         digest, _, rel = line.partition("  ")
         f = b / rel
         if not f.exists():
@@ -84,8 +92,17 @@ def main():
                 h.update(chunk)
         if h.hexdigest() != digest:
             bad.append(rel)
-    check("every named file present", not missing, f"{len(missing)} missing" if missing else "")
-    check("every checksum matches", not bad, f"{len(bad)} differ" if bad else "")
+    if a.subset:
+        # Absence is expected here; corruption never is. Report what is absent so
+        # nobody reads a subset result as though it covered the whole release.
+        check("every present file matches its checksum", not bad,
+              f"{len(bad)} differ" if bad else
+              f"{len(named) - len(missing)} of {len(named)} files present, "
+              f"{len(missing)} absent, which --subset allows")
+    else:
+        check("every named file present", not missing,
+              f"{len(missing)} missing" if missing else "")
+        check("every checksum matches", not bad, f"{len(bad)} differ" if bad else "")
 
     print("\nschema and shards")
     schema = json.loads((b / "schema.json").read_text())
@@ -109,9 +126,16 @@ def main():
     check("shards load", True, f"{len(df):,} rows in {time.time()-t0:.0f}s")
     if scen:
         counts = df.scenario.value_counts().to_dict()
-        ok = all(counts.get(k, 0) == v["rows"] for k, v in scen.items())
+        # A scenario with no shards present is absent, not wrong. Under --subset
+        # only the scenarios actually shipped are held to their declared counts.
+        judged = {k: v for k, v in scen.items()
+                  if counts.get(k, 0) or not a.subset}
+        ok = all(counts.get(k, 0) == v["rows"] for k, v in judged.items())
+        absent = sorted(set(scen) - set(judged))
         check("row counts match what SCENARIOS.json declares", ok,
-              "" if ok else str(counts))
+              (f"{len(judged)} scenario(s) checked"
+               + (f", absent: {', '.join(absent)}" if absent else ""))
+              if ok else str(counts))
     check("columns match the schema exactly",
           [c for c in df.columns if c != "scenario"] == promised,
           f"{len([c for c in df.columns if c != 'scenario'])} of "
