@@ -228,6 +228,23 @@ Shortening the window from 1000 ms to 200 ms costs **0.035 macro F1 for a
 fivefold latency reduction.** The radio block loses most of it, because radio
 features are statistics and statistics need samples.
 
+### One constraint, so you do not lose a week to it
+
+**You cannot extend the window sweep from the release bundle.** Every row in the
+bundle is already windowed at 1000 ms. Changing the window length means
+rebuilding the corpus from the raw simulator tables with
+`build_corpus.py --window-ms`, and those tables are 36 GB, are not distributed,
+and live only on the machine that generated them.
+
+So the three points at 200, 500 and 1000 ms are the curve you have. If you want
+more points on it, that is a request to Likhith rather than something you can
+run, and each new window length costs a corpus rebuild across six seeds plus a
+benchmark, so ask for the ones you actually need rather than a sweep.
+
+What you *can* do from the bundle is everything on the hardware side, which is
+the part that is yours: the export, the board, the measurement, and the argument
+that follows from it.
+
 ### What the hardware work actually proves
 
 Measure inference on the ARM board and show it **stays negligible against window
