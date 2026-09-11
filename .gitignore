@@ -58,6 +58,12 @@ docs/PARTA_CORRECTIONS.md
 docs/archive/
 docs/research/
 
+# The Part A coursework phase. Archived out of the working tree on 11 Sep 2026:
+# the results in it are superseded and were being read as current. The files
+# remain on disk and the tree is retrievable with
+# `git checkout part-a-archived -- capstone`.
+capstone/
+
 # Session state files. Volatile status and durable lessons; both name defects
 # and open decisions the team has not seen.
 docs/STATUS.md

@@ -38,6 +38,33 @@ CHECKS = [
     ("geometry law fitted",
      "path loss exponent **2.466**, residual **3.821 dB**",
      "campaign_gnss/logs/geometry_bound", "path loss exponent n      2.466"),
+    # 3h5: the predicted rotation to 86 degrees, tested against the corrected
+    # estimator and refuted. The off-axis column is the claim; the caught-at-5%
+    # column beside it is what the correction is worth against this adversary.
+    ("3h5 road 25m",
+     "| 25 m | 0.002 | **0.021** |",
+     "campaign_gnss/logs/br_centreline3_roadest_debias", "0.021        0.572           0.047          65.0          -8.9"),
+    ("3h5 road 50m",
+     "| 50 m | 0.013 | **0.101** |",
+     "campaign_gnss/logs/br_centreline3_roadest_debias", "0.101        0.635           0.108          75.0         -34.3"),
+    ("3h5 road 100m",
+     "| 100 m | 0.057 | **0.230** |",
+     "campaign_gnss/logs/br_centreline3_roadest_debias", "0.230        0.704           0.196          80.0         -84.2"),
+    ("3h5 road 200m",
+     "| 200 m | 0.254 | **0.593** |",
+     "campaign_gnss/logs/br_centreline3_roadest_debias", "0.593        0.867           0.525          85.0        -185.4"),
+    ("3h5 free 25m",
+     "| 25 m | 75 deg | **65 deg** |",
+     "campaign_gnss/logs/br_centreline3_free_debias", "0.019        0.540           0.039          65.0          -2.2"),
+    ("3h5 free 50m",
+     "| 50 m | 80 deg | **75 deg** |",
+     "campaign_gnss/logs/br_centreline3_free_debias", "0.087        0.581           0.089          75.0         -28.0"),
+    ("3h5 free 100m",
+     "| 100 m | 85 deg | **80 deg** |",
+     "campaign_gnss/logs/br_centreline3_free_debias", "0.194        0.644           0.164          80.0         -78.2"),
+    ("3h5 free 200m",
+     "| 200 m | 85 deg | 85 deg |",
+     "campaign_gnss/logs/br_centreline3_free_debias", "0.556        0.836           0.479          85.0        -180.4"),
     ("geometry ellipse angle",
      "| **50th** | **38.7 m** | **8.2 m** | **79.3 deg** |",
      "campaign_gnss/logs/geometry_bound",
@@ -516,8 +543,7 @@ STYLE_FILES = ["docs/RESULTS.md", "docs/MASTER_INDEX.md", "docs/BUILD_LOG_V2.md"
                "docs/PAPER_CLAIMS.md", "docs/METHODS_DRAFT.md",
                "docs/PAPER_DRAFT.md",
                "docs/DEFECTS_V2.md", "docs/PLAN_V3.md", "docs/RUNS_MANIFEST.md",
-               "README.md", "analysis/README.md", "simulation/README.md",
-               "capstone/README.md"]
+               "README.md", "analysis/README.md", "simulation/README.md"]
 
 
 def check_references(bad):
@@ -545,6 +571,33 @@ def check_references(bad):
     else:
         for r in bad_refs:
             print(f"FAIL reference does not exist: {r}")
+    return bad
+
+
+def check_selfcount(total, bad):
+    """The root README quotes how many figures this script checks. Keep it true.
+
+    That number is a credential: it tells a reader the results were pinned to
+    their logs rather than transcribed. It went stale once, sitting at 134 while
+    the real total was 146, which is exactly the kind of drift the rest of this
+    file exists to catch. A count nobody checks is a count that rots.
+    """
+    import re
+    readme = pathlib.Path(__file__).resolve().parent.parent / "README.md"
+    if not readme.exists():
+        print("FAIL readme figure count       <- README.md not found")
+        return bad + 1
+    m = re.search(r"which checks (\d+) figures", readme.read_text())
+    if m is None:
+        print("FAIL readme figure count       <- no 'which checks N figures' "
+              "sentence in README.md")
+        return bad + 1
+    claimed = int(m.group(1))
+    if claimed != total:
+        print(f"FAIL readme figure count       <- README.md says {claimed}, "
+              f"this script runs {total}")
+        return bad + 1
+    print(f"ok   readme figure count: README.md says {claimed}")
     return bad
 
 
@@ -663,7 +716,8 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 2)   # reference and readme checks
+             + len(CLAIMS_CONSISTENCY) + 3)   # reference, readme, self-count
+    bad = check_selfcount(total, bad)
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
 

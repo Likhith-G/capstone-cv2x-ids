@@ -28,12 +28,18 @@ exchange messages directly over an NR V2X Mode 2 PC5 sidelink.
 | Mobility | Intelligent Driver Model car following, three vehicle classes |
 | Benign traffic | ETSI CAM, DENM, CPM and VAM, each from its own triggering conditions, under TS 102 687 reactive congestion control |
 | Seeds | 8, each 60 s |
-| Windows | 1,641,002 |
+| Windows | 1,641,002 in this scenario, 7,916,708 across the five released |
 | Stations | 720, of which 519 benign |
 | Classes | 11, being benign and ten misbehaviour types |
 | Features | 50, being 22 application layer and 28 physical and MAC layer |
 | Benign positioning error | median 4.00 m, 95th percentile 5.90 m |
 | Detection unit | one observer's view of one claimed station over one time window |
+
+The table describes `highway_sparse`, the reference scenario every headline
+figure is measured on. The release ships five scenarios, each varying one factor
+against that reference, under a single partition assigned across all of them.
+[`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) describes each one and why they
+are not independent samples.
 
 **Benign vehicles do not claim their exact position.** Each carries a receiver
 error drawn from the model VeReMi Extension uses: a per-vehicle bias, a small
@@ -71,7 +77,7 @@ misbehaviour.
 ## What it shows
 
 Four results, in the order they build. Every number here is pinned to the log
-that produced it by `analysis/verify_results.py`, which checks 134 figures and
+that produced it by `analysis/verify_results.py`, which checks 154 figures and
 must report no failures.
 
 **A single receiver cannot see a position lie.** Not at any magnitude this
@@ -190,15 +196,30 @@ capstone-cv2x-ids/
 │   ├── persistence_filter.py    # alert episodes and K-of-M operating points
 │   └── regenerate.sh            # whole chain, one stage per log
 │
-├── docs/patches/                # additive patch to 5G-LENA, required to build
-│
-└── capstone/                    # earlier coursework material, archived
+└── docs/patches/                # additive patch to 5G-LENA, required to build
 ```
 
-[`capstone/`](capstone/) holds the earlier RMIT coursework phase: a separate
-simulation over a 5G uplink, its feature selection, classification and federated
-learning workstreams, and the progress report. It is kept for reference and is
-not used by anything above it. See [`capstone/README.md`](capstone/README.md).
+## The earlier coursework phase
+
+An earlier version of this project ran over a 5G uplink to a MEC server rather
+than over a PC5 sidelink, with constant-velocity mobility and features drawn
+from traffic statistics and message payloads. Some of those features differenced
+a claimed value against the simulator's true position, which a deployed roadside
+unit does not have. An audit found that 96.39 percent of its test rows appeared
+verbatim in training and that a 1-nearest-neighbour classifier scored a macro F1
+of 1.0000 on it, so the near-perfect results it reported were a property of the
+dataset rather than of the detectors.
+
+That phase is not in the working tree, because leaving it beside the corrected
+work invited its numbers to be read as current. It is kept in full and retrieved
+with:
+
+```bash
+git checkout part-a-archived -- capstone
+```
+
+`v1-parta-frozen` marks the same work as submitted in June 2026, before 508
+further files were added to it.
 
 ---
 

@@ -1,1 +1,0 @@
-% time(s)	cellId	bwpId	IMSI	RNTI	frame	sframe	slot	symStart	numSym	harqId	ndi	rv	mcs	tbSize
