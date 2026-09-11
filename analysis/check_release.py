@@ -113,6 +113,13 @@ def main():
     check("scenarios declared", bool(scen),
           ", ".join(f"{k} ({v['kind']})" for k, v in scen.items()))
     bench = [k for k, v in scen.items() if v["kind"] == "benchmark"] or list(scen)
+    shard_root = b / "shards"
+    present_scenarios = ({d.name for d in shard_root.iterdir() if d.is_dir()}
+                         if shard_root.is_dir() else set())
+    if a.subset and present_scenarios:
+        # Only judge and report on the scenarios that were actually shipped,
+        # or the cross-scenario line claims a comparison it did not make.
+        bench = [k for k in bench if k in present_scenarios] or bench
 
     shards = sorted((b / "shards").rglob("*.csv.gz"))
     check("shards present", len(shards) > 0, f"{len(shards)} found")

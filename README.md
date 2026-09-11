@@ -37,9 +37,17 @@ This project builds the data to answer that, and then answers it.
 |---|---|
 | **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md) |
 | **pick up one of the open pieces of work** | [`HANDOFF.md`](HANDOFF.md) |
+| see the idea in ninety seconds | [`docs/booth/index.html`](docs/booth/index.html), open it in a browser |
 | know what every class and column means | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) |
 | rebuild the dataset from the simulator | [`REPRODUCING.md`](REPRODUCING.md) |
 | understand the detection pipeline | [`analysis/README.md`](analysis/README.md) |
+
+`docs/booth/index.html` is *Catch Me Lying*, a self-contained interactive demo
+that puts you in the attacker's seat: choose where to claim you are, and watch
+whether the receivers catch you. It is a single file with no server and no build
+step. [`docs/booth/poster.html`](docs/booth/poster.html) is the A0 poster that
+goes beside it, also a single file, laid out in millimetres so it prints at the
+size it was designed at.
 
 ---
 
