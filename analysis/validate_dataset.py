@@ -24,11 +24,17 @@ from sklearn.metrics import f1_score
 
 FAIL = []
 WARN = []
+RAN = set()
 
 
 def gate(name, ok, detail, warn_only=False):
     tag = "PASS" if ok else ("WARN" if warn_only else "FAIL")
     print(f"[{tag}] {name}: {detail}")
+    # Two gates run once per class, so count the gate rather than the invocation.
+    # Documents kept disagreeing about whether this suite has eight gates or ten,
+    # because eight is the number of numbered families and ten is the number that
+    # actually run. The suite now says which, and nobody has to count again.
+    RAN.add(name.split()[0])
     if not ok:
         (WARN if warn_only else FAIL).append(name)
 
@@ -178,9 +184,10 @@ def main():
 
     print()
     if FAIL:
-        print(f"FAILED {len(FAIL)} gate(s): {', '.join(FAIL)}")
+        print(f"FAILED {len(FAIL)} of {len(RAN)} gate(s): {', '.join(FAIL)}")
         sys.exit(1)
-    print("all gates passed" + (f" ({len(WARN)} warning(s))" if WARN else ""))
+    print(f"all {len(RAN)} gates passed"
+          + (f" ({len(WARN)} warning(s))" if WARN else ""))
 
 
 if __name__ == "__main__":

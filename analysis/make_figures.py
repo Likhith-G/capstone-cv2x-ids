@@ -65,13 +65,17 @@ def fig_placement():
                 xy=(off[0], across[0]), xytext=(4, across[0] + 0.7),
                 fontsize=8, color="#555555")
     ax.plot([40], [across[best]], "*", ms=16, color="#a0522d", zorder=5)
+    # Sits under the curve's right arm, which is the only clear region: at this
+    # y-limit the space above the optimum is crossed by the curve itself and by
+    # the 80 m sample, and the text ran straight through that marker before.
     ax.annotate(f"optimum at {off[best]:.0f} m: {across[best]:.1f} m, "
                 f"anisotropy {aniso[best]:.2f}\n"
                 f"generated at this offset and measured,\n"
                 f"19.1 percent against 19.6 predicted",
-                xy=(40, across[best]), xytext=(60, across[best] + 2.2),
-                fontsize=8, color="#a0522d",
-                arrowprops=dict(arrowstyle="->", lw=0.8, color="#a0522d"))
+                xy=(40, across[best]), xytext=(202, 29.2),
+                fontsize=8, color="#a0522d", va="bottom", ha="right",
+                arrowprops=dict(arrowstyle="->", lw=0.8, color="#a0522d",
+                                shrinkA=2, shrinkB=6))
     ax.set_xlabel("roadside unit lateral offset from the centreline (m)")
     ax.set_ylabel("Cramer-Rao bound,\nacross the road (m)")
     ax.set_title("Geometry improves with offset, information falls with distance",
