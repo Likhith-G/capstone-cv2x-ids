@@ -1,5 +1,13 @@
 # Reproducing
 
+**You probably do not need this page.** It covers rebuilding the dataset from the
+ns-3 simulator, which takes hours across two different Python versions and
+produces the same data that is already released. If you want to train something
+on the data, read [`USING_THE_DATA.md`](USING_THE_DATA.md) instead.
+
+This page is for changing how the data is generated: a new attack, a different
+road, another window length.
+
 Everything here was measured on the machine that produced the results rather than
 estimated, so the runtimes are what you should actually expect on comparable
 hardware, not a best case.

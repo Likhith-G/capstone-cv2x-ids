@@ -35,11 +35,11 @@ This project builds the data to answer that, and then answers it.
 
 | If you want to | Read |
 |---|---|
-| **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md) |
+| **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md). You do not need to reproduce anything |
 | **pick up one of the open pieces of work** | [`HANDOFF.md`](HANDOFF.md) |
 | see the idea in ninety seconds | [`docs/booth/index.html`](docs/booth/index.html), open it in a browser |
 | know what every class and column means | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) |
-| rebuild the dataset from the simulator | [`REPRODUCING.md`](REPRODUCING.md) |
+| rebuild the dataset from the simulator, which almost nobody needs | [`REPRODUCING.md`](REPRODUCING.md) |
 | understand the detection pipeline | [`analysis/README.md`](analysis/README.md) |
 
 `docs/booth/index.html` is *Catch Me Lying*, a self-contained interactive demo
