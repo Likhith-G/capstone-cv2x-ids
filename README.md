@@ -290,7 +290,7 @@ capstone-cv2x-ids/
 ├── simulation/                  # ns-3 contrib module
 │   └── cv2xids/                 # ITS messaging, DCC, car following, attacks, traces
 │
-├── analysis/                    # detection pipeline, 42 scripts
+├── analysis/                    # detection pipeline, 43 scripts
 │   ├── baseline_starter.py      # start here to train something
 │   ├── build_features.py        # windowing, application and radio features
 │   ├── validate_dataset.py      # ten adversarial integrity gates
