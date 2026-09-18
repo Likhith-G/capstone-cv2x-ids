@@ -371,10 +371,31 @@ def run_best_response(df, a, levels):
     # whose median sits near the bound while its RMS is an order of magnitude
     # above it is NOT near efficient, and 3h4 found exactly that. Reporting only
     # the median is what hid it the first time.
-    rms = float(np.sqrt(np.mean(fe ** 2)))
+    #
+    # RMS is taken over fits within ROAD_LEN of the truth and the excluded share
+    # is its own figure, which is 3h4's convention and it is not fussiness. A fit
+    # that puts a vehicle further from the truth than the road is long has not
+    # estimated a position, it has failed, and averaging one in destroys the
+    # statistic: the raw RMS here is about 4 km at every correction scale and
+    # carries no signal at all.
+    ROAD_LEN = 6000.0
+    ok = fe < ROAD_LEN
+    rms = float(np.sqrt(np.mean(fe[ok] ** 2))) if ok.any() else float("nan")
+    med = float(np.median(fe))
     print(f"free-fit localisation error on these benign triples: median "
-          f"{np.median(fe):.1f} m, RMS {rms:.1f} m, "
-          f"RMS/median {rms / max(np.median(fe), 1e-9):.1f}")
+          f"{med:.1f} m, 90th {np.percentile(fe, 90):.1f} m, "
+          f"RMS {rms:.1f} m, RMS/median {rms / max(med, 1e-9):.2f}, "
+          f"diverged {100.0 * (~ok).mean():.2f}%")
+    # The censoring threshold is a judgement call, and on a sweep that changes
+    # the tail shape deliberately it has to be shown not to be carrying the
+    # result. Same statistic at two more thresholds, so the ordering across a
+    # sweep can be checked rather than assumed stable.
+    alts = " ".join(
+        f"{lab} {float(np.sqrt(np.mean(fe[fe < c] ** 2))) if (fe < c).any() else float('nan'):.1f} m"
+        f" ({100.0 * (fe >= c).mean():.2f}% cut)"
+        for lab, c in (("RMS<3km", 3000.0), ("RMS<12km", 12000.0)))
+    print(f"  censoring check: {alts}  RMS uncensored "
+          f"{float(np.sqrt(np.mean(fe ** 2))):.1f} m")
     print("That number is the budget the attacker gets to spend. A lie shorter "
           "than the\nestimator's own error can be aimed at the estimate "
           "instead of away from it.\n")

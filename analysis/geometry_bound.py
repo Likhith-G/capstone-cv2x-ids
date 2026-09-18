@@ -229,6 +229,14 @@ def main():
                          "geometric diversity improves with offset while the "
                          "information each receiver carries falls as the "
                          "inverse square of its distance")
+    ap.add_argument("--debias-scale", type=float, default=1.0, metavar="ALPHA",
+                    help="scale the fitted log-distance correction by ALPHA "
+                         "before it enters sigma and the range sensitivity. 0 "
+                         "reproduces the uncorrected bound and 1 the corrected "
+                         "one. Sweeping it alongside power_evasion.py's flag of "
+                         "the same name is how RESULTS.md 3h7 puts the predicted "
+                         "weak axis and the searched attack direction on one "
+                         "curve. Requires --corrected")
     ap.add_argument("--corrected", action="store_true",
                     help="recompute the bound under the CORRECTED propagation "
                          "law of RESULTS.md 3h3, which adds log-distance "
@@ -293,6 +301,15 @@ def main():
     if a.corrected:
         _, _, curve, residc = fit_law_curved(ben.d.values,
                                              ben.phy_rsrp_mean.values)
+        if a.debias_scale != 1.0:
+            # residc removed the WHOLE correction, so putting back the part the
+            # scale does not remove reconstructs the partially corrected
+            # residual exactly, without refitting anything.
+            L_ = np.log10(np.maximum(ben.d.values, 1.0))
+            Xc = np.c_[np.ones(len(L_)), L_, L_ ** 2, L_ ** 3]
+            residc = residc + (1.0 - a.debias_scale) * (Xc @ curve)
+            curve = curve * a.debias_scale
+            print(f"CORRECTION SCALED BY {a.debias_scale:.2f}, RESULTS.md 3h7\n")
         sigma_corr = float(np.std(residc))
         print("CORRECTED LAW, RESULTS.md 3h3\n")
         print("  The published bound treats a deterministic range dependent term")

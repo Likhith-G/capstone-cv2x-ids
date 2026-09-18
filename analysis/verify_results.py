@@ -66,6 +66,33 @@ CHECKS = [
     ("3h5 free 200m",
      "| 200 m | 85 deg | 85 deg |",
      "campaign_gnss/logs/br_centreline3_free_debias", "0.556        0.836           0.479          85.0        -180.4"),
+    # 3h7: the correction swept in five steps, with the bound swept alongside
+    # it. The controls are the two endpoints, which must reproduce the published
+    # single slope and corrected columns, and the claim is the monotone gap.
+    ("3h7 bound axis scale 0",
+     "| 0.00 | 65.3 m | 2.14 | 6.14 | 79.7 deg | 81.25 deg | **-1.55** |",
+     "campaign_gnss/logs/bound_sweep_000", "major axis  79.7 deg from the road"),
+    ("3h7 bound axis scale 1",
+     "| 1.00 | 26.7 m | 4.81 | 4.76 | 86.5 deg | 76.25 deg | **+10.25** |",
+     "campaign_gnss/logs/bound_sweep_100", "major axis  86.5 deg from the road"),
+    ("3h7 spread scale 0",
+     "| 0.00 | 65.3 m | 2.14 | 6.14 |",
+     "campaign_gnss/logs/eff_sweep_000",
+     "median 65.3 m, 90th 140.0 m, RMS 268.0 m"),
+    ("3h7 spread scale 1",
+     "| 1.00 | 26.7 m | 4.81 | 4.76 |",
+     "campaign_gnss/logs/eff_sweep_100",
+     "median 26.7 m, 90th 128.3 m, RMS 359.4 m"),
+    ("3h7 spread scale 050",
+     "| 0.50 | 42.7 m | 3.19 | 7.32 |",
+     "campaign_gnss/logs/eff_sweep_050",
+     "median 42.7 m, 90th 136.0 m, RMS 366.4 m"),
+    ("3h7 censor 3km",
+     "| 3 km | 149.9 to 291.8 m | 3.43 to 3.86, **rises** |",
+     "campaign_gnss/logs/censor_check_000", "RMS<3km 149.9 m"),
+    ("3h7 censor 12km",
+     "| 12 km | 368.1 to 445.0 m | 8.43 to 5.89, falls |",
+     "campaign_gnss/logs/censor_check_100", "RMS<12km 445.0 m"),
     # 3h6: the attacker constraint isolated. Same campaign, same triples, same
     # estimator constraint; only --br-lateral differs. The angle column is the
     # finding and the caught-at-5% column is what the constraint is worth.
