@@ -155,6 +155,14 @@ def main():
                          "per triple per displacement, so the full corpus is "
                          "hours; a few thousand triples already give a spread "
                          "far tighter than the effect being measured")
+    ap.add_argument("--debias-scale", type=float, default=1.0, metavar="ALPHA",
+                    help="scale the calibrated mean correction by ALPHA before "
+                         "applying it. 0 is the single slope law and 1 is the "
+                         "full correction, and the values between are estimators "
+                         "of intermediate efficiency. Sweeping it is how "
+                         "RESULTS.md 3h7 turns 'the bound predicts the adversary "
+                         "while the estimator is near efficient' from a claim at "
+                         "two points into a curve. Requires --debias")
     ap.add_argument("--debias", action="store_true",
                     help="apply the calibrated mean correction of RESULTS.md "
                          "3h3 to the propagation law. Off by default")
@@ -275,7 +283,12 @@ def run_best_response(df, a, levels):
         X_ = np.c_[np.ones(len(L_)), -L_]
         b_, *_ = np.linalg.lstsq(X_, rr, rcond=None)
         mu = calibrate_mean(dd, rr - X_ @ b_)
-        print("calibrated mean correction applied, RESULTS.md 3h3, dB per bin:")
+        if a.debias_scale != 1.0:
+            mu = mu * a.debias_scale
+            print(f"calibrated mean correction scaled by "
+                  f"{a.debias_scale:.2f}, RESULTS.md 3h7, dB per bin:")
+        else:
+            print("calibrated mean correction applied, RESULTS.md 3h3, dB per bin:")
         print("  " + "  ".join(f"{v:+.2f}" for v in mu) + "\n")
     print("The attacker knows the receiver positions, the propagation model "
           "and the statistic,\nand picks the direction of its lie to minimise "
@@ -353,8 +366,15 @@ def run_best_response(df, a, levels):
     hr = np.array(honest_rmse)
     hq = np.array(honest_ratio)
     fe = np.array(free_err)
+    # The median is the readable statistic and the RMS is the one the bound
+    # constrains. A Cramer-Rao bound is on the second moment, so an estimator
+    # whose median sits near the bound while its RMS is an order of magnitude
+    # above it is NOT near efficient, and 3h4 found exactly that. Reporting only
+    # the median is what hid it the first time.
+    rms = float(np.sqrt(np.mean(fe ** 2)))
     print(f"free-fit localisation error on these benign triples: median "
-          f"{np.median(fe):.1f} m")
+          f"{np.median(fe):.1f} m, RMS {rms:.1f} m, "
+          f"RMS/median {rms / max(np.median(fe), 1e-9):.1f}")
     print("That number is the budget the attacker gets to spend. A lie shorter "
           "than the\nestimator's own error can be aimed at the estimate "
           "instead of away from it.\n")
