@@ -54,7 +54,7 @@ size it was designed at.
 ## What we found
 
 Four results. Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 158 figures and must report no
+`analysis/verify_results.py`, which checks 166 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -95,9 +95,26 @@ from the geometry alone predicts the error ellipse points **79.3 degrees** off
 the road axis. An attacker found independently by brute-force search over 72 directions
 lies at **75 to 85 degrees**, with no knowledge of the prediction.
 
-The countermeasure follows from the same reasoning. Constraining the position
-estimate to the carriageway removes the direction the receivers cannot resolve,
-and takes localisation error from 65 m to 18 m.
+That pairing holds under a condition worth stating, because it was tested rather
+than assumed. A Cramer-Rao ellipse describes where an *efficient* estimator is
+weak, and an attacker optimises against whatever estimator is actually running,
+so the two coincide only while the estimator is close to efficient. This one is,
+sitting a factor of 2.3 above its own bound. When the estimator was deliberately
+moved an order of magnitude away from efficient, the prediction stopped holding
+and the attacker went the other way.
+
+The countermeasure follows from the same reasoning, and it does two jobs rather
+than one. Constraining the position estimate to the carriageway removes the
+direction the receivers cannot resolve, and takes localisation error from 65 m to
+18 m. It also takes that direction away from the attacker, because a lie that
+exploits the array's lateral blindness has to be placed laterally, and that puts
+the claimed position off the road where a map check rejects it for nothing.
+
+Holding the attacker to the carriageway and changing nothing else moves it from
+75 degrees off the road axis to 35 at a 25 m lie, and to 0 at 200 m. Its chance
+of being caught at a 5 percent false positive rate goes from 1.3 percent to 37
+percent at 50 m, and from 5.7 percent to 83 percent at 100 m. **The adversary
+that lies sideways is the one that does not have to stay on the road.**
 
 ![The bound against the measured attack direction](docs/figures/direction.png)
 
@@ -112,6 +129,13 @@ ordering reproduces on an independently generated dataset and is sharper there.
 
 Fused macro F1 is **0.5145** across all eleven classes, 0.5659 across the ten
 that have a physical signature, with a Matthews correlation of 0.6635.
+
+The eleventh is class 8, semi-persistent scheduling manipulation, and it scores
+zero in every feature block on every corpus generated. That is mechanistic rather
+than a failure: Mode 2 sidelink grants in 5G-LENA are data driven, so an attacker
+cannot hoard the channel and there is nothing for a receiver to see. It is
+reported as a documented negative control rather than quietly dropped, and the
+eleven-class figure stays primary so nothing is hidden by the choice.
 
 **That is a low number and it is the right one.** Three things put it there.
 

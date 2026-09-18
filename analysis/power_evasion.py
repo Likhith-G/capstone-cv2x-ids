@@ -40,6 +40,9 @@ this check can ever do, because no attacker constrained to tell a lie of a
 given size can do better, and it is measured rather than argued.
 """
 import argparse
+import datetime
+import shlex
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -160,6 +163,17 @@ def main():
                          "is given a fine search because the bound is supposed "
                          "to be generous to it")
     a = ap.parse_args()
+
+    # Record the invocation in the log itself. Two published sections report
+    # the attacker's off-axis angle from runs whose constraint flags differed,
+    # and neither log said which flags it carried, so the difference could not
+    # be attributed without rerunning both. A log that does not say what
+    # produced it cannot be read years later, or by anyone else.
+    print("invocation: " + " ".join(shlex.quote(s) for s in sys.argv))
+    print(f"run at {datetime.datetime.now():%Y-%m-%d %H:%M:%S}, "
+          f"attacker {'held to +/- %g m of the centreline' % a.br_lateral if a.br_lateral is not None else 'unconstrained'}, "
+          f"estimator {'road constrained at +/- %g m' % a.br_estimator_road if a.br_estimator_road is not None else 'free'}, "
+          f"law {'calibrated-mean corrected' if a.debias else 'single slope'}")
 
     df = pd.read_pickle(a.corpus)
     if "label_clean" in df.columns:

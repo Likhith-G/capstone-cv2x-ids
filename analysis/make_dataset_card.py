@@ -336,7 +336,22 @@ def main():
       "beside.")
     w("6. **Three classes have fewer than twenty stations**, so a per class score "
       "on them rests on single figures per partition and must be read with the "
-      "station count beside it.\n")
+      "station count beside it.")
+    w("7. **The observation unit cannot be varied from this release.** Every row "
+      "is already aggregated into a 1000 ms window. Changing the window length, "
+      "or deriving any feature the pipeline did not compute, means rebuilding "
+      "from the raw per packet simulator tables, and those are 36 GB and are not "
+      "part of this bundle. So a user can train any model on these features, and "
+      "cannot ask a question that needs different features. The published window "
+      "sweep at 200, 500 and 1000 ms is the curve that exists.")
+    w("8. **Every measurement is a simulator output and none has been checked "
+      "against a real radio.** Received power comes from the 3GPP TR 37.885 V2V "
+      "highway channel model with log normal shadowing, which is a standardised "
+      "model rather than a measured one. Labelled real world misbehaviour cannot "
+      "be collected, because nobody performs position falsification on a public "
+      "road, but that argument does not extend to the benign propagation law, "
+      "and public benign C-V2X sidelink measurement sets do exist. Treat the "
+      "fitted path loss exponent as a property of this corpus.\n")
 
     w("## Licence\n")
     w("The data is intended for **CC BY 4.0**. The generator is an ns-3 contrib "
