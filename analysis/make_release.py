@@ -97,10 +97,18 @@ def write_schema(df, out):
 
 
 def write_citation(out, version):
+    # `authors` is REQUIRED by CFF 1.2.0. Without it the file fails every
+    # validator and GitHub does not render the "Cite this repository" button,
+    # which is the only place most people would ever see it. An earlier version
+    # of this function omitted the key and the file looked fine to read.
     out.write_text(f"""cff-version: 1.2.0
 title: "CV2X-IDS: a labelled cross-layer misbehaviour dataset for NR V2X sidelink"
 message: "If you use this dataset, please cite it."
 type: dataset
+authors:
+  - family-names: "Gowda"
+    given-names: "Likhith Lokesh"
+    affiliation: "RMIT University, School of Engineering"
 version: "{version}"
 date-released: "{dt.date.today().isoformat()}"
 license: CC-BY-4.0

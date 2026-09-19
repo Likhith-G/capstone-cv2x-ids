@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: "CV2X-IDS: a labelled cross-layer misbehaviour dataset for NR V2X sidelink"
+message: "If you use this dataset, please cite it."
+type: dataset
+authors:
+  - family-names: "Gowda"
+    given-names: "Likhith Lokesh"
+    affiliation: "RMIT University, School of Engineering"
+version: "1.0.0"
+date-released: "2026-09-06"
+license: CC-BY-4.0
+abstract: >-
+  A labelled intrusion detection dataset for C-V2X, generated in ns-3 with the
+  5G-LENA nr module over an NR V2X Mode 2 PC5 sidelink. Each row is one
+  receiver's view of one claimed station over one time window and carries both
+  the message contents and the physical and MAC layer measurements taken while
+  receiving it, including per SCI sidelink reference signal received power.
+  Benign vehicles carry a realistic receiver positioning error rather than
+  claiming their exact position, and position falsification is generated at
+  three non-overlapping magnitude bands chosen against that error so the set
+  brackets the point at which detection becomes possible.
+keywords:
+  - vehicular networks
+  - C-V2X
+  - NR sidelink
+  - misbehaviour detection
+  - intrusion detection
+  - cross-layer
