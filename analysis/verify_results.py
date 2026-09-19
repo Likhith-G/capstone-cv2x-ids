@@ -66,6 +66,23 @@ CHECKS = [
     ("3h5 free 200m",
      "| 200 m | 85 deg | 85 deg |",
      "campaign_gnss/logs/br_centreline3_free_debias", "0.556        0.836           0.479          85.0        -180.4"),
+    # 3h8: the replication. The two displacements that carry the claim, on the
+    # two independent seed subsets, plus the 200 m cell that never moves.
+    ("3h8 seeds4-6 scale 0",
+     "| **25 m** | 75/75/70/65/65 | 75/75/70/65/65 | 75/75/70/65/65 | **3 of 3, identical** |",
+     "campaign_gnss/logs/rep_b_eff_000", "75.0"),
+    ("3h8 seeds4-6 scale 1",
+     "| **50 m** | 80/80/80/75/75 | 80/80/80/75/75 | 80/80/80/75/75 | **3 of 3, identical** |",
+     "campaign_gnss/logs/rep_b_eff_100", "65.0"),
+    ("3h8 seeds6-8 scale 1",
+     "| 100 m | 85/85/85/85/80 | 85/85/85/85/85 | 85/85/85/85/80 | 2 of 3 |",
+     "campaign_gnss/logs/rep_c_eff_100", "80.0"),
+    ("3h8 bound seeds4-6",
+     "**80.3 to 86.2** on 4 to 6",
+     "campaign_gnss/logs/rep_b_bnd_100", "major axis  86.2 deg from the road"),
+    ("3h8 bound seeds6-8",
+     "**79.3 to 85.7** on 6 to 8",
+     "campaign_gnss/logs/rep_c_bnd_000", "major axis  79.3 deg from the road"),
     # 3h7: the correction swept in five steps, with the bound swept alongside
     # it. The controls are the two endpoints, which must reproduce the published
     # single slope and corrected columns, and the claim is the monotone gap.
