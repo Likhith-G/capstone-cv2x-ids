@@ -194,6 +194,11 @@ def main():
     rng = np.random.default_rng(0)
     df["d_claim"] = np.hypot(df.rxX - df.claimedX, df.rxY - df.claimedY)
     print(f"{len(df)} observations")
+    if df.empty:
+        sys.exit("no rows survived the merge with the observer geometry. The "
+                 "usual cause is a --tags list naming seeds that are not in the "
+                 "corpus, or were namespaced differently when it was built. "
+                 "Refusing to fit a propagation law to nothing.")
 
     ben = df.label_attackId == 0
     A0, n0 = fit_global_law(df.d_claim[ben].values, df.phy_rsrp_mean[ben].values)

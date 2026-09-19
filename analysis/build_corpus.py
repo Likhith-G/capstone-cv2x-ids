@@ -13,6 +13,7 @@ test fold.
 import argparse
 import pandas as pd
 from build_features import build_features, attach_labels, feature_columns
+from pooled_consensus import seed_offset
 
 
 def main():
@@ -30,8 +31,11 @@ def main():
                              max_time_ms=a.max_time_ms)
         out = attach_labels(agg, a.run_dir, tag, window_ms=a.window_ms,
                             max_time_ms=a.max_time_ms)
-        # Namespace the station identifiers so grouping stays honest.
-        off = (i + 1) * 100000
+        # Namespace the station identifiers so grouping stays honest. The rule
+        # lives in pooled_consensus so the builder and every analysis that
+        # re-derives geometry cannot drift apart: they did, and a later seed
+        # subset silently merged to zero rows.
+        off = seed_offset(tag, i)
         out["key_rxNodeId"] += off
         out["label_txNodeId"] += off
         out["key_seed"] = tag

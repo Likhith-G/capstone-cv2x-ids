@@ -39,6 +39,7 @@ explain every observer's power under ANY single consistent propagation law.
 import argparse
 import gc
 
+import re
 import numpy as np
 import pandas as pd
 from scipy.optimize import least_squares
@@ -79,13 +80,40 @@ ROAD_HALFWIDTH = 12.0
 
 
 # ---------------------------------------------------------------- geometry ---
+def seed_offset(tag, i):
+    """Namespace node ids per seed, keyed on the SEED rather than its position.
+
+    Node ids repeat across seeds, so every table offsets them into a private
+    block. That offset used to be `(i + 1) * 100000`, the index of the tag in
+    the list passed on the command line, and `build_corpus.py` used the same
+    rule when it built the corpus.
+
+    Those two agree only while the analysis is given the same tag list, in the
+    same order, that built the corpus. Ask for a LATER subset, say seeds 4 to 6
+    of a corpus built from 1 to 8, and the analysis offsets them into blocks
+    100000 to 300000 while the corpus holds them at 400000 to 600000. The merge
+    then matches nothing and the run reports zero rows rather than failing.
+
+    Every campaign on record passes a prefix, seed1 to 3, 1 to 6 or 1 to 8, so
+    nothing published is affected: for an in-order prefix the two rules give the
+    same number. It bites the first person to try a held out tail, which is
+    exactly the robustness check worth running.
+
+    Keying on the trailing integer of the tag fixes it and changes nothing for
+    any corpus built here. Tags with no trailing integer keep the positional
+    rule, which is what they had.
+    """
+    m = re.search(r"(\d+)$", tag)
+    return (int(m.group(1)) if m else i + 1) * 100000
+
+
 def observer_geometry(run_dir, tags, window_ms=1000.0):
     """Per (seed, observer, window) observer position, and per (seed, claimed
     station, window) the position that station claimed. Both are things a
     receiver has: where it is, and what the message said."""
     obs, claim = [], []
     for i, tag in enumerate(tags):
-        off = (i + 1) * 100000
+        off = seed_offset(tag, i)
         rx = pd.read_csv(f"{run_dir}/rx_app_{tag}.csv",
                          usecols=["rxTimeMs", "rxNodeId", "claimedStationId",
                                   "claimedX", "claimedY", "rxX", "rxY"],
