@@ -949,15 +949,19 @@ def _flat(s):
 def check_pack(bad):
     """Every figure the AT2 pack transcribes must still say that in its source."""
     root = pathlib.Path(__file__).resolve().parent.parent
-    pack = root / "docs" / "AT2_SECTION3_PACK.md"
-    if not pack.exists():
+    targets = [root / "docs" / n for n in
+               ("AT2_SECTION3_PACK.md", "AT2_METHODOLOGY_DRAFT.md")]
+    present = [f for f in targets if f.exists()]
+    if not present:
         print("ok   AT2 pack                  not present, nothing to check")
         return bad
-    text = _flat(pack.read_text())
+    # A figure need only appear in one of the AT2 documents; both restate
+    # numbers out of the same sources, and the draft quotes a subset.
+    text = " ".join(_flat(f.read_text()) for f in present)
     cache, problems, checked = {}, [], 0
     for mine, theirs, src in PACK_FIGURES:
         if _flat(mine) not in text:
-            problems.append(f"pack no longer quotes {mine!r}; drop it from PACK_FIGURES")
+            problems.append(f"no AT2 document quotes {mine!r}; drop it from PACK_FIGURES")
             continue
         if src not in cache:
             f = root / src
@@ -966,13 +970,14 @@ def check_pack(bad):
         if body is None:
             problems.append(f"{src} is missing, so {mine!r} cannot be checked")
         elif _flat(theirs) not in body:
-            problems.append(f"pack quotes {mine!r} but {src} no longer says {theirs!r}")
+            problems.append(f"AT2 quotes {mine!r} but {src} no longer says {theirs!r}")
         else:
             checked += 1
     for m in problems:
         print(f"FAIL AT2 pack                 <- {m}")
     if not problems:
-        print(f"ok   AT2 pack                 {checked} transcribed figures match their sources")
+        print(f"ok   AT2 documents            {checked} transcribed figures match their sources, "
+              f"across {len(present)} document(s)")
     return bad + len(problems)
 
 
