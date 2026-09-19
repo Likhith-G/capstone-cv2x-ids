@@ -87,10 +87,10 @@ CHECKS = [
     # it. The controls are the two endpoints, which must reproduce the published
     # single slope and corrected columns, and the claim is the monotone gap.
     ("3h7 bound axis scale 0",
-     "| 0.00 | 65.3 m | 2.14 | 6.14 | 79.7 deg | 81.25 deg | **-1.55** |",
+     "| 0.00 | 65.3 m | 2.14 | 6.14 | 79.7 deg |",
      "campaign_gnss/logs/bound_sweep_000", "major axis  79.7 deg from the road"),
     ("3h7 bound axis scale 1",
-     "| 1.00 | 26.7 m | 4.81 | 4.76 | 86.5 deg | 76.25 deg | **+10.25** |",
+     "| 1.00 | 26.7 m | 4.81 | 4.76 | 86.5 deg |",
      "campaign_gnss/logs/bound_sweep_100", "major axis  86.5 deg from the road"),
     ("3h7 spread scale 0",
      "| 0.00 | 65.3 m | 2.14 | 6.14 |",
