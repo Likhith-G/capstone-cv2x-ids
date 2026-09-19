@@ -913,6 +913,69 @@ def check_doc_commands(bad):
     return bad + len(missing)
 
 
+# The AT2 methodology pack transcribes about thirty figures out of RESULTS.md,
+# the dataset card and the README so a writer does not have to look each one up.
+# That makes it the one document in the project where a stale number can live:
+# it is gitignored, so the published-reference check never sees it, and nothing
+# pins what it quotes. The figure count alone moved four times in one session.
+# Each pair below is (the string as the pack writes it, the file it came from).
+PACK_FIGURES = [
+    # (what the pack says, what the source says, the source). The two differ
+    # where the source words it differently; prose wraps, so both sides are
+    # compared with whitespace collapsed.
+    ("178 figures", "178 figures", "README.md"),
+    ("0.3466", "0.3466", "README.md"),
+    ("0.5145", "0.5145", "README.md"),
+    ("0.5659", "0.5659", "README.md"),
+    ("4.00 m", "4.00 m", "README.md"),
+    ("96.39 percent", "96.39 percent", "README.md"),
+    ("16,150", "16,150", "README.md"),
+    ("2,414", "2,414", "README.md"),
+    ("720 physical transmitters", "720 physical transmitters", "docs/DATASET_CARD.md"),
+    ("783 claimed identities", "| 783,", "docs/DATASET_CARD.md"),
+    ("61 columns", "| 61, being 22 application layer", "docs/DATASET_CARD.md"),
+    ("47.2 m", "47.2 m", "docs/RESULTS.md"),
+    ("39.3 to 57.4 m", "39.3 to 57.4 m", "docs/RESULTS.md"),
+    ("0.5145 +/- 0.0016", "0.5145 +/- 0.0016", "docs/RESULTS.md"),
+    ("6.53 +/- 0.70", "6.53 +/- 0.70", "docs/RESULTS.md"),
+    ("30.45 +/- 6.93", "30.45 +/- 6.93", "docs/RESULTS.md"),
+]
+
+
+def _flat(s):
+    return re.sub(r"\s+", " ", s)
+
+
+def check_pack(bad):
+    """Every figure the AT2 pack transcribes must still say that in its source."""
+    root = pathlib.Path(__file__).resolve().parent.parent
+    pack = root / "docs" / "AT2_SECTION3_PACK.md"
+    if not pack.exists():
+        print("ok   AT2 pack                  not present, nothing to check")
+        return bad
+    text = _flat(pack.read_text())
+    cache, problems, checked = {}, [], 0
+    for mine, theirs, src in PACK_FIGURES:
+        if _flat(mine) not in text:
+            problems.append(f"pack no longer quotes {mine!r}; drop it from PACK_FIGURES")
+            continue
+        if src not in cache:
+            f = root / src
+            cache[src] = _flat(f.read_text()) if f.exists() else None
+        body = cache[src]
+        if body is None:
+            problems.append(f"{src} is missing, so {mine!r} cannot be checked")
+        elif _flat(theirs) not in body:
+            problems.append(f"pack quotes {mine!r} but {src} no longer says {theirs!r}")
+        else:
+            checked += 1
+    for m in problems:
+        print(f"FAIL AT2 pack                 <- {m}")
+    if not problems:
+        print(f"ok   AT2 pack                 {checked} transcribed figures match their sources")
+    return bad + len(problems)
+
+
 def main():
     doc = DOC.read_text()
     cache, bad = {}, 0
@@ -954,6 +1017,7 @@ def main():
     bad = check_geometry_span(bad)
     bad = check_public_refs(bad)
     bad = check_doc_commands(bad)
+    bad = check_pack(bad)
     bad = check_selfcount(total, bad)
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
