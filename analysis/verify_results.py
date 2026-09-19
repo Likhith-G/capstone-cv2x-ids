@@ -883,6 +883,36 @@ def check_style(bad):
     return bad
 
 
+def check_doc_commands(bad):
+    """Every command a published document tells a stranger to run must exist.
+
+    The reproducibility instructions have never been executed by the audience
+    they address, so the only thing standing between them and a dead command is
+    that nobody renamed a script. Somebody will. This does not prove the
+    instructions work; it proves they still point at something, which is the
+    half that can be checked from here.
+    """
+    import re
+    root = pathlib.Path(__file__).resolve().parent.parent
+    docs = ("REPRODUCING.md", "USING_THE_DATA.md", "HANDOFF.md", "README.md")
+    missing, seen = [], 0
+    for name in docs:
+        f = root / name
+        if not f.exists():
+            missing.append(f"{name} is referenced by this check and does not exist")
+            continue
+        for c in re.findall(r"^\s{4}(?:python3?\s+|\./)(\S+\.(?:py|sh))", f.read_text(), re.M):
+            seen += 1
+            stem = pathlib.PurePath(c).name
+            if not ((root / c).exists() or (root / "analysis" / stem).exists()):
+                missing.append(f"{name} runs {c}, which does not exist")
+    for m in missing:
+        print(f"FAIL doc commands            <- {m}")
+    if not missing:
+        print(f"ok   doc commands             {seen} documented commands all resolve")
+    return bad + len(missing)
+
+
 def main():
     doc = DOC.read_text()
     cache, bad = {}, 0
@@ -923,6 +953,7 @@ def main():
     bad = check_no_tool_urls(bad)
     bad = check_geometry_span(bad)
     bad = check_public_refs(bad)
+    bad = check_doc_commands(bad)
     bad = check_selfcount(total, bad)
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
