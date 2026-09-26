@@ -43,6 +43,9 @@ def main():
                          "draws is how the band between them gets populated. "
                          "Never pass this for a corpus that reports per class "
                          "magnitude results")
+    ap.add_argument("--no-rsu-ok", action="store_true",
+                    help="the campaign was designed without roadside units, "
+                         "as highway_dense is, so their absence is not a fault")
     ap.add_argument("--expect-classes", default=None,
                     help="comma separated attack ids the run was asked for")
     a = ap.parse_args()
@@ -61,6 +64,8 @@ def main():
           f"{tx.txTimeMs.min():.0f} to {tx.txTimeMs.max():.0f} ms")
     if "rsu" not in set(st.role):
         print("  WARNING: no roadside units, this run cannot support federation")
+        if not a.no_rsu_ok:
+            problems.append("no roadside units (pass --no-rsu-ok if by design)")
 
     got = set(st[st.attackId > 0].attackId.astype(int))
     counts = st[st.attackId > 0].groupby("attackId").size()

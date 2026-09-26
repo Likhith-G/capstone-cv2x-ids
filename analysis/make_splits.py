@@ -4,8 +4,9 @@ Turn the corpus into the two sets the evaluation needs.
 
 **Balanced set.** Every attack window is kept and benign windows are
 subsampled to a target share, default 30 percent. Subsampling is stratified by
-observer so it does not quietly delete a whole stretch of road, and by station
-so no station disappears entirely. This is what the classifiers train on.
+observer so it does not quietly delete a whole stretch of road. It is not
+stratified by station, so a benign station with few windows can drop out of the
+balanced set. This is what the classifiers train on.
 
 **Deployment-realism set.** The corpus at its natural prevalence, untouched.
 Real traffic is overwhelmingly benign, so a model tuned on a balanced set will

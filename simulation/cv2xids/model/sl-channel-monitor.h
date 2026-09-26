@@ -41,10 +41,11 @@ class SlChannelMonitor : public Object
      *
      * The slot fraction matters more than it looks. Sidelink transmits only in
      * the uplink slots the TDD pattern allows, further masked by the resource
-     * pool's time bitmap. Measured on the default configuration only 42 percent
-     * of slots carry sidelink at all. Normalising against every slot understates
-     * the channel busy ratio by roughly 2.4 times, which in turn stops the DCC
-     * gating from ever leaving its relaxed state.
+     * pool's time bitmap. On the default configuration the scenario computes
+     * 45 percent from the TDD pattern and the bitmap and passes it in; the slot
+     * indices the MAC actually used gave 42. Normalising against every slot
+     * understates the channel busy ratio by more than twice, which in turn
+     * stops the DCC gating from ever leaving its relaxed state.
      */
     void SetPoolGeometry(uint16_t numSubchannels, Time slotDuration, double slotFraction = 1.0);
 

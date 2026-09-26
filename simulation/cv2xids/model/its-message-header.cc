@@ -39,7 +39,7 @@ ItsMessageHeader::Print(std::ostream& os) const
 uint32_t
 ItsMessageHeader::GetSerializedSize() const
 {
-    // 8 + 1 + 4 + 4 + 8*6 + 2 = 67 bytes.
+    // 8 + 1 + 4 + 4 + 8*7 + 2 = 75 bytes.
     return 8 + 1 + 4 + 4 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 2;
 }
 

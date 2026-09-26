@@ -30,9 +30,10 @@ enum class ItsMsgType : uint8_t
 /**
  * \brief The observable content of an ETSI ITS message.
  *
- * Kinematic fields are the CLAIMED values. For a benign station they equal the
- * true state; for a misbehaving station they do not. The receiver cannot tell
- * the difference, which is the whole point.
+ * Kinematic fields are the CLAIMED values. For a benign station they are the
+ * true state plus its positioning error; for a misbehaving station they carry
+ * the lie as well. The receiver cannot tell the difference, which is the whole
+ * point.
  */
 class ItsMessageHeader : public Header
 {

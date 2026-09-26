@@ -506,9 +506,11 @@ def attach_labels(agg, run_dir, tag, window_ms=1000.0, max_time_ms=None):
     out = agg.merge(lab, how="left", on=["key_rxNodeId", "key_claimedStationId", "key_window"])
     out["label_is_attack"] = (out.label_attackId > 0).astype(int)
     # A window whose messages come from more than one behaviour is not a clean
-    # training example. This happens when a Sybil's rotating identities land in
-    # the same window as benign traffic from the same claimed id. Flag it here;
-    # the benchmark drops anything below the floor.
+    # training example. In these campaigns none exists: every claimed identity
+    # belongs to one transmitter and a transmitter's behaviour is fixed, so
+    # purity is 1 everywhere. The flag is kept for a corpus built with an attack
+    # that sends under another station's identity; the benchmark drops anything
+    # below the floor.
     out["label_clean"] = (out.label_attack_purity >= 0.9).astype(int)
     return out
 

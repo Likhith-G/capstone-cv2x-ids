@@ -177,7 +177,7 @@ nothing, rather than carrying on over the seeds that survived.
 | `check_partition_skew.py` | is the federated partition actually skewed, or is the panel meaningless |
 | `federated.py` | FedAvg, FedProx, FedNova, FedLC, FedProto, and DP-FedAvg |
 | `evaluate_deployment.py` | false positive rate at true prevalence and alerts per hour |
-| `persistence_filter.py` | alert episodes and K-of-M rules, the deployable operating point |
+| `persistence_filter.py` | alert episodes and K-of-M rules, the best available operating point on this corpus |
 | `calibration.py` | PRR, BLER and channel occupancy against TR 37.885 |
 | `measure_latency.py` | end to end detection latency, window fill included |
 | `a1_victim_effect.py` | does sensing manipulation damage its neighbours |

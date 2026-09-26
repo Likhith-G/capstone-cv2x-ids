@@ -161,10 +161,11 @@ main(int argc, char* argv[])
     // is both more realistic and what turns resource-exhaustion detection into
     // an actual inference rather than a lookup.
     std::string benignRriSet = "40,100,100,100,200";
-    // A2, resource exhaustion: reserve as often as the pool allows and claim
-    // the maximum number of future resources per SCI. Against a benign station
-    // holding one resource every 100 ms this attacker holds three every 40 ms,
-    // a 7.5-fold resource footprint, without violating the protocol.
+    // A2, resource exhaustion: reserve every 40 ms. The per SCI reservation
+    // maximum below only raises the pool's limit, which every station shares,
+    // and 40 ms is also one of the benign intervals above, so this attacker's
+    // footprint is that of a benign station that drew 40 ms. That is why the
+    // class carries no signature, and it is reported rather than dropped.
     uint16_t exhaustionRri = 40;
     uint16_t exhaustionMaxNumPerReserve = 3;
     bool enableSensing = true;

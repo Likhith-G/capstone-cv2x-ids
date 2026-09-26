@@ -80,7 +80,7 @@ so the set brackets the point where detection becomes possible. `MediumOffsetMin
 middle rung. If any two bands are changed so they overlap, the campaign check
 fails, because a ladder whose rungs overlap cannot bracket a threshold.
 
-**Attackers can misbehave in bursts.** `--sporadicDuty 0.2` makes each attacker
+**Attackers can misbehave in bursts.** `--sporadicDuty=0.2` makes each attacker
 spend a fifth of the run attacking, in exponential bursts, and keep its label
 throughout. It is off by default. **It does not apply to the rate attacks**,
 classes 7 and 12: their flooding branch never consults the duty cycle, so they
