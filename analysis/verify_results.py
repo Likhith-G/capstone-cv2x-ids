@@ -458,8 +458,16 @@ CHECKS = [
      "campaign_gnss/logs/federated",
      "fedlc     MCC delta +0.0078  p = 0.0156  significant"),
     ("federated FedNova no longer worse",
-     "| FedNova | 0.2024 +/- 0.0317 | +0.0010 | 0.0679 | 0.2976 +/- 0.0214 | +0.0013 | 0.0679 |",
-     "campaign_gnss/logs/federated", "fednova   delta +0.0010  p = 0.0679"),
+     "| FedNova | 0.2024 +/- 0.0317 | +0.0010 | 0.1250 | 0.2976 +/- 0.0214 | +0.0013 | 0.1250 |",
+     "campaign_gnss/logs/federated", "fednova   delta +0.0010"),
+    # The p-values in section 5 are recomputed exactly from the logged per-seed
+    # scores, because the logged ones came from a normal approximation.
+    ("section 5 FedNova exact p",
+     "| FedNova | 0.2024 +/- 0.0317 | +0.0010 | 0.1250 |",
+     "campaign_gnss/logs/federated_exact_p", "fednova                 4       0.1250    0.1250"),
+    ("section 5 FedProx exact p",
+     "| FedProx | 0.1997 +/- 0.0309 | -0.0017 | 0.3125 |",
+     "campaign_gnss/logs/federated_exact_p", "fedprox                 5       0.0625    0.3125"),
     ("partition skew", "mean total variation from the pooled distribution 0.126",
      "campaign_gnss/logs/skew", "mean total variation from the pooled distribution: 0.126"),
     ("deployment at 0.90",

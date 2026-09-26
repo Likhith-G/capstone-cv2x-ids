@@ -70,7 +70,9 @@ def main():
     ap.add_argument("--folds", type=int, default=3)
     ap.add_argument("--sample", type=int, default=150000)
     ap.add_argument("--trees", type=int, default=100,
-                    help="matches benchmark.py, so the random forest row reproduces\n                         the published figure and checks this harness")
+                    help="matches the published benchmark run, which passed "
+                         "--trees 100 (benchmark.py itself defaults to 200), so the "
+                         "random forest row reproduces the published figure")
     ap.add_argument("--jobs", type=int, default=-1)
     ap.add_argument("--block", default="fused", choices=["app", "phy", "fused"])
     a = ap.parse_args()

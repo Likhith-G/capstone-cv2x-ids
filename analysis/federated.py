@@ -29,7 +29,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from scipy.stats import wilcoxon
+from pooled_consensus import wilcoxon
 from sklearn.metrics import f1_score, matthews_corrcoef
 from sklearn.preprocessing import StandardScaler
 
@@ -129,9 +129,9 @@ def local_train(model, global_vec, X, y, method, cfg, class_counts, global_proto
 
     protos = None
     if method == "fedproto":
-        protos = torch.where(proto_cnt[:, None] > 0,
-                             proto_sum / proto_cnt[:, None].clamp(min=1),
-                             torch.zeros_like(proto_sum))
+        # Sums and counts, not means, so the server can average each class over
+        # only the clients that saw it (below).
+        protos = (proto_sum, proto_cnt)
     return flat(model).clone(), steps, protos
 
 
@@ -192,7 +192,16 @@ def run_method(method, clients, test, cfg, seed, detail=False):
             gvec = (p[:, None] * torch.stack(updates)).sum(0)
 
         if method == "fedproto" and protos:
-            global_proto = torch.stack(protos).mean(0)
+            # FedProto averages each class prototype over the clients that hold
+            # that class. Averaging every client's vector, with zeros for classes
+            # a client never saw, shrank a class seen by k of m clients toward the
+            # origin by about k/m, and on this partition most clients miss at
+            # least one class, so the damage fell on the rare classes the method
+            # exists for. Weighted by how many embeddings each client contributed.
+            s = torch.stack([pr[0] for pr in protos]).sum(0)
+            c = torch.stack([pr[1] for pr in protos]).sum(0)
+            global_proto = torch.where(c[:, None] > 0, s / c[:, None].clamp(min=1),
+                                       torch.zeros_like(s))
 
     load_flat(g, gvec)
     g.eval()
@@ -439,7 +448,7 @@ def main():
             if m == "fedavg":
                 continue
             try:
-                stat, pval = wilcoxon(s, base)
+                pval = wilcoxon(s, base)
                 delta = np.mean(s) - np.mean(base)
                 print(f"  {m:9s} delta {delta:+.4f}  p = {pval:.4f}"
                       f"{'  significant' if pval < 0.05 else ''}")
@@ -455,7 +464,7 @@ def main():
             if m == "fedavg":
                 continue
             try:
-                stat, pval = wilcoxon(s, mbase)
+                pval = wilcoxon(s, mbase)
                 delta = np.mean(s) - np.mean(mbase)
                 print(f"  {m:9s} MCC delta {delta:+.4f}  p = {pval:.4f}"
                       f"{'  significant' if pval < 0.05 else ''}")

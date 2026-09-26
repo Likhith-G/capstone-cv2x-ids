@@ -6,11 +6,14 @@ needs Python 3.12; do not mix the two.
 
 ## The rule the whole pipeline is built around
 
-`build_features.py` opens only the receive-side tables. `attach_labels()` is
-the only function permitted to read the transmit log, and an assertion fails
-the run if any column named `key_*` or `label_*` reaches the feature list. A
-feature that a real receiver could not compute cannot enter the dataset by
-accident, which is a structural guarantee rather than a review step.
+`build_features.py` computes features from the receive-side tables.
+`attach_labels()` reads the transmit log for labels, and the radio-to-message
+binding below is the one other use of it. Every feature column is then checked
+against `FEATURES`, the fixed list of the 50 reviewed as computable by a real
+receiver, and the run fails on any column not on it. An earlier version asserted
+only that no `app_` or `phy_` column was named `key_` or `label_`, which is true
+of every name and could never fail; the list makes adding a feature a deliberate
+edit, which is the review step.
 
 The one narrow exception is the radio-to-message binding, which is
 reconstructed from the transmit log because a nearest-time join misattributes
@@ -23,7 +26,7 @@ construction: which radio sent the message it just decoded.
     merge_corpora.py part1.pkl part2.pkl -o corpus.pkl    # if seeds built separately
     validate_dataset.py corpus.pkl                        # ten adversarial gates
     make_splits.py corpus.pkl --out-dir DIR               # balanced + realism
-    benchmark.py corpus.pkl --report --sample 250000      # app / phy / fused
+    benchmark.py corpus.pkl --report --sample 250000 --folds 3 --trees 100   # the published 0.5145
     check_partition_skew.py corpus.pkl                    # BEFORE any federated run
     federated.py corpus.pkl --seeds 8 --rounds 20 --tune
     pooled_regions.py corpus.pkl --run-dir DIR --tags ... --road-halfwidth
@@ -131,8 +134,10 @@ rate rather than at a chosen constant.
 
     plausibility_baseline.py corpus.pkl --fpr 0.01
 
-`veremi_bridge.py` runs this project's application-layer detector on VeReMi
-Extension, on the seventeen features computable from both datasets. Prove the
+`veremi_bridge.py` runs this project's application-layer detector on the
+original VeReMi (2018) and, with `--nextgen`, on VeReMi NextGen, on the seventeen
+features computable from both datasets. It does not read the VeReMi Extension
+layout. Prove the
 feature definitions still match before trusting a comparison, because the
 arithmetic is duplicated from `build_features.py` rather than imported:
 

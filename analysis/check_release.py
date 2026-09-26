@@ -172,10 +172,24 @@ def main():
     span = sp.groupby(["key_seed", "label_txNodeId"]).split.nunique()
     check("no transmitter in two partitions", int((span > 1).sum()) == 0,
           f"{int((span > 1).sum())} span partitions")
-    gaps = sum(len(v.get("coverage_gaps", [])) for v in scen.values()
-               if v["kind"] == "benchmark")
+    # Measured from the rows, not read back from SCENARIOS.json. The bundler
+    # labels a scenario "benchmark" exactly when its own gap list is empty, so
+    # summing the declared gaps of benchmark scenarios was zero by construction
+    # and this check could not fail on anything the bundler wrote. Count the
+    # physical transmitters in every (class, partition) cell of every benchmark
+    # scenario present, against every class the schema declares.
+    all_classes = sorted(int(c) for c in schema.get("classes", {}))
+    holes = []
+    for s in sorted(set(bench) & set(m.scenario.unique())):
+        cells = (m[m.scenario == s].drop_duplicates(key + ["label_attackId"])
+                 .groupby(["label_attackId", "split"]).size())
+        for c in all_classes:
+            for part in ("train", "validation", "test"):
+                if cells.get((c, part), 0) == 0:
+                    holes.append(f"{s}: class {c} has no transmitter in {part}")
     check("every class reaches every partition in every benchmark scenario",
-          gaps == 0, f"{gaps} gaps" if gaps else "")
+          not holes, (f"{len(holes)} empty cell(s): " + "; ".join(holes[:4]))
+          if holes else "counted from the rows")
     supp = sum(len(v.get("coverage_gaps", [])) for v in scen.values()
                if v["kind"] == "supplementary")
     if supp:

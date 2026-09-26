@@ -15,7 +15,7 @@ the air interface.
 | file | responsibility |
 |---|---|
 | `model/its-message-header.*` | the ITS message on the wire. Carries only what a real receiver could observe |
-| `model/its-station-app.*` | CAM, DENM, CPM and VAM generation to EN 302 637-2/3, TS 103 324 and TS 103 300-3, TS 102 687 reactive DCC gating, and the attack behaviours |
+| `model/its-station-app.*` | CAM, DENM, CPM and VAM generation (VAM needs vulnerable road users, which no released scenario has, and `--numVru` is not safe to use: the traffic model would drive pedestrians as cars) to EN 302 637-2/3, TS 103 324 and TS 103 300-3, TS 102 687 reactive DCC gating, and the attack behaviours |
 | `model/highway-traffic-model.*` | Intelligent Driver Model car following with three vehicle classes |
 | `model/sl-channel-monitor.*` | per-node channel busy ratio and per-transmitter RSRP, neither of which 5G-LENA provides |
 | `model/cv2x-trace-store.*` | buffered CSV tables, flushed every second |
@@ -24,8 +24,17 @@ the air interface.
 
 ## Requirements
 
-ns-3.42 with 5G-LENA `nr` at tag `v2x-1.1`, plus one additive three-file patch
-to `contrib/nr`, saved at `docs/patches/nr-sl-rsrp-trace.patch`:
+The CTTC fork of ns-3 at tag `ns-3-dev-v2x-v1.1`, which is based on ns-3.42, with
+5G-LENA `nr` at tag `v2x-1.1` in `contrib/nr`. Vanilla ns-3.42 lacks the sidelink
+extensions the `nr` V2X branch needs and will not build it:
+
+    git clone https://gitlab.com/cttc-lena/ns-3-dev.git
+    git -C ns-3-dev checkout ns-3-dev-v2x-v1.1
+    git clone https://gitlab.com/cttc-lena/nr.git ns-3-dev/contrib/nr
+    git -C ns-3-dev/contrib/nr checkout v2x-1.1
+
+plus one additive three-file patch to `contrib/nr`, saved at
+`docs/patches/nr-sl-rsrp-trace.patch`:
 
     git -C contrib/nr apply /path/to/docs/patches/nr-sl-rsrp-trace.patch
 

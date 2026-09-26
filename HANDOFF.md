@@ -158,7 +158,9 @@ will save yourselves a fortnight.
 
 ### Done looks like
 
-1. A transformer trained on the frozen partition with the pinned observation unit.
+1. A transformer scored with `baseline_starter.py --protocol cv` at the pinned
+   observation unit, which is the protocol the four rows above used. The frozen
+   partition is for iterating; it reads high and does not sit in that table.
 2. Its row added to the four above: MCC, macro F1, per-class F1.
 3. Its three position-class scores stated explicitly against 0.010 / 0.052 / 0.167.
 4. The `check_release.py` output alongside.
@@ -168,8 +170,10 @@ will save yourselves a fortnight.
 
 - `analysis/baseline_starter.py`, **the thing to start from.** The protocol is
   already correct in it.
-- `analysis/model_independence.py`, the harness the other four families ran in.
-  Your row plugs into it.
+- `analysis/model_independence.py`, the record of how the other four rows were
+  produced. It is not a plug-in: it reads a merged corpus file the bundle does not
+  ship and needs scikit-learn estimators. Use the starter for your row; it runs
+  the same protocol on the bundle as shipped.
 - `analysis/validate_dataset.py`, the ten integrity gates, if you want to check
   any subset you construct.
 - `analysis/benchmark.py`, which is where the 0.5145 comes from.
@@ -218,15 +222,19 @@ Already measured:
 | inference as a share of latency | **0.34 percent** |
 | cooperative pooling block | 0.4054 ms |
 
-| window | fused macro F1 |
+| window | fused macro F1, mean +/- fold spread |
 |---|---|
-| 200 ms | 0.6166 |
+| 200 ms | 0.6166 +/- 0.0541 |
 | 500 ms | 0.6468 |
-| 1000 ms | 0.6514 |
+| 1000 ms | 0.6514 +/- 0.0225 |
 
-Shortening the window from 1000 ms to 200 ms costs **0.035 macro F1 for a
-fivefold latency reduction.** The radio block loses most of it, because radio
-features are statistics and statistics need samples.
+**Read this table with two cautions.** It comes from the superseded 30 August
+corpus, a 1.2 km road before benign positioning error was added, which is why its
+fused score at 1000 ms, 0.6514, is not the released 0.5145. And the 0.035 it
+suggests shortening the window costs is smaller than the fold spread at 200 ms,
+so it is not a measured trade-off at that precision. It says the direction, not
+the size. Measuring the trade on the current corpus needs a rebuild per window
+length, which is the constraint below.
 
 ### One constraint, so you do not lose a week to it
 
@@ -278,19 +286,24 @@ The plan also had you re-run feature selection on the regenerated dataset. **Do
 not run it as the headline method**, and this is a finding rather than a
 cancellation.
 
-Ranking all 50 features by importance and keeping the top 15 costs only 0.0315
-macro F1, which reads as a sensible trade. But of that top 15, **fourteen are
-application features and exactly one is a radio feature.** The radio block earns
+**This was measured on the superseded 30 August corpus and has not been rerun on
+the released one**, so treat it as a hypothesis for your workstream to test, not a
+result to report. On that corpus, ranking all 50 features by importance and keeping
+the top 15 cost only 0.0315 macro F1, which reads as a sensible trade. But of that
+top 15, **fourteen were application features and exactly one was a radio
+feature**, `phy_rsrp_voiceprint_min`, and that feature's strength is partly a
+simulator artefact (dataset card, limitation 9). The radio block earns
 its place by catching attacks the application layer misses entirely, not by
 containing the single strongest signal, and its contribution is spread across many
 individually weak features. Importance ranking keeps the best one and discards the
 other 27.
 
-So the routine procedure would have quietly deleted the cross-layer result the
-whole project rests on, while the headline metric barely moved. That is worth
-reporting as a result of your workstream, because it is one: **on a dataset whose
-value is distributed across a block of weak features, top-k selection destroys the
-finding and the aggregate does not tell you.**
+If it holds on the released corpus, the routine procedure would quietly delete
+the cross-layer result the project rests on while the headline metric barely
+moved. **Rerunning `feature_selection.py` on the released data and reporting the
+block composition is the useful piece of work here**: it either confirms that
+top-k selection destroys a finding spread across many weak features, or shows it
+does not once the Sybil artefact is accounted for. Either answer is reportable.
 
 If a selection step is kept at all, report the block composition beside it, never
 a count alone.

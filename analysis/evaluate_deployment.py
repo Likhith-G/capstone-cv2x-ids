@@ -35,12 +35,21 @@ def main():
     ap.add_argument("--trees", type=int, default=150)
     ap.add_argument("--sample", type=int, default=300000)
     ap.add_argument("--decisions-per-window", type=float, default=None,
-                    help="decisions an observer makes per window. Defaults to "
-                         "the median neighbour count. A POOLED detector makes "
-                         "one decision per station per window for the whole "
-                         "region, so the fleet raises one alert where a fleet "
-                         "of independent receivers raises one each.")
+                    help="decisions an observer makes per window. A POOLED "
+                         "detector makes one decision per station per window for "
+                         "the whole region, so the fleet raises one alert where a "
+                         "fleet of independent receivers raises one each.")
+    ap.add_argument("--population", default=None,
+                    help="the full corpus the splits were cut from. Without "
+                         "--decisions-per-window, the decisions per observer per "
+                         "window are counted from it: the claimed stations each "
+                         "receiver decodes in each window. The realism set holds "
+                         "only held-out stations and is subsampled, so counting "
+                         "its rows would undercount")
     a = ap.parse_args()
+    if a.decisions_per_window is None and a.population is None:
+        raise SystemExit("give --decisions-per-window or --population; the alert "
+                         "rate is meaningless without a decision count")
 
     load = lambda x: pd.read_pickle(x) if x.endswith('.pkl') else pd.read_csv(x)
     tr = load(a.balanced)
@@ -58,6 +67,15 @@ def main():
             "Hold out whole stations when building the splits.")
     if len(te) > a.sample:
         te = te.sample(n=a.sample, random_state=0)
+
+    if a.decisions_per_window is not None:
+        decisions = a.decisions_per_window
+    else:
+        pop = load(a.population)
+        decisions = float(pop.groupby(["key_seed", "key_rxNodeId", "key_window"])
+                          .key_claimedStationId.nunique().median())
+        del pop
+    print(f"decisions per observer per window: {decisions:.1f}")
 
     X = lambda d: d[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
     clf = RandomForestClassifier(n_estimators=a.trees, n_jobs=-1, random_state=0)
@@ -89,11 +107,13 @@ def main():
         fpr = fp / max(1, n_benign)
         recall = tp / max(1, int((y == 1).sum()))
         prec = tp / max(1, tp + fp)
-        # One decision per observed neighbour per window. The neighbour count
-        # the observers actually saw is in the features.
-        neigh = (a.decisions_per_window if a.decisions_per_window is not None
-                 else (te.phy_neighbours.median()
-                       if "phy_neighbours" in te else 1.0))
+        # One decision per claimed station a receiver decodes in a window, which
+        # is the number of rows per (seed, receiver, window). It used to take
+        # phy_neighbours, which counts every radio whose control channel appears
+        # in the trace, undecodable ones included, and is 89 or 88 on every row
+        # of a 90-vehicle road: that is the whole road, not the decisions a
+        # receiver makes, and it overstated the alert rate about twofold.
+        neigh = decisions
         alerts = fpr * windows_per_hour * float(neigh)
         mcc = matthews_corrcoef(y, pred)
         print(f"{t:9.2f} {fpr:8.4f} {recall:8.4f} {prec:10.4f} {alerts:28.0f}"

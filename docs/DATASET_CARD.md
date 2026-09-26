@@ -6,7 +6,7 @@ Generated from `corpus.pkl` on 2026-09-26 by `analysis/make_dataset_card.py`. Ev
 
 A labelled intrusion detection dataset for C-V2X sidelink, generated in ns-3.42 with the 5G-LENA `nr` module at tag `v2x-1.1`. Vehicles exchange ETSI messages directly over an NR V2X Mode 2 PC5 sidelink. Each row is **one receiver's view of one claimed station over one time window**, and carries both what the message said and what the radio measured while receiving it.
 
-**Ground truth never travels over the air.** The transmitter logs it, the receiver logs only what it received, and the two are joined offline on a message identifier. An assertion fails the build if any column named `key_*` or `label_*` reaches the feature list.
+**Ground truth never travels over the air.** The transmitter logs it, the receiver logs only what it received, and the two are joined offline on a message identifier. Every feature column is checked against a fixed list of the 50 reviewed as computable by a real receiver, and the build fails on any column not on it.
 
 **Benign vehicles do not claim their exact position.** Each carries a receiver error drawn from the model VeReMi Extension uses. Without it the benign class has no positional variance and any displacement at all is separable in principle, which makes position falsification far easier to detect than it could ever be in deployment.
 

@@ -43,19 +43,36 @@ import re
 import numpy as np
 import pandas as pd
 from scipy.optimize import least_squares
-from scipy.stats import wilcoxon as _wilcoxon
+from scipy.stats import rankdata, wilcoxon as _wilcoxon
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.metrics import f1_score, matthews_corrcoef
 
 def wilcoxon(a, b):
-    """Wilcoxon that reports p = 1.0 when the two arms are identical rather
-    than raising. Two arms scoring 0.000 on a class every fold is a real and
-    reportable outcome, not an error."""
+    """Exact two-sided Wilcoxon signed-rank p for paired arms.
+
+    scipy's wilcoxon switches silently to a normal approximation whenever any
+    paired difference is zero, and with eight seeds or ten folds that returns
+    p-values below anything an exact test on the non-zero pairs can produce:
+    four positive differences out of eight gave 0.0679 where the exact floor is
+    0.125. Zero differences are dropped, as the test defines, and the p-value is
+    enumerated over every sign pattern of the remaining ranks, which is exact
+    and cheap at these sizes. Identical arms return 1.0, which is a real and
+    reportable outcome rather than an error.
+    """
     d = np.asarray(a, float) - np.asarray(b, float)
-    if not np.any(d):
+    d = d[np.abs(d) > 1e-12]
+    n = len(d)
+    if n == 0:
         return 1.0
-    return float(_wilcoxon(a, b).pvalue)
+    if n > 20:
+        return float(_wilcoxon(d).pvalue)
+    r = rankdata(np.abs(d))
+    half = r.sum() / 2.0
+    obs = abs(r[d > 0].sum() - half)
+    signs = ((np.arange(2 ** n)[:, None] >> np.arange(n)) & 1).astype(bool)
+    w = (signs * r).sum(axis=1)
+    return float(np.mean(np.abs(w - half) >= obs - 1e-9))
 
 
 # The joint fit has four free parameters (x, y, intercept, exponent), so five

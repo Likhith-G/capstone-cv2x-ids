@@ -99,27 +99,43 @@ def matrices(df):
     receiver has none of them. If one reaches the feature matrix the score stops
     describing detection and starts describing the simulator.
     """
-    feats = [c for c in df.columns if c.startswith(("app_", "phy_"))]
-    leaked = [c for c in feats if c.startswith(("key_", "label_"))]
+    # app then phy, in that order, exactly as benchmark.py builds its fused
+    # block. A random forest samples features per split, so column order changes
+    # its trees and a reordered matrix cannot reproduce the published figure.
+    feats = ([c for c in df.columns if c.startswith("app_")] +
+             [c for c in df.columns if c.startswith("phy_")])
+    leaked = [c for c in df.columns if c.startswith(("key_", "label_")) and c in feats]
     assert not leaked, f"ground truth in the feature list: {leaked}"
     X = df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
     return X, df.label_attackId.astype(int), df.label_txNodeId.astype(int), feats
 
 
-def report(y_true, y_pred, classes, elapsed, comparable):
-    macro = f1_score(y_true, y_pred, average="macro", labels=classes,
-                     zero_division=0)
-    mcc = matthews_corrcoef(y_true, y_pred)
+def fold_scores(y_true, y_pred, classes):
+    """The metrics for one fold, computed exactly as benchmark.py computes them.
+
+    Macro F1 takes the labels present in the fold, as benchmark.py does, rather
+    than a fixed list; the published figures are means of these over folds, not
+    a score of pooled predictions, and the two are different statistics.
+    """
     live = [c for c in classes if c != INERT_CLASS]
-    macro_live = f1_score(y_true, y_pred, average="macro", labels=live,
-                          zero_division=0)
-    per = dict(zip(classes, f1_score(y_true, y_pred, average=None,
-                                     labels=classes, zero_division=0)))
+    return {
+        "macro": f1_score(y_true, y_pred, average="macro"),
+        "mcc": matthews_corrcoef(y_true, y_pred),
+        "live": f1_score(y_true, y_pred, average="macro", labels=live, zero_division=0),
+        "per": f1_score(y_true, y_pred, average=None, labels=classes, zero_division=0),
+    }
+
+
+def report(folds, classes, elapsed, comparable, scenario):
+    agg = lambda k: (float(np.mean([f[k] for f in folds])), float(np.std([f[k] for f in folds])))
+    (macro, macro_sd), (mcc, mcc_sd), (live, live_sd) = agg("macro"), agg("mcc"), agg("live")
+    per = dict(zip(classes, np.mean([f["per"] for f in folds], axis=0)))
+    n_live = len([c for c in classes if c != INERT_CLASS])
     note = "" if comparable else "  not comparable, see below"
-    print(f"\n  macro F1, all {len(classes)} classes   {macro:.4f}"
+    print(f"\n  macro F1, all {len(classes)} classes   {macro:.4f} +/- {macro_sd:.4f}"
           f"      (published {PUBLISHED['macro_f1']:.4f}){note}")
-    print(f"  macro F1, the {len(live)} with a signature  {macro_live:.4f}")
-    print(f"  MCC                          {mcc:.4f}"
+    print(f"  macro F1, the {n_live} with a signature  {live:.4f} +/- {live_sd:.4f}")
+    print(f"  MCC                          {mcc:.4f} +/- {mcc_sd:.4f}"
           f"      (published {PUBLISHED['mcc']:.4f}){note}")
     print(f"  wall clock                   {elapsed:.0f}s")
 
@@ -128,6 +144,16 @@ def report(y_true, y_pred, classes, elapsed, comparable):
         tag = "  <- inert by construction" if c == INERT_CLASS else ""
         print(f"    class {c:<3d} {per[c]:.4f}{tag}")
 
+    # The best-of-four column was measured on highway_sparse. On any other
+    # scenario the classes are drawn differently (magnitude_sweep widens both
+    # offset draws on purpose), so a comparison there would announce a finding
+    # that is only a different ladder.
+    if scenario != "highway_sparse":
+        print(f"\n  Position classes not compared: the best-of-four column was "
+              f"measured on\n  highway_sparse, and {scenario} draws its offsets "
+              f"differently. Bin by realised\n  displacement instead if magnitude "
+              f"matters to your result.")
+        return macro
     print("\n  the position classes, which is where the claim lives")
     print(f"    {'class':<32s} {'yours':>7s} {'best of four':>13s}")
     for c, name in POSITION_CLASSES.items():
@@ -208,15 +234,12 @@ def main():
               f"label_txNodeId")
         sgkf = StratifiedGroupKFold(n_splits=a.folds, shuffle=True,
                                     random_state=0)
-        truths, preds = [], []
+        scores = []
         for i, (tr, te) in enumerate(sgkf.split(X, y, groups), 1):
             model = build_model()
             model.fit(X.iloc[tr], y.iloc[tr])
-            preds.append(model.predict(X.iloc[te]))
-            truths.append(y.iloc[te])
+            scores.append(fold_scores(y.iloc[te], model.predict(X.iloc[te]), classes))
             print(f"  fold {i} done")
-        y_true = pd.concat(truths)
-        y_pred = np.concatenate(preds)
     else:
         print("\nfrozen partition from the bundle, train against test")
         tr = df.split == "train"
@@ -224,10 +247,10 @@ def main():
         print(f"  train {int(tr.sum()):,} rows, test {int(te.sum()):,} rows")
         model = build_model()
         model.fit(X[tr], y[tr])
-        y_true, y_pred = y[te], model.predict(X[te])
+        scores = [fold_scores(y[te], model.predict(X[te]), classes)]
 
-    macro = report(y_true, y_pred, classes, time.time() - t0,
-                   comparable=(a.protocol == "cv"))
+    macro = report(scores, classes, time.time() - t0,
+                   comparable=(a.protocol == "cv"), scenario=a.scenario)
     sys.exit(leakage_alarm(macro))
 
 

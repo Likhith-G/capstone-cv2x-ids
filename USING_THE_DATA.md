@@ -122,7 +122,8 @@ description of what happened to the first version of this project.
 
 `release_splits.csv` assigns every vehicle to train, validation or test **once,
 across all five scenarios at the same time**. 1,170 physical transmitters split
-770 / 259 / 258, with all eleven classes present in every partition and no
+703 / 233 / 234, which is 770 / 259 / 258 claimed identities because a sybil
+vehicle claims several, with all eleven classes present in every partition and no
 transmitter appearing in two.
 
 Three reasons not to make your own split.

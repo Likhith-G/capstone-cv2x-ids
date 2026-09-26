@@ -103,7 +103,8 @@ mkdir -p $DIR/split_regions
 $PY -u $A/make_splits.py $DIR/pooled_regions.pkl --observer-col key_region \
     --out-dir $DIR/split_regions > $L/splits_regions.log 2>&1
 $PY -u $A/persistence_filter.py --balanced $DIR/split_regions/balanced.pkl \
-    --realism $DIR/split_regions/realism.pkl > $L/persistence.log 2>&1
+    --realism $DIR/split_regions/realism.pkl --population $DIR/pooled_regions.pkl \
+    > $L/persistence.log 2>&1
 $PY -u $A/measure_pooling_cost.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     > $L/pooling_cost.log 2>&1
 
@@ -111,7 +112,7 @@ echo "[9/9] deployment and latency"
 mkdir -p $DIR/split
 $PY -u $A/make_splits.py $DIR/corpus.pkl --out-dir $DIR/split > $L/splits.log 2>&1
 $PY -u $A/evaluate_deployment.py --balanced $DIR/split/balanced.pkl \
-    --realism $DIR/split/realism.pkl > $L/deployment.log 2>&1
+    --realism $DIR/split/realism.pkl --population $DIR/corpus.pkl > $L/deployment.log 2>&1
 $PY -u $A/measure_latency.py $DIR/corpus.pkl > $L/latency.log 2>&1
 
 # Window length is a design knob, not a fixed choice, and section 7 of the

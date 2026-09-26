@@ -12,7 +12,7 @@ test fold.
 """
 import argparse
 import pandas as pd
-from build_features import build_features, attach_labels, feature_columns
+from build_features import build_features, attach_labels, feature_columns, check_features
 from pooled_consensus import seed_offset
 
 
@@ -45,7 +45,7 @@ def main():
 
     df = pd.concat(frames, ignore_index=True)
     feats = feature_columns(df)
-    assert not any(c.startswith(("key_", "label_")) for c in feats)
+    check_features(df)
     df.to_csv(a.out, index=False)
     # Write the pickle here too, keeping EVERY column. Reading the corpus back
     # from CSV costs a minute and silently retypes the key columns, so the

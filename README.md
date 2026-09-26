@@ -63,7 +63,7 @@ two is set by the geometry, and the whole pattern reproduces on a dataset this
 project did not generate.
 
 Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 184 figures and must report no
+`analysis/verify_results.py`, which checks 186 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -115,7 +115,11 @@ than one. Constraining the position estimate to the carriageway removes the
 direction the receivers cannot resolve, and takes localisation error from 65 m to
 18 m. It also takes that direction away from the attacker, because a lie that
 exploits the array's lateral blindness has to be placed laterally, and that puts
-the claimed position off the road where a map check rejects it for nothing.
+the claimed position off the road where a map check can reject it. That check is
+not free: honest claims carry positioning error, and at the plus or minus 12 m
+used here about one honest window in five falls outside it. A width no honest
+window crosses on these seeds is about plus or minus 18 m, which leaves an
+outer-lane attacker more room than the figures below allow.
 
 Holding the attacker to the carriageway and changing nothing else moves it from
 75 degrees off the road axis to 35 at a 25 m lie, and to 0 at 200 m. Its chance
@@ -178,8 +182,8 @@ The perfect score was not an achievement. It was the symptom.
 
 So the pipeline was rebuilt from the simulator upward, over a direct
 vehicle-to-vehicle sidelink rather than an uplink to a server, with realistic
-mobility, standards-compliant message triggering, benign positioning error, and a
-structural guarantee that ground truth cannot reach the feature list. The honest
+mobility, standards-compliant message triggering, benign positioning error, and
+ground truth kept out of the feature list by construction. The honest
 number is 0.5145.
 
 Two things were kept from that experience and they shape everything here.
@@ -189,8 +193,8 @@ integrity checks and passed all 57, because they checked what the generator
 intended. The current gates try to *show the dataset is trivial*, and the run
 fails if any of them succeeds: duplicate rows at measurement precision, verbatim
 train and test overlap, nearest-neighbour triviality, single-feature
-separability, correlation with any ground-truth column. Ten gates, and they are
-written to be failed.
+separability, correlation with any ground-truth column. Ten gates: nine can fail
+the run and the class-balance gate warns.
 
 **Every reported number is pinned to its log.** `verify_results.py` ties each of
 155 figures to the exact line of the run log that produced it and fails if either
@@ -202,7 +206,8 @@ are mechanically tied together.
 
 ## The dataset
 
-Generated with ns-3.42 and the 5G-LENA `nr` module at tag `v2x-1.1`. Vehicles
+Generated with the CTTC fork of ns-3 at `ns-3-dev-v2x-v1.1` (based on ns-3.42) and
+the 5G-LENA `nr` module at tag `v2x-1.1`. Vehicles
 exchange messages directly over an NR V2X Mode 2 PC5 sidelink, which is
 vehicle-to-vehicle radio with no base station involved.
 
@@ -210,7 +215,7 @@ vehicle-to-vehicle radio with no base station involved.
 |---|---|
 | Road | 6 km, three lanes each way, 90 vehicles, 12 roadside units |
 | Mobility | Intelligent Driver Model car following, three vehicle classes |
-| Benign traffic | ETSI CAM, DENM, CPM and VAM, each from its own triggering conditions, under TS 102 687 reactive congestion control |
+| Benign traffic | ETSI CAM, DENM and CPM, each from its own triggering conditions, under TS 102 687 reactive congestion control |
 | Seeds | 8, each 60 s |
 | Windows | 1,641,002 in this scenario, 7,916,708 across the five released |
 | Stations | 720, of which 519 benign |
@@ -245,10 +250,11 @@ deployment.
 
 **Ground truth never travels over the air.** The transmitter logs it, the receiver
 logs only what it received, and the two are joined offline on a message
-identifier. `build_features.py` opens only the receive-side tables, and an
-assertion fails the run if any column named `key_*` or `label_*` reaches the
-feature list. A feature that a real receiver could not compute cannot enter the
-dataset by accident.
+identifier. `build_features.py` computes features from the receive-side tables;
+the one thing it takes from the transmit log is which radio sent each decoded
+message, which a receiver also knows. Every feature column is then checked against
+a fixed list of the 50 reviewed as computable by a real receiver, so a new one
+cannot enter the dataset without being added to that list deliberately.
 
 **A limit worth stating up front.** Mode 2 resource grants in 5G-LENA are data
 driven, so a reserved resource is only used when there is data for it and no
@@ -312,7 +318,8 @@ expensive to find after eight seeds: that the benign positioning error is presen
 and that the small and medium position offset bands do not overlap.
 
 **Requirements, exact versions and measured runtimes** are in
-[`REPRODUCING.md`](REPRODUCING.md). Short version: ns-3 at the CTTC `v2x-1.1` fork
+[`REPRODUCING.md`](REPRODUCING.md). Short version: the CTTC ns-3 fork at
+`ns-3-dev-v2x-v1.1` with 5G-LENA `nr` at `v2x-1.1`,
 built under Python 3.12, analysis on Python 3.9, and the two interpreters must not
 be mixed.
 

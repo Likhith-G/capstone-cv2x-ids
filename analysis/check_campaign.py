@@ -131,10 +131,19 @@ def main():
         print(f"  stations under 1 m of mean error: "
               f"{(per < 1.0).sum()} of {len(per)}")
         sp = (ben.claimedSpeed - ben.trueSpeed).abs()
-        hd = np.degrees((ben.claimedHeading - ben.trueHeading).abs())
+        # Headings are logged in degrees. This used to convert the difference
+        # to degrees a second time, which multiplied it by 57 and made a benign
+        # heading error 57 times too small (a unit bug in the simulator) print
+        # as the size the model intends. Wrap to [-180, 180] instead.
+        hd = ((ben.claimedHeading - ben.trueHeading + 180.0) % 360.0 - 180.0).abs()
         print(f"  speed error median {sp.median():.4f} m/s p95 "
               f"{sp.quantile(.95):.4f}")
         print(f"  heading error median {hd.median():.3f} deg max {hd.max():.2f}")
+        if hd.max() < 1.0:
+            print("  WARNING: benign heading error never reaches a degree. The model "
+                  "bounds it at HeadingErrMaxDeg, 20 by default, so a unit error in "
+                  "the simulator is the likeliest cause")
+            problems.append("benign heading error is far below its configured bound")
 
         # The magnitude ladder, stated against the noise floor rather than in
         # absolute metres, because a displacement only means something relative

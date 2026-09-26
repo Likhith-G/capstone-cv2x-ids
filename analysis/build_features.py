@@ -449,8 +449,44 @@ def attach_labels(agg, run_dir, tag, window_ms=1000.0, max_time_ms=None):
     return out
 
 
+# The 50 features that were reviewed as computable by a real receiver, in the
+# order they are built. A column enters the feature set by being named here and
+# nowhere else. This replaces an assertion that no app_ or phy_ column starts
+# with key_ or label_, which is true of every string and so could never fire: an
+# oracle column named phy_something would have passed it. Adding a feature now
+# means editing this list, which is the review step the prefix check pretended
+# to make unnecessary.
+FEATURES = (
+    "app_n_msgs", "app_n_cam", "app_n_denm", "app_n_cpm", "app_iat_mean",
+    "app_iat_std", "app_iat_min", "app_claimed_dist_mean",
+    "app_claimed_dist_std", "app_claimed_speed_mean", "app_claimed_speed_std",
+    "app_dmv_mean", "app_dmv_absmax", "app_ssc_mean", "app_ssc_absmax",
+    "app_predict_mean", "app_predict_max", "app_heading_mean",
+    "app_heading_max", "app_accel_absmax", "phy_sinr_db_mean",
+    "phy_sinr_db_std", "phy_tbler_mean", "phy_corrupt_rate", "phy_mcs_mean",
+    "phy_rsrp_resid_mean", "phy_rsrp_resid_std", "phy_rsrp_resid_absmax",
+    "app_seq_gaps", "app_seq_loss_rate", "phy_rsrp_mean", "phy_rsrp_std",
+    "phy_rsrp_min", "phy_rsrp_max", "phy_rsrp_count", "phy_cbr_pscch_rate",
+    "phy_pscch_corrupt_rate", "phy_neighbours", "phy_track_corr",
+    "phy_track_slope", "phy_track_resid_std", "phy_track_span",
+    "phy_closest_lag_s", "phy_closest_lag_abs", "phy_closest_power_gap",
+    "phy_rsrp_vs_claimed", "phy_rsrp_voiceprint_min", "phy_loss_vs_rsrp",
+    "phy_corrupt_vs_rsrp", "phy_tbler_vs_rsrp",
+)
+
+
 def feature_columns(df):
     return [c for c in df.columns if c.startswith(("app_", "phy_"))]
+
+
+def check_features(df):
+    """Fail unless the feature columns are exactly the reviewed set."""
+    got = set(feature_columns(df))
+    extra, missing = sorted(got - set(FEATURES)), sorted(set(FEATURES) - got)
+    assert not extra and not missing, (
+        f"feature set differs from the reviewed list. New, unreviewed: {extra}. "
+        f"Missing: {missing}. A feature is added by editing FEATURES after "
+        f"checking a real receiver could compute it.")
 
 
 def main():
@@ -470,8 +506,7 @@ def main():
                         max_time_ms=a.max_time_ms)
 
     feats = feature_columns(out)
-    assert not any(c.startswith(("key_", "label_")) for c in feats), \
-        "identifier or label column leaked into the feature set"
+    check_features(out)
 
     path = a.out or f"{a.run_dir}/features_{a.tag}.csv"
     out.to_csv(path, index=False)

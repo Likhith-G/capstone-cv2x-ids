@@ -135,10 +135,17 @@ def main():
     gate("4 1-NN triviality", f1_knn <= a.knn_max,
          f"macro F1 {f1_knn:.4f} (a near-perfect score means the task is trivial)")
 
+    # A depth-3 tree has at most eight leaves, so it predicts at most eight
+    # classes and every other class scores zero: macro F1 cannot exceed
+    # min(8, k) / k. Against the 1-NN threshold the gate could never fire on a
+    # corpus with more than eight classes, which is every corpus here. So the
+    # threshold is taken relative to what the tree can reach.
     dt = DecisionTreeClassifier(max_depth=3, random_state=0).fit(Xtr, ytr)
     f1_dt = f1_score(yte, dt.predict(Xte), average="macro")
-    gate("4b depth-3 tree triviality", f1_dt <= a.knn_max,
-         f"macro F1 {f1_dt:.4f}")
+    k = int(pd.Series(ytr).nunique())
+    ceiling = min(8, k) / k
+    gate("4b depth-3 tree triviality", f1_dt <= a.knn_max * ceiling,
+         f"macro F1 {f1_dt:.4f} against a ceiling of {ceiling:.3f} for {k} classes")
 
     # 5. Single-feature separability. No class may be readable off one column.
     worst = ("", 0.0)

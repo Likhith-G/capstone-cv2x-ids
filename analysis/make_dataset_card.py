@@ -188,8 +188,9 @@ def main():
       "receiving it.\n")
     w("**Ground truth never travels over the air.** The transmitter logs it, the "
       "receiver logs only what it received, and the two are joined offline on a "
-      "message identifier. An assertion fails the build if any column named "
-      "`key_*` or `label_*` reaches the feature list.\n")
+      "message identifier. Every feature column is checked against a fixed list "
+      "of the 50 reviewed as computable by a real receiver, and the build fails on "
+      "any column not on it.\n")
     w("**Benign vehicles do not claim their exact position.** Each carries a "
       "receiver error drawn from the model VeReMi Extension uses. Without it the "
       "benign class has no positional variance and any displacement at all is "
@@ -384,7 +385,14 @@ def main():
       "6 km for a benign station in the window it crosses. It is rare, about 0.07 "
       "percent of benign rows in the released sample, and it inflates the benign "
       "tail of those features rather than any attack class. Drop rows whose claim "
-      "jump exceeds half the road length if a threshold is being set on them.\n")
+      "jump exceeds half the road length if a threshold is being set on them.")
+    w("11. **Benign heading error is about 57 times smaller than the model "
+      "intends.** The simulator converts the per-vehicle heading error bound from "
+      "degrees to radians and then adds it to a heading kept in degrees, so benign "
+      "heading error reaches at most about 0.3 degrees where the model allows up "
+      "to 20. The `app_heading_*` features therefore see almost no honest heading "
+      "noise, which makes heading-based checks look more reliable here than on a "
+      "road.\n")
 
     w("## Licence\n")
     w("The data is intended for **CC BY 4.0**. The generator is an ns-3 contrib "
