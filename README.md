@@ -104,19 +104,11 @@ from the geometry alone predicts the error ellipse points **79.3 degrees** off
 the road axis. An attacker found independently by brute-force search over 72 directions
 lies at **75 to 85 degrees**, with no knowledge of the prediction.
 
-That pairing holds under a condition worth stating, because it was measured
-rather than assumed. An error ellipse describes a second moment, and a second
-moment describes an error distribution only while that distribution is roughly
-elliptical. An attacker optimises against where the estimator actually errs, so
-the two agree only while those are the same place.
-
-Sweeping the estimator's propagation law in five steps moves the predicted axis
-from 79.7 to 86.5 degrees while the attacker moves the other way, and the two
-diverge from under 2 degrees apart to over 10. What tracks that divergence is
-not the estimator's efficiency, which does not degrade across the sweep, but the
-shape of its error: the ninetieth percentile over the median climbs from 2.1 to
-4.8 as the correction concentrates the bulk of the error and leaves the tail
-alone. The published pairing sits at the low end of that range.
+That pairing is measured for the estimator the bound describes. It is not
+unconditional: when the estimator's propagation law is changed, the predicted
+axis and the attacker's chosen direction move apart. What governs that is still
+being worked out, and this page will say so when it is settled rather than
+before.
 
 The countermeasure follows from the same reasoning, and it does two jobs rather
 than one. Constraining the position estimate to the carriageway removes the
