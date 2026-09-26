@@ -48,6 +48,10 @@ class MLP(nn.Module):
         return (out, z) if return_embedding else out
 
 
+# Local SGD momentum. FedNova's normalisation depends on it, so it is named once.
+MOMENTUM = 0.9
+
+
 def flat(model):
     """Detached flat copy of the weights. For arithmetic, never for a loss."""
     return torch.cat([p.data.view(-1) for p in model.parameters()])
@@ -77,7 +81,7 @@ def load_flat(model, vec):
 def local_train(model, global_vec, X, y, method, cfg, class_counts, global_proto):
     global_params = [p.detach().clone() for p in model.parameters()]
     """One client's local work. Returns (weights, n_steps, prototypes)."""
-    opt = torch.optim.SGD(model.parameters(), lr=cfg["lr"], momentum=0.9)
+    opt = torch.optim.SGD(model.parameters(), lr=cfg["lr"], momentum=MOMENTUM)
     n = len(X)
     bs = cfg["batch_size"]
     steps = 0
@@ -185,9 +189,19 @@ def run_method(method, clients, test, cfg, seed, detail=False):
             # by the effective number of steps. Clients with more data would
             # otherwise drag the global model toward their own optimum simply
             # by taking more steps.
+            #
+            # The work is not the step count. Local training uses SGD with
+            # momentum rho, its buffer fresh each round, so a gradient taken at
+            # step k is applied again at every later step, and after tau steps
+            # the update is a_i = [tau - rho (1 - rho^tau) / (1 - rho)] / (1 - rho)
+            # gradients' worth (Wang et al. 2020, section 5). Dividing by tau
+            # instead gave a client taking sixty steps about six times too much
+            # weight against one taking two, the imbalance FedNova removes.
+            rho = MOMENTUM
             tau = torch.tensor(taus, dtype=torch.float)
-            d = torch.stack([(gvec - u) / t for u, t in zip(updates, tau)])
-            gvec = gvec - (p * tau).sum() * (p[:, None] * d).sum(0)
+            work = (tau - rho * (1 - rho ** tau) / (1 - rho)) / (1 - rho)
+            d = torch.stack([(gvec - u) / w for u, w in zip(updates, work)])
+            gvec = gvec - (p * work).sum() * (p[:, None] * d).sum(0)
         else:
             gvec = (p[:, None] * torch.stack(updates)).sum(0)
 
@@ -367,9 +381,14 @@ def main():
     # each method on the test set and reporting the best is how a panel ends up
     # comparing tuning effort rather than methods. Report 06 is explicit about
     # this and it costs almost nothing to do properly.
-    grids = {"fedprox": ("mu", [0.001, 0.01, 0.1]),
-             "fedlc": ("tau", [0.5, 1.0, 2.0]),
-             "fedproto": ("lam", [0.01, 0.1, 1.0])}
+    #
+    # The grids are wide on purpose. The first ones stopped at mu 0.1 and tau 2,
+    # and every panel chose a value on the edge, so each tuned figure was a lower
+    # bound on what the method could do. A choice on an edge is now printed as
+    # such rather than read as an optimum.
+    grids = {"fedprox": ("mu", [0.0001, 0.001, 0.01, 0.1, 1.0]),
+             "fedlc": ("tau", [0.5, 1.0, 2.0, 4.0, 8.0]),
+             "fedproto": ("lam", [0.01, 0.1, 1.0, 10.0])}
     chosen = {}
     if a.tune:
         for method, (name, values) in grids.items():
@@ -387,7 +406,10 @@ def main():
                 if score > best_v:
                     best, best_v = v, score
             chosen[method] = (name, best)
-            print(f"tuned {method}: {name} = {best} (validation macro F1 {best_v:.4f})")
+            edge = best in (values[0], values[-1])
+            print(f"tuned {method}: {name} = {best} (validation macro F1 {best_v:.4f})"
+                  + ("  AT THE GRID EDGE, so the optimum may lie beyond it"
+                     if edge else ""))
         print()
 
     if a.dp_clip:

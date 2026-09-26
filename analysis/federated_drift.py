@@ -51,8 +51,10 @@ def load(path, tag, role, sample, rng):
     return df
 
 
-def pack_clients(X, codes, obs, keep, min_rows, cap, rng):
-    """One client per observer in `keep`, with a per-arm row budget."""
+def pack_clients(obs, keep, min_rows, cap, rng):
+    """One client per observer in `keep`, with a per-arm row budget. Returns row
+    indices; the arm scales and packs them, because each arm fits its own
+    scaler on its own training rows."""
     out = []
     for o in keep:
         m = obs == o
@@ -68,11 +70,15 @@ def pack_clients(X, codes, obs, keep, min_rows, cap, rng):
         # met without changing how many clients it has or how skewed they are.
         frac = cap / total
         out = [rng.choice(i, max(20, int(len(i) * frac)), replace=False) for i in out]
+    return out
+
+
+def to_tensors(X, codes, idx_lists, scaler, n_classes):
     packed = []
-    for idx in out:
-        xi = torch.tensor(X[idx])
+    for idx in idx_lists:
+        xi = torch.tensor(scaler.transform(X[idx]).astype(np.float32))
         yi = torch.tensor(codes[idx], dtype=torch.long)
-        packed.append((xi, yi, torch.bincount(yi, minlength=int(codes.max()) + 1)))
+        packed.append((xi, yi, torch.bincount(yi, minlength=n_classes)))
     return packed
 
 
@@ -135,14 +141,13 @@ def main():
 
     obs = both["client"].values
     X = both[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0).values.astype(np.float32)
-    # The scaler sees training rows only, from both corpora, which is what a
-    # federation spanning densities would have.
-    fit_mask = np.isin(obs, tgt_train + src_obs)
-    X = StandardScaler().fit(X[fit_mask]).transform(X).astype(np.float32)
-
+    # Each arm fits its scaler on the rows it trains on, and the test rows are
+    # scaled by that arm's scaler. One scaler fitted on both corpora gave the
+    # transfer arm the target density's statistics, an unlabelled adaptation
+    # step a model trained on the other density would not have, and shrank the
+    # transfer penalty for this model while the forest in 3c is unaffected.
     test_mask = np.isin(obs, tgt_test)
-    test = (torch.tensor(X[test_mask]),
-            torch.tensor(codes[test_mask], dtype=torch.long))
+    test_y = torch.tensor(codes[test_mask], dtype=torch.long)
     print(f"{len(src_obs)} source clients, {len(tgt_train)} target training "
           f"clients, {len(tgt_test)} target test clients, "
           f"{test_mask.sum():,} test rows, {len(feats)} features\n")
@@ -189,9 +194,9 @@ def main():
         # The unmatched pooled arms above see every row twice per round while
         # the federation samples half its clients for two local epochs, so each
         # row is visited about 50 times pooled against 25 federated. One local
-        # epoch on the pooled side matches that exposure to under a tenth of a
-        # percent, and the arms below are the comparison to quote for what
-        # partitioning costs.
+        # epoch on the pooled side matches that exposure to within about 0.2
+        # percent, set by int(p N) of N clients sampled, and the arms below are
+        # the comparison to quote for what partitioning costs.
         #
         # What is deliberately NOT matched is sequential depth: the pooled
         # client still takes about 1,630 gradient steps between averages against
@@ -212,17 +217,19 @@ def main():
     if want and not want <= set(arms):
         raise SystemExit(f"unknown arms {sorted(want - set(arms))}, "
                          f"choose from {sorted(arms)}")
+    # A pooled arm holds exactly the rows of the federated arm it is the ceiling
+    # for, and a matched arm the rows of the arm it is matched against. Drawing
+    # them afresh made "the same rows pooled" a separate thinning draw, so the
+    # printed gap mixed partitioning with a resample.
+    same_rows = {"centralised": "mixed", "centralised-in-dist": "in-dist",
+                 "centralised-matched": "mixed",
+                 "centralised-in-dist-matched": "in-dist"}
     results, packed = {}, {}
     for name, (keep, mult, pool, epochs) in arms.items():
         cap = budget * mult
-        base = name[:-8] if name.endswith("-matched") else None
+        base = same_rows.get(name)
         if base and base in packed:
-            # A matched arm must hold the SAME rows as the arm it is matched
-            # against, or the comparison mixes a change of exposure with a
-            # change of sample. Reusing the pack also draws nothing from the
-            # RandomState, so every arm above keeps the rows its published
-            # figures were pinned against.
-            clients = packed[base]
+            idx_lists = packed[base]
         else:
             # Packed for EVERY arm, including ones this run will not train.
             # pack_clients draws its thinning from one RandomState shared across
@@ -230,22 +237,23 @@ def main():
             # of every arm after it. That would silently move the numbers a
             # subset run is meant to reproduce, which is worse than the cost of
             # packing.
-            clients = pack_clients(X, codes, obs, keep, a.min_rows, cap, rng)
-            if not clients:
+            idx_lists = pack_clients(obs, keep, a.min_rows, cap, rng)
+            if not idx_lists:
                 print(f"{name}: no clients with {a.min_rows} rows, skipped")
                 continue
-            if pool:
-                # One client holding every row the mixed arm has. Same rows,
-                # same budget, no partitioning. pack_clients returns (x, y,
-                # class counts), so the counts are recomputed over the pooled
-                # labels rather than summed, which would be the same here but is
-                # not obviously so.
-                xs = torch.cat([c[0] for c in clients])
-                ys = torch.cat([c[1] for c in clients])
-                clients = [(xs, ys, torch.bincount(ys, minlength=len(shared)))]
-        packed[name] = clients
+        packed[name] = idx_lists
         if want is not None and name not in want:
             continue
+        scaler = StandardScaler().fit(X[np.concatenate(idx_lists)])
+        clients = to_tensors(X, codes, idx_lists, scaler, len(shared))
+        if pool:
+            # One client holding every row of its base arm: same rows, same
+            # budget, same scaler, no partitioning.
+            xs = torch.cat([c[0] for c in clients])
+            ys = torch.cat([c[1] for c in clients])
+            clients = [(xs, ys, torch.bincount(ys, minlength=len(shared)))]
+        test = (torch.tensor(scaler.transform(X[test_mask]).astype(np.float32)),
+                test_y)
         n_rows = sum(len(c[0]) for c in clients)
         if a.per_seed:
             # What this arm is actually training on, per class. A class that
@@ -259,7 +267,10 @@ def main():
         # A pooled client is always selected; a federated one is selected with
         # probability `participation`. Printed so the match is checkable from
         # the log rather than taken on trust.
-        share = 1.0 if len(clients) == 1 else acfg["participation"]
+        # The expected share of rows visited is the share of clients sampled,
+        # int(p N) of N as run_method samples them, not the nominal p.
+        share = (1.0 if len(clients) == 1 else
+                 max(1, int(acfg["participation"] * len(clients))) / len(clients))
         if a.per_seed:
             print(f"   exposure {int(acfg['local_epochs'] * n_rows * share):,} "
                   f"row visits per round, {acfg['local_epochs']} local epoch(s)")
@@ -281,7 +292,7 @@ def main():
 
     if "mixed" in results and "centralised" in results:
         gap = results["centralised"][0] - results["mixed"][0]
-        print(f"\ncentralised against mixed, the SAME rows pooled into one "
+        print(f"\ncentralised against mixed, the same rows pooled into one "
               f"client: {gap:+.4f}")
         if "centralised-in-dist" in results:
             mix = results["centralised"][0] - results["centralised-in-dist"][0]
