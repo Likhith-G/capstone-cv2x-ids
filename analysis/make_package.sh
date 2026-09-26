@@ -11,7 +11,10 @@ set -euo pipefail
 
 SRC="${1:-$HOME/ns3-v2x/runs/release}"
 OUT="${2:-$HOME/Downloads}"
-VER="1.0.0"
+# The version is read from the bundle's own CITATION.cff, so the package name
+# cannot drift from the release it contains.
+VER=$(awk -F'"' '/^version:/{print $2}' "$SRC/CITATION.cff")
+[ -n "$VER" ] || { echo "no version in $SRC/CITATION.cff"; exit 1; }
 REF="highway_sparse"
 
 [ -d "$SRC/shards" ] || { echo "no shards/ under $SRC"; exit 1; }

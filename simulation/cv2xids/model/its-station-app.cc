@@ -295,7 +295,7 @@ ItsStationApp::TxHeader()
     return "msgUid,txTimeMs,txNodeId,trueStationId,claimedStationId,msgType,seqNo,"
            "trueX,trueY,trueSpeed,trueHeading,"
            "claimedX,claimedY,claimedSpeed,claimedHeading,"
-           "attackId,txCbr";
+           "attackId,txCbr,attackActive";
 }
 
 std::string
@@ -472,10 +472,16 @@ ItsStationApp::CheckCamGeneration()
         m_positionHistory.pop_front();
     }
 
-    if (m_attack == ItsAttack::DOS_RATE || m_attack == ItsAttack::DOS_LOW_RATE)
+    if ((m_attack == ItsAttack::DOS_RATE || m_attack == ItsAttack::DOS_LOW_RATE) &&
+        m_attackActive)
     {
         // The rate attacker ignores the ETSI rules entirely. This is an
         // application-layer flood, distinct from the MAC-layer SPS attack.
+        // It floods only in its active phase: with --sporadicDuty below one a
+        // flooder in its quiet phase falls through to the ETSI rules below and
+        // transmits as a benign station would. Before 26 Sep this branch never
+        // read the phase, so the rate attacks stayed continuous in a campaign
+        // described as bursty.
         SendMessage(m_isVru ? ItsMsgType::VAM : ItsMsgType::CAM);
         m_camEvent = Simulator::Schedule(m_dosInterval, &ItsStationApp::CheckCamGeneration, this);
         return;
@@ -667,8 +673,10 @@ ItsStationApp::InitGnssError()
     m_gnssSigmaY = m_gnssJitter * std::fabs(m_gnssE0y);
 
     m_speedErrRel = m_gnssNormal->GetValue(0.0, m_speedErrSigma * m_speedErrSigma);
-    m_headingErr0 = m_uniform->GetValue(-m_headingErrMaxDeg, m_headingErrMaxDeg)
-                    * M_PI / 180.0;
+    // In degrees, like every heading here. This used to convert to radians and
+    // then add the result to a heading in degrees, which made benign heading
+    // error 57 times smaller than HeadingErrMaxDeg says.
+    m_headingErr0 = m_uniform->GetValue(-m_headingErrMaxDeg, m_headingErrMaxDeg);
 
     m_gnssEvent = Simulator::Schedule(m_gnssTick, &ItsStationApp::StepGnssError, this);
 }
@@ -715,6 +723,7 @@ ItsStationApp::ApplyGnssError(Vector& pos, double& speed, double& heading) const
     // Heading error decays with speed: a stationary vehicle's heading is
     // whatever its compass says, a moving one's is derived from its track.
     heading += m_headingErr0 * std::exp(-0.1 * std::fabs(speed));
+    heading = std::fmod(heading + 360.0, 360.0);
 }
 
 void
@@ -879,7 +888,7 @@ ItsStationApp::SendMessage(ItsMsgType type)
         << m_stationId << ',' << claimedStationId << ',' << static_cast<int>(type) << ',' << seq
         << ',' << truePos.x << ',' << truePos.y << ',' << trueSpeed << ',' << trueHeading << ','
         << claimedPos.x << ',' << claimedPos.y << ',' << claimedSpeed << ',' << claimedHeading
-        << ',' << static_cast<int>(m_attack) << ',' << cbr;
+        << ',' << static_cast<int>(m_attack) << ',' << cbr << ',' << (m_attackActive ? 1 : 0);
     Cv2xTraceStore::Get().Write("tx", row.str());
 
     if (type == ItsMsgType::CAM || type == ItsMsgType::VAM)

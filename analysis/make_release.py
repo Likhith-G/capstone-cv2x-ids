@@ -194,7 +194,11 @@ def main():
         tab = st.pivot_table(index="label_attackId", columns="split",
                              values="label_txNodeId", aggfunc="count",
                              fill_value=0).reindex(
-                                 columns=["train", "validation", "test"], fill_value=0)
+                                 index=sorted(CLASSES), columns=["train", "validation", "test"],
+                                 fill_value=0)
+        # Every class the schema declares, not only the ones present: a class
+        # missing from a scenario entirely is the largest coverage gap there is,
+        # and pivoting over the classes present made it invisible.
         gaps = [f"class {c} has no transmitter in {s}"
                 for c, row in tab.iterrows() for s in tab.columns if row[s] == 0]
         kind = "benchmark" if not gaps else "supplementary"

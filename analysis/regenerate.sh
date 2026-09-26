@@ -23,6 +23,11 @@ PY=/usr/bin/python3
 A=$(cd "$(dirname $0)" && pwd)
 L=$DIR/logs; mkdir -p $L
 
+# An existing corpus.pkl is used as it is unless REBUILD=1, so the analysis
+# stages can be rerun against a corpus built separately without rebuilding it.
+if [[ -f $DIR/corpus.pkl && "$REBUILD" != "1" ]]; then
+  echo "[1-2/9] using the existing $DIR/corpus.pkl (REBUILD=1 to rebuild it)"
+else
 echo "[1/9] per-seed corpora"
 PARTS=()
 for t in $TAGS; do
@@ -36,6 +41,7 @@ done
 
 echo "[2/9] merge"
 $PY -u $A/merge_corpora.py $PARTS -o $DIR/corpus.pkl > $L/merge.log 2>&1
+fi
 
 echo "[3/9] integrity gates"
 $PY -u $A/validate_dataset.py $DIR/corpus.pkl > $L/validate.log 2>&1

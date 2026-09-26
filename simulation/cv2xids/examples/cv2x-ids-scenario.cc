@@ -255,6 +255,13 @@ main(int argc, char* argv[])
     // Mobility: a bidirectional highway with per-vehicle speeds.
     // ------------------------------------------------------------------
     uint32_t numVehicles = numLanesPerDirection * vehiclesPerLane * 2;
+    // Vulnerable road users are installed into the highway traffic model with
+    // the vehicles, which drives them as cars in the outer lane at a 5 m/s
+    // desired speed and with the lane's direction. Until they get their own
+    // mobility, refuse rather than quietly corrupt the traffic.
+    NS_ABORT_MSG_IF(numVru > 0,
+                    "--numVru is not supported: the traffic model would drive "
+                    "pedestrians as cars. See simulation/README.md.");
     uint32_t numMobile = numVehicles + numVru;
     NodeContainer allUes;
     allUes.Create(numMobile + numRsu);
