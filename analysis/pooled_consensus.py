@@ -164,10 +164,46 @@ def window_mean(df, keys, cols, xcol):
     return m[keep].reset_index(), int((~keep).sum())
 
 
-def observer_geometry(run_dir, tags, window_ms=1000.0):
+def own_gnss_error(run_dir, tag, window_ms=1000.0, seed=0):
+    """Per (vehicle, window), the positioning error that vehicle's own receiver
+    would carry, from the simulator's own error process.
+
+    The simulator gives every transmitter a positioning error but logs a
+    receiving vehicle at its true position. A benign vehicle's error is what it
+    broadcasts minus where it is, so its own claims supply it. An attacker's
+    claims carry the lie as well, so each attacker borrows the error series of a
+    benign vehicle of the same seed. Roadside units are surveyed and get none.
+    """
+    tx = pd.read_csv(f"{run_dir}/tx_{tag}.csv", on_bad_lines="skip",
+                     usecols=["txTimeMs", "txNodeId", "trueX", "trueY",
+                              "claimedX", "claimedY", "attackId"]).dropna()
+    st = pd.read_csv(f"{run_dir}/stations_{tag}.csv")
+    vehicles = set(st[st.role != "rsu"].nodeId.astype(int))
+    tx = tx[tx.txNodeId.astype(int).isin(vehicles)]
+    tx["key_window"] = (tx.txTimeMs // window_ms).astype(int)
+    tx["ex"] = tx.claimedX - tx.trueX
+    tx["ey"] = tx.claimedY - tx.trueY
+    ben = tx[(tx.attackId == 0) & (np.hypot(tx.ex, tx.ey) < 100.0)]
+    err = ben.groupby(["txNodeId", "key_window"])[["ex", "ey"]].mean().reset_index()
+    donors = sorted(err.txNodeId.unique())
+    attackers = sorted(set(tx[tx.attackId != 0].txNodeId.unique()) - set(donors))
+    rng = np.random.default_rng(seed)
+    borrowed = []
+    for n, d in zip(attackers, rng.choice(donors, len(attackers))):
+        e = err[err.txNodeId == d].copy()
+        e["txNodeId"] = n
+        borrowed.append(e)
+    err = pd.concat([err] + borrowed, ignore_index=True)
+    return err.rename(columns={"txNodeId": "rxNodeId"})
+
+
+def observer_geometry(run_dir, tags, window_ms=1000.0, observer_gnss=False):
     """Per (seed, observer, window) observer position, and per (seed, claimed
     station, window) the position that station claimed. Both are things a
-    receiver has: where it is, and what the message said."""
+    receiver has: where it is, and what the message said.
+
+    With `observer_gnss`, a vehicle observer's position carries its own
+    positioning error rather than being exact; see own_gnss_error."""
     obs, claim = [], []
     for i, tag in enumerate(tags):
         off = seed_offset(tag, i)
@@ -179,6 +215,16 @@ def observer_geometry(run_dir, tags, window_ms=1000.0):
         rx = rx.dropna()
         rx["key_window"] = (rx.rxTimeMs // window_ms).astype(int)
         o, w_o = window_mean(rx, ["rxNodeId", "key_window"], ["rxX", "rxY"], "rxX")
+        if observer_gnss:
+            e = own_gnss_error(run_dir, tag, window_ms)
+            o = o.merge(e, how="left", on=["rxNodeId", "key_window"])
+            moved = o.ex.notna()
+            o["rxX"] += o.ex.fillna(0.0)
+            o["rxY"] += o.ey.fillna(0.0)
+            print(f"{tag}: {int(moved.sum()):,} of {len(o):,} receiver-windows "
+                  f"given their own positioning error, median "
+                  f"{np.hypot(o.ex, o.ey)[moved].median():.2f} m")
+            o = o.drop(columns=["ex", "ey"])
         o = o.rename(columns={"rxNodeId": "key_rxNodeId"})
         o["key_rxNodeId"] += off
         o["key_seed"] = tag
@@ -358,6 +404,10 @@ def main():
                          "small machine is how this gets killed")
     ap.add_argument("--obs-cap", type=int, default=250000,
                     help="cap on single-observer training rows per fold, for runtime")
+    ap.add_argument("--observer-gnss", action="store_true",
+                    help="give each vehicle observer its own positioning error "
+                         "instead of its true position, the sensitivity test for "
+                         "the dataset card's limitation 13")
     ap.add_argument("--validate", action="store_true",
                     help="score the localisation against true positions")
     ap.add_argument("--out", default=None, help="write the pooled table here")
@@ -396,7 +446,8 @@ def main():
               f"because otherwise the receiver geometry varies alongside "
               f"whatever the comparison is about")
     feats = [c for c in df.columns if c.startswith(("app_", "phy_"))]
-    obs, claim = observer_geometry(a.run_dir, a.tags)
+    obs, claim = observer_geometry(a.run_dir, a.tags,
+                                   observer_gnss=a.observer_gnss)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
     require_every_seed(df, a.tags, "pooled_consensus")
     df = df.merge(claim, how="inner", on=["key_seed", "key_claimedStationId", "key_window"])
