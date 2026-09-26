@@ -3,7 +3,7 @@
 #
 # Store mode (-0) throughout: the shards are already gzipped, so deflate spends
 # minutes to save nothing. The small package carries one scenario plus every
-# top level file, because the eight small files are what check_release.py reads
+# top level file, because the nine small files are what check_release.py reads
 # to know what it is looking at, and a scenario without them verifies nothing.
 #
 #   ./analysis/make_package.sh [release_dir] [out_dir]

@@ -25,11 +25,13 @@ take. Two options.
 **The whole thing**, 1.6 GB, over OneDrive or a shared drive. Preferred, because
 it is the only form the acceptance test covers completely.
 
-**One scenario**, if that is impractical. `highway_sparse` plus the eight small
+**One scenario**, if that is impractical. `highway_sparse` plus the nine small
 files beside it is **358 MB** and is enough for everything in section A, because
-it is the reference scenario where every published figure is measured. Copy the
-`shards/highway_sparse/` directory and all eight files at the top level of the
-bundle, then run the acceptance test in subset mode:
+it is the reference scenario where every published figure is measured. Use the
+packaged zip, or copy the `shards/highway_sparse/` directory and every file at
+the top level of the bundle. One of the nine, `.zenodo.json`, is hidden and a
+file browser will not show it, so copy the directory from a terminal rather than
+selecting files. Then run the acceptance test in subset mode:
 
     python3 analysis/check_release.py path/to/bundle --subset
 

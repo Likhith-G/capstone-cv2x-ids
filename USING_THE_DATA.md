@@ -35,6 +35,10 @@ Then, from the repository directory:
     python3 analysis/check_release.py /path/to/release      # confirm it arrived intact
     python3 analysis/baseline_starter.py /path/to/release   # train the baseline
 
+If you were sent the single-scenario package, the 358 MB one holding only
+`highway_sparse`, add `--subset` to the first command. Without it the check looks
+for the four scenarios you were not sent and reports the bundle as incomplete.
+
 ---
 
 ## What you get
@@ -49,12 +53,15 @@ One directory, about 1.6 GB.
         bursty_attackers/      attackers who misbehave in bursts, not continuously
         offset_receivers/      roadside units moved off the centreline
       release_splits.csv       the frozen train, validation and test partition
-      schema.json              all 61 columns, typed and described
+      schema.json              every column, typed and described
+      SCENARIOS.json           row counts and parameters of the five scenarios
       sample.csv               5,000 rows, to look at before committing
       DATASET_CARD.md          what every class and column means
-      CHECKSUMS.sha256         every file above
+      CHECKSUMS.sha256         every file here
       CITATION.cff             how to cite it
       PROVENANCE.txt           the generator commit that built it
+      .zenodo.json             archive metadata; hidden, so copy the whole
+                               directory rather than the files you can see
 
 7,916,708 rows. Each row is **one receiver's view of one claimed station over one
 one-second window**, carrying both what the messages said and what the radio
@@ -64,7 +71,8 @@ measured while receiving them.
 
     python3 analysis/check_release.py path/to/release
 
-This is the acceptance test. It verifies the checksums, loads the shards against
+Add `--subset` for the single-scenario package. This is the acceptance test. It
+verifies the checksums, loads the shards against
 the schema, confirms the partition covers every row exactly once with no vehicle
 on both sides of a split, and trains a small baseline on the frozen split. It
 uses only files inside the bundle. **Run it once and keep the output**, then send
@@ -98,14 +106,21 @@ Columns are prefixed by what they are:
 | prefix | count | what it is |
 |---|---|---|
 | `app_` | 22 | application layer, computed from message contents |
-| `phy_` | 28 | physical and MAC layer, measured by the receiver's radio |
+| `phy_` | 28 | radio measurements, and residuals that set a measurement against what the claimed position predicts |
 | `key_` | 6 | identifiers. **Never a feature.** |
 | `label_` | 5 | ground truth. **Never a feature.** |
 
-`label_clean` marks a window that passes the label purity threshold. Every row
-in the release has it set, because impure windows were excluded when the bundle
-was built, so filtering on it changes nothing here. Filter anyway if you build
-your own corpus.
+`label_clean` marks a window that passes the label purity threshold. It is set on
+every row here because no window in this corpus is impure: every claimed identity
+belongs to one transmitter and a transmitter's behaviour is fixed. The column is
+kept for corpora built with an attack that sends under another station's
+identity, so filter on it if you build your own.
+
+Thirteen of the `phy_` columns take the claimed position or the application loss
+rate as an input (`phy_rsrp_resid_*`, `phy_track_*`, `phy_closest_*`,
+`phy_rsrp_vs_claimed`, `phy_rsrp_voiceprint_min`, `phy_loss_vs_rsrp`). They are
+the physical layer check the literature uses, power against the claim, so the
+`phy_` block is not a radio-only ablation. Drop those thirteen for one.
 
 The six keys are `key_rxNodeId`, `key_claimedStationId`, `key_window`,
 `key_txRnti_mode`, `key_observer_role` and `key_seed`. The five labels are
@@ -178,7 +193,7 @@ cannot produce a number you put beside 0.5145.
 | **Report beside it** | macro F1, over all eleven classes |
 | **Also give** | per-class F1, because the aggregate hides where the work is |
 | **Splits** | grouped by `label_txNodeId`, which the frozen partition already does |
-| **False positives** | at true prevalence, not on a balanced set |
+| **False positives** | on unbalanced data, and precision at a stated deployment prevalence; the corpus's own attack share of about a third is far above a road's |
 
 MCC was chosen as primary before any of these numbers existed, because it uses
 all four cells of the confusion matrix and stays meaningful when one class holds
