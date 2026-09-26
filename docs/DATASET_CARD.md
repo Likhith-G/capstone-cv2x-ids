@@ -18,7 +18,7 @@ A labelled intrusion detection dataset for C-V2X sidelink, generated in ns-3.42 
 | stations | 720 physical transmitters, of which 519 benign |
 | claimed identities | 783, more than the transmitter count because sybil emits several per vehicle |
 | classes | 11 |
-| columns | 61, being 22 application layer, 28 physical and MAC, 11 keys and labels |
+| columns | 60, being 22 application layer, 28 physical and MAC, 10 keys and labels |
 | seeds | 8 |
 
 ## Scenarios
@@ -100,7 +100,7 @@ A dependence this does not remove, stated rather than hidden: stations inside on
 
 ## Schema
 
-### Keys and provenance (6)
+### Keys and provenance (5)
 
 Identify a row. **Never features.**
 
@@ -109,7 +109,6 @@ Identify a row. **Never features.**
 | `key_rxNodeId` | int64 | Receiver that made this observation. |
 | `key_claimedStationId` | int64 | Station identifier as claimed over the air. |
 | `key_window` | int64 | Time window index. |
-| `key_txRnti_mode` | int64 | Modal radio identifier seen for this station in this window. |
 | `key_observer_role` | object | Whether the receiver is a vehicle or a roadside unit. |
 | `key_seed` | object | Simulation seed. Eight independent realisations. |
 
