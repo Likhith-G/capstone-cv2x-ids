@@ -104,9 +104,15 @@ def matrices(df):
     # its trees and a reordered matrix cannot reproduce the published figure.
     feats = ([c for c in df.columns if c.startswith("app_")] +
              [c for c in df.columns if c.startswith("phy_")])
-    leaked = [c for c in df.columns if c.startswith(("key_", "label_")) and c in feats]
-    assert not leaked, f"ground truth in the feature list: {leaked}"
     X = df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    # A prefix cannot smuggle ground truth in, but a column can: a feature that
+    # equals a label on every row is the label, whatever it is called.
+    labels = [c for c in df.columns if c.startswith("label_")
+              and pd.api.types.is_numeric_dtype(df[c]) and df[c].nunique() > 1]
+    copies = [(f, l) for l in labels for f in feats
+              if (X[f].to_numpy() == df[l].to_numpy()).all()]
+    if copies:
+        sys.exit(f"feature columns identical to a label: {copies}")
     return X, df.label_attackId.astype(int), df.label_txNodeId.astype(int), feats
 
 
@@ -171,13 +177,23 @@ def report(folds, classes, elapsed, comparable, scenario):
               "  cross-validation and this was one pass over the frozen split,\n"
               "  which reads high. Re-run with --protocol cv before concluding\n"
               "  anything from the difference.")
+    elif any(np.isnan(per.get(c, np.nan)) for c in POSITION_CLASSES):
+        print("\n  A position class is missing from this sample, so there is no\n"
+              "  verdict. Use a larger --sample.")
+    elif macro < PUBLISHED["one_nn"]:
+        # Below what a 1-nearest-neighbour classifier reaches, a model is
+        # broken and its per class scores support no conclusion.
+        print(f"\n  Macro F1 is below the 1-nearest-neighbour floor of "
+              f"{PUBLISHED['one_nn']}, so the\n  model is not working and failing to "
+              f"move a position class says nothing.")
     elif [c for c in POSITION_CLASSES if per.get(c, 0) > BEST_OF_FOUR[c] + 0.05]:
         print("\n  You moved a position class under the comparable protocol.\n"
               "  That is the finding, not the aggregate. Check the split before\n"
               "  believing it, then write it up.")
     else:
-        print("\n  No position class moved, which is the expected result and\n"
-              "  confirms the bound.")
+        print("\n  No position class moved. That is the expected result and is\n"
+              "  consistent with the bound; failing to beat a baseline is\n"
+              "  evidence, not proof.")
     return macro
 
 

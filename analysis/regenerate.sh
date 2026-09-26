@@ -77,7 +77,14 @@ $PY -u $A/power_evasion.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     --classes 1 3 4 6 13 > $L/power_evasion.log 2>&1
 
 echo "[7/9] federated"
-$PY -u $A/check_partition_skew.py $DIR/corpus.pkl > $L/skew.log 2>&1
+# A gate that fails is recorded in its log; under set -e it would otherwise
+# stop every later stage, deployment and latency included, which it says
+# nothing about.
+$PY -u $A/check_partition_skew.py $DIR/corpus.pkl > $L/skew.log 2>&1 || true
+# The section 5 panel trains on the roadside unit clients of a sampled table,
+# which is a different partition from every observer, so it is gated on its own.
+$PY -u $A/check_partition_skew.py $DIR/corpus.pkl --observer-role rsu \
+    --sample 200000 --training-clients > $L/skew_rsu.log 2>&1 || true
 $PY -u $A/federated.py $DIR/corpus.pkl --observer-role rsu --seeds 8 \
     --rounds 20 --tune > $L/federated.log 2>&1 || \
 $PY -u $A/federated.py $DIR/corpus.pkl --seeds 8 --rounds 20 --tune \
@@ -93,7 +100,7 @@ $PY -u $A/pooled_regions.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     --road-halfwidth --out $DIR/pooled_regions.pkl \
     > $L/pooled_regions.log 2>&1
 $PY -u $A/check_partition_skew.py $DIR/pooled_regions.pkl \
-    --observer-col key_region > $L/skew_regions.log 2>&1
+    --observer-col key_region > $L/skew_regions.log 2>&1 || true
 $PY -u $A/federated.py $DIR/pooled_regions.pkl --observer-col key_region \
     --seeds 8 --rounds 20 --tune > $L/federated_regions.log 2>&1
 $PY -u $A/federated.py $DIR/pooled_regions.pkl --observer-col key_region \
@@ -111,15 +118,16 @@ $PY -u $A/make_splits.py $DIR/pooled_regions.pkl --observer-col key_region \
 $PY -u $A/persistence_filter.py --balanced $DIR/split_regions/balanced.pkl \
     --realism $DIR/split_regions/realism.pkl --population $DIR/pooled_regions.pkl \
     > $L/persistence.log 2>&1
-$PY -u $A/measure_pooling_cost.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
-    > $L/pooling_cost.log 2>&1
-
 echo "[9/9] deployment and latency"
 mkdir -p $DIR/split
 $PY -u $A/make_splits.py $DIR/corpus.pkl --out-dir $DIR/split > $L/splits.log 2>&1
 $PY -u $A/evaluate_deployment.py --balanced $DIR/split/balanced.pkl \
     --realism $DIR/split/realism.pkl --population $DIR/corpus.pkl > $L/deployment.log 2>&1
 $PY -u $A/measure_latency.py $DIR/corpus.pkl > $L/latency.log 2>&1
+# After latency, because the pooling cost is quoted against the inference cost
+# that run measured on this corpus rather than a figure typed in from another.
+$PY -u $A/measure_pooling_cost.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
+    --latency-log $L/latency.log > $L/pooling_cost.log 2>&1
 
 # Window length is a design knob, not a fixed choice, and section 7 of the
 # results reports it. It needs its own corpora because the window length is a

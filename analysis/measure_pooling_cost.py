@@ -17,19 +17,25 @@ because the cost depends on how many receivers there are and how well
 conditioned they leave the fit.
 
 The claimed-position statistics are separated from the free fit because they
-are two very different costs and only one of them is optional: the claimed-
-position regression is closed form, and it carries most of the separation
-(pool_claim_rmse reaches +5.03 benign standard deviations on class 1 against
-+0.98 for pool_mlat_err). A deployment that cannot afford the nonlinear fit can
-drop it and keep most of the signal.
+are two very different costs: the claimed-position regression is closed form,
+the free fit is a nonlinear least squares. The free fit timed here is the one
+the pipeline runs, pooled_consensus.free_fit bounded to the carriageway, which
+is several times slower than the unbounded fit this script used to time.
+Whether a deployment could drop it is a question about separation, answered in
+RESULTS.md, not here.
+
+Units are drawn at random across every seed; a prefix of the grouped table
+would time one seed's early traffic.
 """
 import argparse
+import re
+import shlex
+import sys
 import time
 import numpy as np
 import pandas as pd
-from scipy.optimize import least_squares
 
-from pooled_consensus import observer_geometry, _resid, FIT_CAP
+from pooled_consensus import observer_geometry, free_fit, FIT_CAP, ROAD_HALFWIDTH
 from pooled_consensus import require_every_seed
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
@@ -43,23 +49,22 @@ def closed_form(ox, oy, rsrp, cx, cy):
     return float(np.sqrt(np.mean(r ** 2)))
 
 
-def free_fit(ox, oy, rsrp):
-    i0 = int(np.argmax(rsrp))
-    p0 = np.array([ox[i0], oy[i0], float(np.max(rsrp)) + 20.0, 2.5])
-    sol = least_squares(_resid, p0, args=(ox, oy, rsrp), method="lm", max_nfev=400)
-    return float(sol.x[0]), float(sol.x[1])
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("corpus")
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--tags", nargs="+", required=True)
     ap.add_argument("--units", type=int, default=2000)
-    ap.add_argument("--inference-ms", type=float, default=3.390,
-                    help="single-window inference cost to compare against, "
-                         "from measure_latency.py on the same corpus")
+    ap.add_argument("--latency-log", required=True,
+                    help="measure_latency.py's log on the same corpus; the "
+                         "single-window inference cost is read from it")
     a = ap.parse_args()
+    print("invocation: " + " ".join(shlex.quote(s) for s in sys.argv) + "\n")
+    m = re.search(r"single-window inference\s+([\d.]+) ms",
+                  open(a.latency_log).read())
+    if not m:
+        sys.exit(f"no single-window inference line in {a.latency_log}")
+    inference_ms = float(m.group(1))
     rng = np.random.default_rng(0)
 
     df = pd.read_pickle(a.corpus)
@@ -72,14 +77,15 @@ def main():
     df = df.merge(claim, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
 
+    grouped = df.groupby(KEY, sort=False)
+    size = grouped.size()
+    eligible = size[size >= 5].index
+    pick = rng.choice(len(eligible), min(a.units, len(eligible)), replace=False)
     units = []
-    for _, g in df.groupby(KEY, sort=False):
-        if len(g) < 5:
-            continue
+    for i in sorted(pick):
+        g = grouped.get_group(eligible[i])
         units.append((g.rxX.values, g.rxY.values, g.phy_rsrp_mean.values,
                       float(g.claimedX.iloc[0]), float(g.claimedY.iloc[0])))
-        if len(units) >= a.units:
-            break
     n = np.array([len(u[2]) for u in units])
     print(f"{len(units)} units, receivers per unit: median {np.median(n):.0f}, "
           f"min {n.min()}, max {n.max()}\n")
@@ -94,21 +100,18 @@ def main():
         if len(r) > FIT_CAP:
             sel = rng.choice(len(r), FIT_CAP, replace=False)
             ox, oy, r = ox[sel], oy[sel], r[sel]
-        free_fit(ox, oy, r)
+        free_fit(ox, oy, r, ROAD_HALFWIDTH)
     t_free = (time.perf_counter() - t0) / len(units) * 1000
 
     print(f"{'step':44s} {'ms per unit':>12s}")
     print(f"{'claimed-position regression, closed form':44s} {t_closed:12.4f}")
-    print(f'{"free position fit, nonlinear least squares":44s} {t_free:12.4f}')
+    print(f'{"free position fit, bounded to the road":44s} {t_free:12.4f}')
     print(f"{'both':44s} {t_closed + t_free:12.4f}")
-    print(f"\nfor comparison, section 7 of the results measures single-window "
-          f"inference at {a.inference_ms} ms.")
-    print(f"the free fit alone is {t_free / a.inference_ms:.2f} times the "
+    print(f"\nsingle-window inference on this corpus, from {a.latency_log}: "
+          f"{inference_ms} ms")
+    print(f"the free fit alone is {t_free / inference_ms:.2f} times the "
           f"inference cost, and the whole block is "
           f"{(t_closed + t_free) / 1000.0 * 100:.3f} percent of a 1000 ms window.")
-    print("\nThe closed-form regression carries most of the separation, so a "
-          "deployment\nthat cannot afford the nonlinear fit can drop it and "
-          "keep the cheaper half.")
 
 
 if __name__ == "__main__":

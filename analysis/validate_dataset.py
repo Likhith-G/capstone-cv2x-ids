@@ -77,7 +77,12 @@ def main():
     ap.add_argument("features")
     ap.add_argument("--dup-max", type=float, default=0.20)
     ap.add_argument("--knn-max", type=float, default=0.97)
-    ap.add_argument("--corr-max", type=float, default=0.95)
+    ap.add_argument("--auc-max", type=float, default=0.995,
+                    help="gate 6: the largest one-vs-rest AUC any single "
+                         "feature may reach for any class. The strongest honest "
+                         "signature measured on highway_sparse seed 1 is 0.982, "
+                         "a self inconsistent position lie read off the "
+                         "prediction residual")
     ap.add_argument("--model-sample", type=int, default=150000,
                     help="subsample size for the nearest-neighbour gate, which "
                          "is brute force in this many dimensions")
@@ -163,18 +168,34 @@ def main():
     gate("5 single-feature separability", worst[1] < 0.999,
          f"best single feature excludes {worst[1]:.4f} of other classes ({worst[0]})")
 
-    # 6. Oracle freedom. No feature may track a ground-truth column.
-    labels = df[[c for c in df.columns if c.startswith("label_")]].select_dtypes("number")
-    worst_corr = ("", 0.0)
+    # 6. Oracle freedom. No single feature may read one class off almost
+    #    perfectly. This used to be a linear correlation against every label_
+    #    column, which tested features against station identifiers and nominal
+    #    class codes: a feature that was exactly one class's ground truth scored
+    #    far below its threshold, and the recorded maxima measured congestion
+    #    differences between seeds. One-vs-rest AUC per class is rank based, so
+    #    it catches a nonlinear or one-class oracle, and gate 5's range test,
+    #    which one outlier defeats, does not replace it.
+    from scipy.stats import rankdata
+    worst_auc = ("", 0.5)
     for f in feats:
-        for l in labels.columns:
-            if X[f].std() == 0 or labels[l].std() == 0:
+        if X[f].nunique() <= 1:
+            continue
+        r = rankdata(X[f].values)
+        for c in sorted(y.unique()):
+            if c == 0:
                 continue
-            r = abs(np.corrcoef(X[f], labels[l])[0, 1])
-            if np.isfinite(r) and r > worst_corr[1]:
-                worst_corr = (f"{f} vs {l}", r)
-    gate("6 oracle freedom", worst_corr[1] < a.corr_max,
-         f"max |corr| with a label column {worst_corr[1]:.4f} ({worst_corr[0]})")
+            pos = (y == c).values
+            n1, n0 = int(pos.sum()), int((~pos).sum())
+            if not n1 or not n0:
+                continue
+            auc = (r[pos].sum() - n1 * (n1 + 1) / 2.0) / (n1 * n0)
+            auc = max(auc, 1.0 - auc)
+            if auc > worst_auc[1]:
+                worst_auc = (f"{f} vs class {c}", auc)
+    gate("6 oracle freedom", worst_auc[1] < a.auc_max,
+         f"best single-feature one-vs-rest AUC {worst_auc[1]:.4f} "
+         f"({worst_auc[0]}), against {a.auc_max}")
 
     # 7. Negative-class presence. Every feature must have a real benign
     #    distribution, or it is a marker rather than a measurement.

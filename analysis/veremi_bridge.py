@@ -50,6 +50,8 @@ import argparse
 import json
 import pathlib
 import re
+import shlex
+import sys
 
 import numpy as np
 import pandas as pd
@@ -58,23 +60,13 @@ import pandas as pd
 EXCLUDED = ["app_n_cam", "app_n_denm", "app_n_cpm",
             "app_seq_gaps", "app_seq_loss_rate"]
 
-# Attacker type codes. The two VeReMi releases number them differently and the
-# release has to be told apart, because reading one dataset's codes against the
-# other's table would silently relabel every attack.
-#
-#   original VeReMi   powers of two: 1 ConstPos, 2 ConstPosOffset, 4 RandomPos,
-#                     8 RandomPosOffset, 16 EventualStop
-#   VeReMi Extension  consecutive integers over a much longer catalogue
+# Attacker type codes of the original VeReMi, powers of two. Only the original
+# release and NextGen are supported. VeReMi Extension numbers its nineteen
+# attacks differently and ships in a layout this loader does not read, so a code
+# outside this table stops the run rather than being relabelled.
 ATTACKS_ORIGINAL = {0: "benign", 1: "const_pos", 2: "const_pos_offset",
                     4: "random_pos", 8: "random_pos_offset",
                     16: "eventual_stop"}
-ATTACKS_EXTENSION = {0: "benign", 1: "const_pos", 2: "const_pos_offset",
-                     3: "random_pos", 4: "random_pos_offset",
-                     5: "eventual_stop", 6: "disruptive", 7: "data_replay",
-                     8: "delayed_messages", 9: "dos", 10: "dos_random",
-                     11: "dos_disruptive", 12: "grid_sybil",
-                     13: "data_replay_sybil", 14: "dos_random_sybil",
-                     15: "dos_disruptive_sybil"}
 
 # ConstPosOffset ONLY. This project's small, medium and large offset classes all
 # displace the claimed position by a fixed vector while leaving speed and
@@ -176,7 +168,12 @@ def load_receiver(path, truth, receiver_id):
 # attacked where it is an attacker, and `pos_noise` is the sensor error that
 # both benign and attacking senders carry: their magnitudes are both about 4 m,
 # which is how the two are told apart.
-NEXTGEN_CONST_OFFSET = 2
+#
+# The flag says only that a sender attacks, not how, so the variant is read from
+# the scenario's directory name. constantPositionOffset is the comparable,
+# self consistent lie; randomPositionOffset draws a new offset every message,
+# contradicts the claimed speed at every step, and is the positive control.
+NEXTGEN_VARIANTS = {"constantPositionOffset": 2, "randomPositionOffset": 1}
 
 
 def load_nextgen(root, limit=None):
@@ -187,6 +184,17 @@ def load_nextgen(root, limit=None):
         raise SystemExit(f"no veh_*.json receiver logs under {root}")
     if limit:
         files = files[:limit]
+    found = {v for v in NEXTGEN_VARIANTS for f in files[:1] + files[-1:]
+             if v in str(f)}
+    if len(found) != 1:
+        raise SystemExit(f"cannot tell which NextGen variant {root} holds: its "
+                         f"path names {sorted(found) or 'none'} of "
+                         f"{sorted(NEXTGEN_VARIANTS)}. The attacker flag does "
+                         f"not say, so the directory has to.")
+    variant = found.pop()
+    attack_code = NEXTGEN_VARIANTS[variant]
+    print(f"NextGen variant {variant}, attackers labelled "
+          f"{ATTACKS_ORIGINAL[attack_code]} ({attack_code})")
     rows = []
     for rid, path in enumerate(files):
         try:
@@ -207,7 +215,7 @@ def load_nextgen(root, limit=None):
                     sp[0], sp[1], rp[0], rp[1],
                     float(s["spd"]),
                     float(s["hed"]) % 360.0,
-                    NEXTGEN_CONST_OFFSET if int(d.get("attacker", 0)) else 0,
+                    attack_code if int(d.get("attacker", 0)) else 0,
                     rid,
                 ))
             except (KeyError, ValueError, IndexError, TypeError):
@@ -260,14 +268,13 @@ def load_veremi(root, limit=None):
           f"{df.claimedStationId.nunique()} senders")
     counts = df.groupby("label_attackId").claimedStationId.nunique()
 
-    # Tell the two releases apart by the codes present. A code of 16 can only
-    # be the original's EventualStop; a 3 or a 5 can only be the Extension's.
     seen = set(int(k) for k in counts.index)
-    table = ATTACKS_EXTENSION if (seen & {3, 5, 6, 7}) else ATTACKS_ORIGINAL
-    release = "Extension" if table is ATTACKS_EXTENSION else "original"
-    print(f"attacker codes read as VeReMi {release}")
+    if seen - set(ATTACKS_ORIGINAL):
+        raise SystemExit(f"attacker codes {sorted(seen - set(ATTACKS_ORIGINAL))} "
+                         f"are not the original VeReMi's. Only the original "
+                         f"release and NextGen are supported.")
     print("senders per attacker type: " +
-          "  ".join(f"{table.get(int(k), k)}:{v}" for k, v in counts.items()))
+          "  ".join(f"{ATTACKS_ORIGINAL[int(k)]}:{v}" for k, v in counts.items()))
     return df
 
 
@@ -391,9 +398,11 @@ def main():
     from sklearn.model_selection import StratifiedGroupKFold
     from sklearn.metrics import f1_score, matthews_corrcoef
 
+    print("invocation: " + " ".join(shlex.quote(s) for s in sys.argv))
     print("VeReMi NextGen" if a.nextgen else "VeReMi")
     frames = []
     for i, d in enumerate(a.veremi_dir):
+        print(f"\n[{i}] {pathlib.Path(d).resolve()}")
         f = (load_nextgen(d, a.limit_receivers) if a.nextgen
              else load_veremi(d, a.limit_receivers))
         # Namespace per simulation. Two VeReMi runs both number their vehicles
@@ -443,14 +452,22 @@ def main():
     # four decimal places, it needs to know whether the score is near zero.
     if a.sample and len(vm) > a.sample:
         vm = vm.sample(n=a.sample, random_state=0).reset_index(drop=True)
-        print(f"sampled to {len(vm):,} windows, the same budget as the corpus")
-    print(f"{len(vm):,} windows, {len(feats)} transferable features\n")
+    print(f"{len(vm):,} windows, {len(feats)} transferable features")
 
     ours = pd.read_pickle(a.corpus)
     if "label_clean" in ours.columns:
         ours = ours[ours.label_clean == 1]
-    if a.sample and len(ours) > a.sample:
-        ours = ours.sample(n=a.sample, random_state=0)
+    # The corpus arm gets the SAME number of windows as the VeReMi side, which
+    # is the smaller when VeReMi is small, so the arms differ in dataset and
+    # not in data volume.
+    if len(ours) > len(vm):
+        ours = ours.sample(n=len(vm), random_state=0)
+    print(f"corpus sampled to {len(ours):,} windows, the VeReMi budget")
+    # The observation unit differs and the reader should see by how much. A
+    # 1000 ms window holds one VeReMi beacon at 1 Hz, so its spread features are
+    # empty there and informative here; that favours the corpus arm.
+    print(f"messages per window: VeReMi {vm.app_n_msgs.mean():.2f}, "
+          f"this corpus {ours.app_n_msgs.mean():.2f}\n")
     missing = [c for c in feats if c not in ours.columns]
     if missing:
         raise SystemExit(

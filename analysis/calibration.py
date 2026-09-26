@@ -9,6 +9,9 @@ evaluation methodology in 3GPP TR 37.885:
   2. Block error rate against SINR
   3. Channel occupancy against vehicle density
 
+and a fourth that is specific to this dataset: received power against distance,
+because the cross-layer features rest on it.
+
 None of these involve the detector. They are about whether the radio layer
 behaves like a radio. A dataset built on a simulator that does not produce a
 physically sensible PRR curve is not worth the detection results computed from
@@ -94,19 +97,54 @@ def main():
           f"mean rate {len(tx) / tx.txNodeId.nunique() / ((tx.txTimeMs.max() - tx.txTimeMs.min()) / 1000):.2f} Hz")
 
     # ---- 4. Received power against distance ----------------------------
-    # A sanity check on the RSRP the patch exposes: it must fall with distance
-    # at roughly the free-space rate or the strongest feature is measuring
-    # nothing physical.
-    print("\n4. SL-RSRP against distance (the patched measurement)")
-    j = prr[prr.ok].copy()
-    print("   (per-link RSRP is joined in build_features; here the check is that")
-    print("    RSRP spans a physical range)")
-    print(f"   RSRP dBm: min {pscch.slRsrpDbm.min():.1f}, "
-          f"p5 {pscch.slRsrpDbm.quantile(0.05):.1f}, "
-          f"median {pscch.slRsrpDbm.median():.1f}, "
-          f"p95 {pscch.slRsrpDbm.quantile(0.95):.1f}, "
-          f"max {pscch.slRsrpDbm.max():.1f}")
+    # The RSRP the patch exposes must fall with distance at roughly the rate
+    # the channel model sets, or the strongest feature measures nothing
+    # physical. Every decoded control channel is placed at the true distance
+    # between its radio and the receiver at that instant, and the median power
+    # per distance band is fitted against 10 log10(d). Corrupt receptions are
+    # left out, as build_features.py leaves them out: a receiver cannot read
+    # power from a channel it did not decode.
+    print("\n4. SL-RSRP against distance, decoded control channels only")
+    txp = pd.read_csv(f"{a.run_dir}/tx_pssch_{a.tag}.csv", usecols=["txNodeId", "rnti"])
+    rnti2node = txp.groupby("rnti").txNodeId.agg(lambda s: s.mode().iloc[0])
+    ok = pscch[pscch.corrupt == 0]
+    ok = ok.sample(n=min(200000, len(ok)), random_state=0)
+    rpos = {n: (d.rxTimeMs.values, d.rxX.values, d.rxY.values)
+            for n, d in rx[["rxNodeId", "rxTimeMs", "rxX", "rxY"]]
+            .sort_values("rxTimeMs").groupby("rxNodeId")}
 
+    def rx_at(n, t):
+        if n not in rpos:
+            return None
+        ts, xs, ys = rpos[n]
+        i = min(max(np.searchsorted(ts, t), 0), len(ts) - 1)
+        return xs[i], ys[i]
+
+    pts = []
+    for r, rn, t, p_ in zip(ok.rxNodeId, ok.txRnti, ok.timeMs, ok.slRsrpDbm):
+        s_ = rnti2node.get(rn)
+        q, w = (at(s_, t) if s_ is not None else None), rx_at(r, t)
+        if q is None or w is None:
+            continue
+        pts.append((float(np.hypot(q[0] - w[0], q[1] - w[1])), p_))
+    pw = pd.DataFrame(pts, columns=["d", "rsrp"])
+    pw = pw[pw.d > 1.0]
+    print(f"   {len(pw):,} decoded channels placed, of {len(ok):,} sampled; "
+          f"RSRP dBm min {pw.rsrp.min():.1f}, median {pw.rsrp.median():.1f}, "
+          f"max {pw.rsrp.max():.1f}")
+    pw["band"] = pd.cut(pw.d, [1, 25, 50, 100, 200, 300, 500, 750, 1000, 1e9])
+    tab = pw.groupby("band", observed=True).agg(
+        n=("rsrp", "size"), median_dbm=("rsrp", "median"),
+        p10=("rsrp", lambda s: s.quantile(0.1)),
+        p90=("rsrp", lambda s: s.quantile(0.9)))
+    print(tab.round(1).to_string())
+    fit = pw[(pw.d >= 10) & (pw.d <= 1000)]
+    if len(fit) > 100:
+        X = np.c_[np.ones(len(fit)), 10 * np.log10(fit.d.values)]
+        b, *_ = np.linalg.lstsq(X, fit.rsrp.values, rcond=None)
+        print(f"   least squares over 10 to 1000 m: RSRP = {b[0]:.1f} "
+              f"{b[1]:+.2f} x 10 log10(d), an exponent of {-b[1]:.2f}. "
+              f"Free space is 2.")
 
 if __name__ == "__main__":
     main()

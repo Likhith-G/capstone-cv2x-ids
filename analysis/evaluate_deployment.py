@@ -5,11 +5,18 @@ What the detector does once it is deployed, rather than on a balanced test set.
 Two numbers decide whether a V2X misbehaviour detector is usable, and neither
 appears in a balanced-set classification report.
 
-**False positive rate at true prevalence.** Real traffic is overwhelmingly
+**False positive rate on unbalanced data.** Real traffic is overwhelmingly
 benign. A model trained at 30 percent attack prevalence and reported at that
 prevalence looks far better than it will behave. A headline F1 measured on a
 balanced set does not answer this question and is routinely mistaken for an
 answer to it.
+
+The held-out set is at the SIMULATED prevalence, about a third of windows from
+attackers, which is far above anything a road would see. False positive rate,
+recall and the alert rate do not depend on prevalence and are read directly.
+Precision and binary MCC do, so they are also given reweighted to a stated
+deployment prevalence, --deploy-prevalence, from the same false positive rate
+and recall.
 
 **Alert rate per observer per hour.** This is the number an operator actually
 lives with. A 1 percent false positive rate sounds excellent and, at one
@@ -33,6 +40,9 @@ def main():
     ap.add_argument("--realism", required=True)
     ap.add_argument("--window-ms", type=float, default=1000.0)
     ap.add_argument("--trees", type=int, default=150)
+    ap.add_argument("--deploy-prevalence", type=float, default=0.01,
+                    help="share of windows from attackers in a deployment, for "
+                         "the reweighted precision and MCC columns")
     ap.add_argument("--sample", type=int, default=300000)
     ap.add_argument("--decisions-per-window", type=float, default=None,
                     help="decisions an observer makes per window. A POOLED "
@@ -87,7 +97,7 @@ def main():
 
     print(f"trained on {len(tr)} balanced windows "
           f"({(tr.label_is_attack == 0).mean():.1%} benign)")
-    print(f"evaluated on {len(te)} held-out windows at true prevalence "
+    print(f"evaluated on {len(te)} held-out windows at the SIMULATED prevalence "
           f"({1 - prevalence:.1%} benign), {te.label_txNodeId.nunique()} unseen stations\n")
 
     windows_per_hour = 3600.0 / (a.window_ms / 1000.0)
@@ -96,10 +106,14 @@ def main():
     # MCC here is BINARY, benign against attack, at each operating threshold.
     # It is not the multiclass MCC reported by benchmark.py and
     # pooled_consensus.py and the two are not comparable, which is why the
-    # column says so. Binary MCC is the metric the proposal names primary and
-    # it is the one that does not flatter a detector on 99 percent benign data.
+    # column says so. At the simulated prevalence both precision and MCC are
+    # flattered; the two right hand columns recompute them at the deployment
+    # prevalence from the false positive rate and recall, which do not depend
+    # on it.
+    q = a.deploy_prevalence
     print(f"{'threshold':>9s} {'FPR':>8s} {'recall':>8s} {'precision':>10s} "
-          f"{'false alerts/observer/hour':>28s} {'MCC binary':>12s}")
+          f"{'false alerts/observer/hour':>28s} {'MCC binary':>12s} "
+          f"{'precision @%g%%' % (100 * q):>16s} {'MCC @%g%%' % (100 * q):>10s}")
     for t in [0.5, 0.7, 0.9, 0.95, 0.99]:
         pred = proba >= t
         fp = int((pred & (y == 0)).sum())
@@ -116,12 +130,18 @@ def main():
         neigh = decisions
         alerts = fpr * windows_per_hour * float(neigh)
         mcc = matthews_corrcoef(y, pred)
+        tp_q, fn_q = recall * q, (1 - recall) * q
+        fp_q, tn_q = fpr * (1 - q), (1 - fpr) * (1 - q)
+        prec_q = tp_q / (tp_q + fp_q) if tp_q + fp_q > 0 else float("nan")
+        den = np.sqrt((tp_q + fp_q) * (tp_q + fn_q) * (tn_q + fp_q) * (tn_q + fn_q))
+        mcc_q = (tp_q * tn_q - fp_q * fn_q) / den if den > 0 else float("nan")
         print(f"{t:9.2f} {fpr:8.4f} {recall:8.4f} {prec:10.4f} {alerts:28.0f}"
-              f" {mcc:12.4f}")
+              f" {mcc:12.4f} {prec_q:16.4f} {mcc_q:10.4f}")
 
     print(f"\nbinary MCC at threshold 0.5: "
-          f"{matthews_corrcoef(y, proba >= 0.5):.4f}, at true prevalence "
-          f"({prevalence:.4%} attack)")
+          f"{matthews_corrcoef(y, proba >= 0.5):.4f}, at the simulated prevalence "
+          f"({prevalence:.4%} attack); see the right hand columns for "
+          f"{100 * q:g} percent")
     print("\nat threshold 0.5, per class:")
     print(classification_report(y, proba >= 0.5, digits=3, zero_division=0,
                                 target_names=["benign", "attack"]))

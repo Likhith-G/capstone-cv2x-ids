@@ -14,8 +14,10 @@ TS 22.185 budget actually covers is the PC5 transport of a single message, not
 an application-layer detection pipeline, and conflating the two flatters the
 result. State both.
 
-This script measures each term for a given window length and reports the
-detection latency against the budget.
+This script measures window fill and inference for a given window length and
+reports their sum against the budget. Feature extraction is NOT timed, so the
+total is a lower bound on the latency a vehicle experiences, and the share of it
+that inference takes is an upper bound.
 
 Usage: measure_latency.py <features.pkl> [--window-ms 1000] [--long-factor 10]
 """
@@ -81,8 +83,9 @@ def main():
               f"{verdict:>18s}")
 
     print(f"\nInference is {t_single / short_ms * 100:.2f} percent of the shortest "
-          f"path's latency. Window fill dominates, and no amount of hardware "
-          f"acceleration changes that.")
+          f"path's window fill plus inference. Feature extraction is not timed, "
+          f"so the total is a lower bound. Window fill dominates, and no amount "
+          f"of hardware acceleration changes that.")
 
 
 if __name__ == "__main__":
