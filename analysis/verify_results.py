@@ -636,7 +636,8 @@ CHECKS = [
 # separation table is computed FROM the pooled pickle, so a stale log beside a
 # regenerated pickle quotes numbers that can no longer be reproduced, and no
 # amount of string matching would notice.
-FRESHNESS = [("campaign_v3/logs/pool_separation.log", "campaign_v3/pooled.pkl")]
+FRESHNESS = [("campaign_gnss/logs/pool_separation.log", "campaign_gnss/pooled.pkl"),
+             ("campaign_gnss/logs/pool_separation_road.log", "campaign_gnss/pooled_road.pkl")]
 
 # Numbers that appear in BOTH the claims summary and the results file. The
 # claims file is the one that gets read while writing, so it is the one most
@@ -662,6 +663,33 @@ STYLE_FILES = ["docs/RESULTS.md", "docs/MASTER_INDEX.md", "docs/BUILD_LOG_V2.md"
                "docs/PAPER_DRAFT.md",
                "docs/DEFECTS_V2.md", "docs/PLAN_V3.md", "docs/RUNS_MANIFEST.md",
                "README.md", "analysis/README.md", "simulation/README.md"]
+
+
+def check_log_freshness(bad):
+    """Fail any pin whose log is older than the corpus it analyses.
+
+    A pin checks that its string is still in its log. A log the latest rerun
+    did not regenerate still holds its old string, so the pin passes on a
+    figure the current corpus never produced, and after a corpus rebuild that
+    reads as verified when it is stale. A log under campaign_X/logs must be
+    newer than campaign_X/corpus.pkl; any other log, the drift and loose ones,
+    newer than the reference corpus, which every one of them reads.
+    """
+    ref = RUNS / "campaign_gnss" / "corpus.pkl"
+    stale = []
+    for stem in sorted({c[2] for c in CHECKS if c[2]}):
+        log = RUNS / f"{stem}.log"
+        if not log.exists():
+            continue
+        corpus = (RUNS / stem.split("/logs/")[0] / "corpus.pkl"
+                  if stem.startswith("campaign_") and "/logs/" in stem else ref)
+        if corpus.exists() and log.stat().st_mtime < corpus.stat().st_mtime:
+            stale.append(stem)
+    ok = not stale
+    print(f"{'ok  ' if ok else 'FAIL'} log freshness: {len(stale)} pinned log(s) "
+          f"older than the corpus they analyse"
+          + ("" if ok else ", e.g. " + ", ".join(stale[:4])))
+    return bad + (not ok)
 
 
 def check_references(bad):
@@ -1033,6 +1061,7 @@ def main():
     bad = check_claims(bad)
     bad = check_references(bad)
     bad = check_readme(bad)
+    bad = check_log_freshness(bad)
     for log_name, artefact in FRESHNESS:
         lg, ar = RUNS / log_name, RUNS / artefact
         if lg.exists() and ar.exists():
@@ -1061,7 +1090,7 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 7)   # refs, readme, count, public, span, urls, scripts
+             + len(CLAIMS_CONSISTENCY) + 8)   # refs, readme, freshness, count, public, span, urls, scripts
     bad = check_script_count(bad)
     bad = check_no_tool_urls(bad)
     bad = check_geometry_span(bad)
