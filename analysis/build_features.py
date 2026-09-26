@@ -211,32 +211,33 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
     # by the link layer source identifier in each control channel. 5G-LENA
     # never rotates that identifier, but a real station rotates it with its
     # pseudonym (TS 33.536), so a real receiver sees each claimed identity as a
-    # separate source. An earlier version pooled power per physical radio and
-    # copied it onto every identity the radio sent, which gave a Sybil's
-    # identities byte-identical statistics and a voiceprint of exactly zero.
+    # separate source. Release 1.0.0 pooled power per physical radio and copied
+    # it onto every identity the radio sent, which gave a Sybil's identities
+    # byte-identical statistics and a voiceprint of exactly zero.
     #
-    # A radio that carries ONE identity in a window is exactly what a real
-    # receiver sees, so it keeps every decoded control channel it sent: per
-    # radio and per identity are the same thing. A radio that carries several
-    # is split: each identity gets only the control channels matched to its own
-    # decoded messages, and a control channel matched to messages of more than
-    # one identity is attributed to none, since under rotation two identities
-    # could not share a transport block.
-    rsrp_radio = (pscch[pscch.corrupt == 0]
-                    .assign(window=lambda d: (d.timeMs // window_ms).astype(int))
-                    .groupby(["rxNodeId", "txRnti", "window"]).slRsrpDbm
-                    .agg(["mean", "std", "min", "max", "count"])
-                    .add_prefix("rsrp_").reset_index()
-                    .rename(columns={"txRnti": "radio_txRnti"}))
-    shared = (rx.dropna(subset=["rsrp_timeMs"])
-                .groupby(["rxNodeId", "radio_txRnti", "rsrp_timeMs"]).claimedStationId
-                .transform("nunique") > 1)
-    own = rx.loc[rx.msg_rsrp.notna() & ~shared.reindex(rx.index, fill_value=False)]
-    rsrp_ident = (own.groupby(["rxNodeId", "claimedStationId", "window"]).msg_rsrp
-                    .agg(["mean", "std", "min", "max", "count"])
-                    .add_prefix("rsrp_").reset_index())
-    ids_on_radio = (rx.groupby(["rxNodeId", "radio_txRnti", "window"]).claimedStationId
-                      .nunique().rename("ids_on_radio").reset_index())
+    # The rule, applied to every radio alike: each decoded control channel
+    # belongs to the claimed identity whose decoded message, from that radio at
+    # that receiver, is nearest in time. For a radio that only ever sends one
+    # identity this is every control channel it sent, so its statistics are
+    # exactly the per radio ones. For a Sybil it splits the channels,
+    # retransmissions included, between the identities they served. One rule for
+    # every radio matters: a first version kept all channels for single identity
+    # radios and only message-matched ones for the rest, which made a Sybil
+    # record one channel per message against two and a half for everyone else
+    # and left only Sybil rows without a reading, both separable by construction.
+    sci = (pscch[pscch.corrupt == 0][["rxNodeId", "txRnti", "timeMs", "slRsrpDbm"]]
+             .rename(columns={"txRnti": "radio_txRnti"})
+             .assign(window=lambda d: (d.timeMs // window_ms).astype(int))
+             .sort_values("timeMs"))
+    msgs = (rx.dropna(subset=["radio_txRnti"])[["rxNodeId", "radio_txRnti", "rxTimeMs", "claimedStationId"]]
+              .assign(radio_txRnti=lambda d: d.radio_txRnti.astype(sci.radio_txRnti.dtype))
+              .sort_values("rxTimeMs"))
+    owned = pd.merge_asof(sci, msgs, left_on="timeMs", right_on="rxTimeMs",
+                          by=["rxNodeId", "radio_txRnti"], direction="nearest")
+    rsrp_agg = (owned.dropna(subset=["claimedStationId"])
+                  .groupby(["rxNodeId", "claimedStationId", "window"]).slRsrpDbm
+                  .agg(["mean", "std", "min", "max", "count"])
+                  .add_prefix("rsrp_").reset_index())
 
     cbr_agg = pscch.assign(window=lambda d: (d.timeMs // window_ms).astype(int)) \
         .groupby(["rxNodeId", "window"]).agg(
@@ -383,23 +384,13 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
         phy_rsrp_resid_absmax=("rsrp_residual", lambda s: s.abs().max()),
         app_seq_gaps=("seq_gap", "sum"),
         app_seq_loss_rate=("seq_gap", lambda s: float(s.sum()) / max(1.0, s.sum() + len(s))),
-        radio_txRnti=("radio_txRnti", lambda s: s.mode().iloc[0] if not s.mode().empty else np.nan),
     ).reset_index()
 
-    # Single-identity radios take the per radio statistics, multi-identity
-    # radios the per identity ones (see the attribution note above).
-    agg = agg.merge(ids_on_radio, how="left", on=["rxNodeId", "radio_txRnti", "window"])
-    single = agg.merge(rsrp_radio, how="left", on=["rxNodeId", "radio_txRnti", "window"])
-    split = agg.merge(rsrp_ident, how="left", on=["rxNodeId", "claimedStationId", "window"])
-    rcols = ["rsrp_mean", "rsrp_std", "rsrp_min", "rsrp_max", "rsrp_count"]
-    multi = (agg.ids_on_radio > 1).values
-    for c in rcols:
-        agg[c] = np.where(multi, split[c].values, single[c].values)
-    # No radio identifier in the output. It named the physical transmitter under
-    # a key_ prefix, which is ground truth a real receiver does not have once
-    # link layer identifiers rotate, and it would let any user group a Sybil's
-    # identities.
-    agg = agg.drop(columns=["radio_txRnti", "ids_on_radio"])
+    agg = agg.merge(rsrp_agg, how="left", on=["rxNodeId", "claimedStationId", "window"])
+    # No radio identifier in the output. Release 1.0.0 carried key_txRnti_mode,
+    # which named the physical transmitter under a key_ prefix: ground truth a
+    # real receiver does not have once link layer identifiers rotate, and a way
+    # for any user to group a Sybil's identities.
     agg = agg.rename(columns={"rsrp_count": "phy_rsrp_count"})
     agg = agg.merge(cbr_agg, how="left", on=["rxNodeId", "window"])
     agg["long_window"] = (agg.window * window_ms // (window_ms * long_window_factor)).astype(int)
