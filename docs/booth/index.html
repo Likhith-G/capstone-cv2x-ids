@@ -145,7 +145,7 @@
     <p class="sub">In order. Each one only makes sense after the one before it.</p>
     <ol>
       <li><b>Lie with one receiver listening</b><span>Go as far as you like. Nothing happens. One receiver does not do this badly, it cannot do it at all.</span></li>
-      <li><b>Switch the other receivers on</b><span>Now there is a boundary. The panel keeps your smallest successful lie, so this is a game: get it as low as you can. Find the smallest lie you still get away with and you have found the detection floor yourself. Watch the flag threshold fall as you add receivers: it is 4.95 with five and 1.21 with all of them, because honest cars stop looking suspicious too.</span></li>
+      <li><b>Switch the other receivers on</b><span>Now there is a boundary. The panel keeps your smallest successful lie, so this is a game: get it as low as you can. Find the smallest lie you still get away with and you have found the detection floor yourself. Watch the flag threshold fall as you add receivers: it is <b id="thr5">4.95</b> with five and <b id="thrall">1.21</b> with all of them, because honest cars stop looking suspicious too.</span></li>
       <li><b>Lie sideways instead of along the road</b><span>You get away with much more. The receivers sit in a line, so across the road they can barely see. Distance is not the whole story: a hundred metres sideways can be safer than fifty along.</span></li>
       <li><b>Turn on the map constraint</b><span>The detector now knows a car cannot be off the carriageway. The sideways trick stops working.</span></li>
     </ol>
@@ -160,7 +160,10 @@
     threshold is per receiver count, which is why it moves: with five receivers the
     fit has four unknowns and almost no slack, so honest cars scatter and nothing
     separates. Adding receivers tightens the honest distribution before it improves
-    detection, and the second depends on the first.
+    detection, and the second depends on the first. The position fit behind the
+    ratio is bounded to the carriageway whether or not the map constraint is on;
+    the switch adds only the check that rejects a claim off the carriageway. The
+    unconstrained estimator the results also report is not shown here.
   </footer>
 </div>
 
@@ -373,4 +376,12 @@ cv.addEventListener("pointerup",   e => { down = false; });
 /* opens in a working state: a lie already placed, mid-size, along the road */
 claim = {dx: 60, dy: 0};
 render();
+/* The thresholds quoted in the second move are read from the surface, so the
+   prose cannot drift from the data it describes. */
+if (SURFACE.thresholds && SURFACE.thresholds["5"] != null){
+  document.getElementById("thr5").textContent = SURFACE.thresholds["5"].toFixed(2);
+}
+if (SURFACE.thresholds && SURFACE.thresholds["all"] != null){
+  document.getElementById("thrall").textContent = SURFACE.thresholds["all"].toFixed(2);
+}
 </script>
