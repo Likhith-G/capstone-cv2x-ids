@@ -52,6 +52,12 @@ CHECKS = [
     ("ladder benign error",
      "Benign error over the same eight seeds: median 4.02 m, 95th percentile 6.12 m.",
      "campaign_gnss/logs/magnitude_ladder", "benign error: median 4.02 m, p95 6.12 m"),
+    # The acceptance test on the bundle as sent. The public documents quote it,
+    # and it had no log until 26 Sep.
+    ("acceptance test on the bundle",
+     "| a baseline trained on train and scored on test, reference scenario | **macro F1 0.5396, MCC 0.6918** |",
+     "campaign_gnss/logs/check_release_bundle",
+     "reference scenario (highway_sparse): trained on 400,000, scored on 333,990, 84s  ->  macro F1 0.5396, MCC 0.6918"),
     # 3h, the bound from geometry with no classifier involved
     ("geometry law fitted",
      "path loss exponent **2.466**, residual **3.821 dB**",
