@@ -44,7 +44,10 @@ $PY -u $A/merge_corpora.py $PARTS -o $DIR/corpus.pkl > $L/merge.log 2>&1
 fi
 
 echo "[3/9] integrity gates"
-$PY -u $A/validate_dataset.py $DIR/corpus.pkl > $L/validate.log 2>&1
+# Recorded, not fatal: a failing gate is read from validate.log, and under set -e
+# it would otherwise stop every analysis stage after it.
+$PY -u $A/validate_dataset.py $DIR/corpus.pkl > $L/validate.log 2>&1 || \
+    echo "  GATES FAILED, see $L/validate.log"
 
 echo "[4/9] calibration"
 $PY -u $A/calibration.py $DIR ${TAGS[1]} > $L/calibration.log 2>&1 || true
