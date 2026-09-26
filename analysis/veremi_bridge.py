@@ -427,10 +427,19 @@ def main():
             prints.append(set(map(tuple, b[["claimedX", "claimedY"]]
                                   .round(2).drop_duplicates()
                                   .head(4000).to_numpy())))
+        # Twins share essentially every position; distinct traces on a city map
+        # share a few, because SUMO stops queued vehicles at identical stop line
+        # coordinates. Measured on the original release: type 1 repetitions 0
+        # and 1, distinct traces, share 37 of 4,000; type 1 and type 2 of
+        # repetition 0, one trace, share 4,000 of 4,000. A fixed count of 20
+        # refused the distinct pair, so the limit is half the fingerprint.
         for i in range(len(prints)):
             for j in range(i + 1, len(prints)):
                 shared = prints[i] & prints[j]
-                if len(shared) > 20:
+                size = min(len(prints[i]), len(prints[j]))
+                print(f"twin check {i} and {j}: {len(shared)} of {size} "
+                      f"benign positions shared")
+                if len(shared) > 0.5 * size:
                     raise SystemExit(
                         f"REFUSED: simulations {i} and {j} share "
                         f"{len(shared)} benign positions to the centimetre, so "
