@@ -23,6 +23,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from pooled_consensus import observer_geometry, MIN_OBS
+from pooled_consensus import require_every_seed
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
 
@@ -52,6 +53,7 @@ def main():
         .dropna(subset=["phy_rsrp_mean"])
     obs, claim = observer_geometry(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "claim_permutation")
     df = df.merge(claim, how="inner", on=["key_seed", "key_claimedStationId", "key_window"])
 
     # A permuted claim for every benign unit, drawn from another benign station

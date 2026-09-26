@@ -41,6 +41,7 @@ import pandas as pd
 from scipy.optimize import least_squares
 
 from pooled_consensus import observer_geometry, true_positions, ROAD_HALFWIDTH
+from pooled_consensus import require_every_seed
 
 # Calibration bins for the variance curve. Wide enough that each holds tens of
 # thousands of benign observations, narrow enough to follow the shape found in
@@ -129,6 +130,7 @@ def main():
     obs, claim = observer_geometry(a.run_dir, a.tags)
     truth = true_positions(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "estimator_study")
     df = df.merge(claim, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df.merge(truth, how="inner",

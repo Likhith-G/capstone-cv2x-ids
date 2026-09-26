@@ -40,6 +40,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from pooled_consensus import observer_geometry, true_positions, ROAD_HALFWIDTH
+from pooled_consensus import require_every_seed, seed_offset
 
 LN10 = np.log(10.0)
 
@@ -262,6 +263,7 @@ def main():
     obs, claim = observer_geometry(a.run_dir, a.tags)
     truth = true_positions(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "geometry_bound")
     df = df.merge(truth, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df[df.phy_rsrp_mean.notna()]
@@ -271,11 +273,13 @@ def main():
         moved = 0
         for i, tag in enumerate(a.tags):
             st = pd.read_csv(f"{a.run_dir}/stations_{tag}.csv")
-            ids = st[st.role == "rsu"].nodeId.astype(int) + (i + 1) * 100000
+            ids = st[st.role == "rsu"].nodeId.astype(int) + seed_offset(tag, i)
             order = {nid: j for j, nid in enumerate(sorted(ids))}
             m = (frame.key_seed == tag) & (frame.key_rxNodeId.isin(set(ids)))
             if not m.any():
-                continue
+                raise SystemExit(f"{tag}: no roadside unit matched, so the "
+                                 f"counterfactual placement would move nothing "
+                                 f"and report the baseline as a placement")
             side = frame.loc[m, "key_rxNodeId"].map(order) % 2
             frame.loc[m, "rxY"] = np.where(side == 0, lateral, -lateral)
             moved += int(m.sum())
@@ -412,8 +416,11 @@ all, and the measurement agrees.
         st_all = []
         for i, tag in enumerate(a.tags):
             st = pd.read_csv(f"{a.run_dir}/stations_{tag}.csv")
-            ids = set(st[st.role == "rsu"].nodeId.astype(int) + (i + 1) * 100000)
+            ids = set(st[st.role == "rsu"].nodeId.astype(int) + seed_offset(tag, i))
             sub = obs[(obs.key_seed == tag) & (obs.key_rxNodeId.isin(ids))]
+            if sub.empty:
+                raise SystemExit(f"{tag}: no roadside unit matched, so every "
+                                 f"unit would fall outside a region")
             q = sub.groupby("key_rxNodeId")[["rxX", "rxY"]].mean().reset_index()
             q["key_seed"] = tag
             q["region"] = np.arange(len(q))

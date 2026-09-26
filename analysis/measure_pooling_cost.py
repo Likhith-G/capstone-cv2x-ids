@@ -30,6 +30,7 @@ import pandas as pd
 from scipy.optimize import least_squares
 
 from pooled_consensus import observer_geometry, _resid, FIT_CAP
+from pooled_consensus import require_every_seed
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
 
@@ -67,6 +68,7 @@ def main():
     df = df[KEY + ["key_rxNodeId", "phy_rsrp_mean"]].dropna(subset=["phy_rsrp_mean"])
     obs, claim = observer_geometry(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "measure_pooling_cost")
     df = df.merge(claim, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
 

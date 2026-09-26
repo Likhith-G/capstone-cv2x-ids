@@ -107,6 +107,26 @@ def seed_offset(tag, i):
     return (int(m.group(1)) if m else i + 1) * 100000
 
 
+def require_every_seed(df, tags, stage):
+    """Fail if a requested seed matched nothing when joined to its geometry.
+
+    Every script here joins the corpus to geometry re-derived from the receive
+    tables, and it is an inner join on namespaced node ids. If the corpus and the
+    geometry disagree about a seed's id block, that seed's rows vanish and the
+    run carries on over the seeds that survived. An empty-frame check does not
+    catch it, because seed 1 keeps matching while seeds 2 to N drop: that is how
+    the 19 Sep merge regression would have presented. So check every seed.
+    """
+    got = set(df.key_seed.unique())
+    missing = [t for t in tags if t not in got]
+    if missing:
+        raise SystemExit(
+            f"{stage}: seed(s) {', '.join(missing)} matched no rows when the "
+            f"corpus was joined to its geometry. The corpus and the geometry "
+            f"disagree about those seeds' node id block (see seed_offset), or the "
+            f"corpus does not contain them. Refusing to report on a subset.")
+
+
 def observer_geometry(run_dir, tags, window_ms=1000.0):
     """Per (seed, observer, window) observer position, and per (seed, claimed
     station, window) the position that station claimed. Both are things a
@@ -336,6 +356,7 @@ def main():
     feats = [c for c in df.columns if c.startswith(("app_", "phy_"))]
     obs, claim = observer_geometry(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "pooled_consensus")
     df = df.merge(claim, how="inner", on=["key_seed", "key_claimedStationId", "key_window"])
     print(f"{len(df)} observations after attaching geometry")
 

@@ -528,8 +528,10 @@ def selftest(run_dir, tag, corpus_path, tol=1e-6):
 
     # build_corpus.py namespaces receiver identifiers per seed by adding a
     # multiple of 100000, so a single-seed corpus carries an offset the raw log
-    # does not. Recover it from the data rather than hardcoding it, because the
-    # multiple depends on the seed's position in the build order.
+    # does not. Recover it from the data rather than hardcoding it: the
+    # multiple is the seed's label today (pooled_consensus.seed_offset) and was
+    # its position in the build order before 19 Sep, and corpora of both ages
+    # exist.
     off = int(corpus.key_rxNodeId.min()) - int(mine.key_rxNodeId.min())
     off = int(round(off / 100000.0)) * 100000
     if off:

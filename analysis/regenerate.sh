@@ -13,9 +13,10 @@
 #   WINDOW_STUDY=1 regenerate.sh ...
 #
 # Corpora are built ONE SEED AT A TIME and then merged. Several large seeds in
-# one process runs out of memory on an 8 GB machine, and building them
-# separately gives every seed the same station id offset, which merge_corpora
-# corrects and asserts.
+# one process runs out of memory on an 8 GB machine. Every seed must end up in
+# the station id block pooled_consensus.seed_offset gives it, because every
+# geometry stage joins on that block; merge_corpora moves each part there and
+# refuses a repeated seed, and every geometry join fails if a seed goes missing.
 set -e
 DIR=$1; MAXT=$2; shift 2; TAGS=($@)
 PY=/usr/bin/python3

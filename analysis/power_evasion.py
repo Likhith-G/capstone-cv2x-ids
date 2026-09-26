@@ -49,6 +49,7 @@ from sklearn.metrics import roc_auc_score
 from pooled_consensus import (observer_geometry, true_positions,
                               calibrate_mean, DEBIAS_EDGES, _pick,
                               consensus_block, free_fit, MIN_OBS)
+from pooled_consensus import require_every_seed
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
 
@@ -190,15 +191,11 @@ def main():
                    "label_txNodeId"]].dropna(subset=["phy_rsrp_mean"])
     obs, claim = observer_geometry(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "power_evasion")
     df = df.merge(claim, how="inner", on=["key_seed", "key_claimedStationId", "key_window"])
     rng = np.random.default_rng(0)
     df["d_claim"] = np.hypot(df.rxX - df.claimedX, df.rxY - df.claimedY)
     print(f"{len(df)} observations")
-    if df.empty:
-        sys.exit("no rows survived the merge with the observer geometry. The "
-                 "usual cause is a --tags list naming seeds that are not in the "
-                 "corpus, or were namespaced differently when it was built. "
-                 "Refusing to fit a propagation law to nothing.")
 
     ben = df.label_attackId == 0
     A0, n0 = fit_global_law(df.d_claim[ben].values, df.phy_rsrp_mean[ben].values)

@@ -35,6 +35,7 @@ import numpy as np
 import pandas as pd
 
 from pooled_consensus import observer_geometry, true_positions, free_fit
+from pooled_consensus import require_every_seed
 from power_evasion import pooled_rmse
 
 ROAD_HALFWIDTH = 12.0
@@ -80,6 +81,7 @@ def main():
     obs, _ = observer_geometry(a.run_dir, a.tags)
     truth = true_positions(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "make_booth_surface")
     df = df.merge(truth, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df[df.phy_rsrp_mean.notna()]

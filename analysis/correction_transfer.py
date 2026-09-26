@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 
 from pooled_consensus import observer_geometry, true_positions
+from pooled_consensus import require_every_seed
 from estimator_study import EDGES, calibrate, _pick
 from geometry_bound import fit_law
 
@@ -41,6 +42,7 @@ def load(corpus, run_dir, tags):
     obs, _ = observer_geometry(run_dir, tags)
     truth = true_positions(run_dir, tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, tags, "correction_transfer")
     df = df.merge(truth, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df[df.phy_rsrp_mean.notna()]

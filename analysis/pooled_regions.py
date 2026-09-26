@@ -31,6 +31,7 @@ import pandas as pd
 from pooled_consensus import (observer_geometry, consensus_block, MIN_OBS,
                               true_positions, calibrate_mean, DEBIAS_EDGES,
                               ROAD_HALFWIDTH)
+from pooled_consensus import require_every_seed, seed_offset
 
 KEY = ["key_seed", "key_claimedStationId", "key_window"]
 
@@ -41,8 +42,12 @@ def rsu_positions(run_dir, tags, obs):
     out = []
     for i, tag in enumerate(tags):
         st = pd.read_csv(f"{run_dir}/stations_{tag}.csv")
-        ids = set(st[st.role == "rsu"].nodeId.astype(int) + (i + 1) * 100000)
+        ids = set(st[st.role == "rsu"].nodeId.astype(int) + seed_offset(tag, i))
         sub = obs[(obs.key_seed == tag) & (obs.key_rxNodeId.isin(ids))]
+        if sub.empty:
+            raise SystemExit(f"{tag}: no roadside unit matched the observer "
+                             f"geometry, so every observation would fall in "
+                             f"region -1 and the seed would become one client")
         p = sub.groupby("key_rxNodeId")[["rxX", "rxY"]].mean().reset_index()
         p["key_seed"] = tag
         p["region"] = np.arange(len(p))
@@ -81,6 +86,7 @@ def main():
     feats = [c for c in df.columns if c.startswith(("app_", "phy_"))]
     obs, claim = observer_geometry(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
+    require_every_seed(df, a.tags, "pooled_regions")
     df = df.merge(claim, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     print(f"{len(df)} observations after attaching geometry")

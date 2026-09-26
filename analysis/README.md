@@ -70,10 +70,10 @@ different magnitudes will not, because one of them poses a harder position
 problem. `--extra-corpus` is the stronger form: it trains and scores ONE
 detector over both corpora, so the per station flag rates are the same quantity
 by construction rather than by a check. It prefixes the second corpus's seed
-tags and pushes its node identifiers clear of the first, because
-`build_corpus.py` namespaces by seed position and both corpora reuse the same
-identifiers, so a naive concatenation would put two physical stations under one
-id and break every grouped fold. It asserts that afterwards.
+tags and pushes its node identifiers clear of the first, because both corpora
+use the same seed labels and so the same identifier blocks, and a naive
+concatenation would put two physical stations under one id and break every
+grouped fold. It asserts that afterwards.
 
     offset_floor.py MAIN/corpus.pkl --run-dir MAIN --tags seed1 ... \
         --extra-corpus FLOOR/corpus.pkl --extra-run-dir FLOOR \
@@ -144,11 +144,13 @@ scored on the same test rows, because otherwise the difference between them is
 mostly training set size rather than the shift being measured.
 
 `merge_corpora.py` exists because building several large seeds in one process
-runs out of memory, and building them separately gives every seed the same
-station-id offset. It reapplies the offset a combined build would have applied
-and asserts that no identifier is shared between seeds, because a naive
-concatenation would put different physical stations under one id and silently
-invalidate every grouped fold.
+runs out of memory. Station identifiers repeat across seeds, so each seed lives
+in its own block of 100000, keyed on the seed label by
+`pooled_consensus.seed_offset`, and every script that re-derives geometry joins
+on that block. The merge moves each part into its seed's block whichever rule
+built it, refuses two parts with the same seed label, and asserts no identifier
+is shared. Every geometry join then fails outright if any requested seed matched
+nothing, rather than carrying on over the seeds that survived.
 
 ## What each script is for
 
