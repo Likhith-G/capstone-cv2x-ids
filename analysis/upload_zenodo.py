@@ -8,10 +8,16 @@ irreversible: a published Zenodo record cannot be deleted, only superseded, and
 its metadata carries author names that break double blind review.
 
 Run it against the sandbox first. The sandbox is a full copy of Zenodo that
-mints throwaway DOIs, so the whole flow can be rehearsed at no cost:
+mints throwaway DOIs, so the whole flow can be rehearsed at no cost. Put the
+token in ~/.zenodo_token_sandbox (or ~/.zenodo_token_zenodo), chmod 600, rather
+than on the command line, where it would land in the shell history:
 
-    ZENODO_TOKEN=... /usr/bin/python3 analysis/upload_zenodo.py \
-        --record benchmark --target sandbox
+    /usr/bin/python3 analysis/upload_zenodo.py --record benchmark --target sandbox
+
+Known gaps, parked with the upload: Zenodo stores a flat file list, so the
+shards need a scenario prefixed name and check_release a matching layout, and
+the raw record's glob misses the tables that carry the labels and the
+application layer. Fix both before the first real upload.
 
 Uploads are resumable. A file already on the deposition with a matching md5 is
 skipped, so an interrupted 30 GB upload can be restarted with the same command.
