@@ -21,6 +21,9 @@ def main():
     ap.add_argument("run_dir")
     ap.add_argument("tags", nargs="+", help="e.g. seed1 seed2 seed3")
     ap.add_argument("--window-ms", type=float, default=1000.0)
+    ap.add_argument("--road-length", type=float, default=None,
+                    help="the --roadLength the campaign ran with, in metres. "
+                         "Defaults to the road_length_m file beside the tables")
     ap.add_argument("--max-time-ms", type=float, default=None)
     ap.add_argument("-o", "--out", required=True)
     a = ap.parse_args()
@@ -28,7 +31,8 @@ def main():
     frames = []
     for i, tag in enumerate(a.tags):
         agg = build_features(a.run_dir, tag, window_ms=a.window_ms,
-                             max_time_ms=a.max_time_ms)
+                             max_time_ms=a.max_time_ms,
+                             road_length=a.road_length)
         out = attach_labels(agg, a.run_dir, tag, window_ms=a.window_ms,
                             max_time_ms=a.max_time_ms)
         # Namespace the station identifiers so grouping stays honest. The rule

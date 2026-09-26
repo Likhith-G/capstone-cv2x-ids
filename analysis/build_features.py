@@ -21,6 +21,7 @@ Feature groups, kept separable so the three-way benchmark is a clean ablation:
   label_* ground truth. NEVER features. Asserted below.
 """
 import argparse
+import pathlib
 import numpy as np
 import pandas as pd
 
@@ -54,8 +55,31 @@ def _read(path, time_col, max_time_ms):
     return df
 
 
+def road_length_m(run_dir, road_length=None):
+    """The road length a run was generated with.
+
+    The highway is a loop so that density stays stationary: a vehicle passing
+    one end reappears at the other. A deployment knows its map, so using the
+    length is not using truth. It is recorded in `road_length_m` beside the run
+    tables, or passed explicitly.
+    """
+    if road_length is not None:
+        return float(road_length)
+    f = pathlib.Path(run_dir) / "road_length_m"
+    if f.exists():
+        return float(f.read_text().strip())
+    raise SystemExit(f"{run_dir} has no road_length_m file and none was passed. "
+                     f"It is the --roadLength the campaign ran with.")
+
+
+def _unwrap(d, length):
+    """A difference along the road, taken the short way round the loop."""
+    return d - length * np.round(d / length)
+
+
 def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
-                   max_time_ms=None, long_window_factor=10):
+                   max_time_ms=None, long_window_factor=10, road_length=None):
+    L_road = road_length_m(run_dir, road_length)
     rx = _read(f"{run_dir}/rx_app_{tag}.csv", "rxTimeMs", max_time_ms)
     pscch = _read(f"{run_dir}/rx_pscch_{tag}.csv", "timeMs", max_time_ms)
     pssch = _read(f"{run_dir}/rx_pssch_{tag}.csv", "timeMs", max_time_ms)
@@ -66,7 +90,11 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
 
     rx["claimedDist"] = np.hypot(rx.claimedX - rx.rxX, rx.claimedY - rx.rxY)
     rx["dt"] = g.rxTimeMs.diff() / 1000.0
-    rx["dClaimedX"] = g.claimedX.diff()
+    # Along the road the difference is taken the short way round the loop. A
+    # vehicle crossing the seam otherwise appears to jump a whole road length
+    # inside one window, which put 6 km jumps into benign distance-moved and
+    # prediction features.
+    rx["dClaimedX"] = _unwrap(g.claimedX.diff(), L_road)
     rx["dClaimedY"] = g.claimedY.diff()
     rx["claimedMoved"] = np.hypot(rx.dClaimedX, rx.dClaimedY)
 
@@ -84,7 +112,8 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
     prev_heading_rad = np.deg2rad(g.claimedHeading.shift())
     pred_x = g.claimedX.shift() + prev_speed * rx.dt * np.sin(prev_heading_rad)
     pred_y = g.claimedY.shift() + prev_speed * rx.dt * np.cos(prev_heading_rad)
-    rx["predict_residual"] = np.hypot(rx.claimedX - pred_x, rx.claimedY - pred_y)
+    rx["predict_residual"] = np.hypot(_unwrap(rx.claimedX - pred_x, L_road),
+                                      rx.claimedY - pred_y)
 
     # Heading consistency: claimed heading against the bearing of claimed motion.
     move_bearing = np.rad2deg(np.arctan2(rx.dClaimedX, rx.dClaimedY)) % 360.0
@@ -178,16 +207,49 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
     # the energy was on the air either way. These two rules point in opposite
     # directions on purpose; do not unify them.
     rx["window"] = (rx.rxTimeMs // window_ms).astype(int)
-    rsrp_src = pscch[pscch.corrupt == 0].assign(
-        window=lambda d: (d.timeMs // window_ms).astype(int))
-    rsrp_agg = rsrp_src.groupby(["rxNodeId", "txRnti", "window"]).slRsrpDbm.agg(
-        ["mean", "std", "min", "max", "count"]).add_prefix("rsrp_").reset_index()
+    # Received power is attributed the way a real receiver would attribute it,
+    # by the link layer source identifier in each control channel. 5G-LENA
+    # never rotates that identifier, but a real station rotates it with its
+    # pseudonym (TS 33.536), so a real receiver sees each claimed identity as a
+    # separate source. An earlier version pooled power per physical radio and
+    # copied it onto every identity the radio sent, which gave a Sybil's
+    # identities byte-identical statistics and a voiceprint of exactly zero.
+    #
+    # A radio that carries ONE identity in a window is exactly what a real
+    # receiver sees, so it keeps every decoded control channel it sent: per
+    # radio and per identity are the same thing. A radio that carries several
+    # is split: each identity gets only the control channels matched to its own
+    # decoded messages, and a control channel matched to messages of more than
+    # one identity is attributed to none, since under rotation two identities
+    # could not share a transport block.
+    rsrp_radio = (pscch[pscch.corrupt == 0]
+                    .assign(window=lambda d: (d.timeMs // window_ms).astype(int))
+                    .groupby(["rxNodeId", "txRnti", "window"]).slRsrpDbm
+                    .agg(["mean", "std", "min", "max", "count"])
+                    .add_prefix("rsrp_").reset_index()
+                    .rename(columns={"txRnti": "radio_txRnti"}))
+    shared = (rx.dropna(subset=["rsrp_timeMs"])
+                .groupby(["rxNodeId", "radio_txRnti", "rsrp_timeMs"]).claimedStationId
+                .transform("nunique") > 1)
+    own = rx.loc[rx.msg_rsrp.notna() & ~shared.reindex(rx.index, fill_value=False)]
+    rsrp_ident = (own.groupby(["rxNodeId", "claimedStationId", "window"]).msg_rsrp
+                    .agg(["mean", "std", "min", "max", "count"])
+                    .add_prefix("rsrp_").reset_index())
+    ids_on_radio = (rx.groupby(["rxNodeId", "radio_txRnti", "window"]).claimedStationId
+                      .nunique().rename("ids_on_radio").reset_index())
 
     cbr_agg = pscch.assign(window=lambda d: (d.timeMs // window_ms).astype(int)) \
         .groupby(["rxNodeId", "window"]).agg(
             phy_cbr_pscch_rate=("timeMs", "size"),
-            phy_pscch_corrupt_rate=("corrupt", "mean"),
-            phy_neighbours=("txRnti", "nunique")).reset_index()
+            phy_pscch_corrupt_rate=("corrupt", "mean")).reset_index()
+    # Neighbours as a receiver counts them: the distinct stations it decoded a
+    # message from in the window. The earlier count of distinct radios in the
+    # control channel trace included ones whose control channel never decoded,
+    # which a receiver cannot attribute, and came out at 88 or 89 on every row
+    # of a 90-vehicle road.
+    neigh = (rx.groupby(["rxNodeId", "window"]).claimedStationId.nunique()
+               .rename("phy_neighbours").reset_index())
+    cbr_agg = cbr_agg.merge(neigh, how="left", on=["rxNodeId", "window"])
 
     # ---- long-window path-loss tracking ---------------------------------
     # Constant-offset position falsification is the hard case. It is perfectly
@@ -321,12 +383,23 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
         phy_rsrp_resid_absmax=("rsrp_residual", lambda s: s.abs().max()),
         app_seq_gaps=("seq_gap", "sum"),
         app_seq_loss_rate=("seq_gap", lambda s: float(s.sum()) / max(1.0, s.sum() + len(s))),
-        key_txRnti_mode=("radio_txRnti", lambda s: s.mode().iloc[0] if not s.mode().empty else np.nan),
+        radio_txRnti=("radio_txRnti", lambda s: s.mode().iloc[0] if not s.mode().empty else np.nan),
     ).reset_index()
 
-    agg = agg.merge(rsrp_agg, how="left",
-                    left_on=["rxNodeId", "key_txRnti_mode", "window"],
-                    right_on=["rxNodeId", "txRnti", "window"]).drop(columns=["txRnti"])
+    # Single-identity radios take the per radio statistics, multi-identity
+    # radios the per identity ones (see the attribution note above).
+    agg = agg.merge(ids_on_radio, how="left", on=["rxNodeId", "radio_txRnti", "window"])
+    single = agg.merge(rsrp_radio, how="left", on=["rxNodeId", "radio_txRnti", "window"])
+    split = agg.merge(rsrp_ident, how="left", on=["rxNodeId", "claimedStationId", "window"])
+    rcols = ["rsrp_mean", "rsrp_std", "rsrp_min", "rsrp_max", "rsrp_count"]
+    multi = (agg.ids_on_radio > 1).values
+    for c in rcols:
+        agg[c] = np.where(multi, split[c].values, single[c].values)
+    # No radio identifier in the output. It named the physical transmitter under
+    # a key_ prefix, which is ground truth a real receiver does not have once
+    # link layer identifiers rotate, and it would let any user group a Sybil's
+    # identities.
+    agg = agg.drop(columns=["radio_txRnti", "ids_on_radio"])
     agg = agg.rename(columns={"rsrp_count": "phy_rsrp_count"})
     agg = agg.merge(cbr_agg, how="left", on=["rxNodeId", "window"])
     agg["long_window"] = (agg.window * window_ms // (window_ms * long_window_factor)).astype(int)
@@ -494,6 +567,9 @@ def main():
     ap.add_argument("run_dir")
     ap.add_argument("tag")
     ap.add_argument("--window-ms", type=float, default=1000.0)
+    ap.add_argument("--road-length", type=float, default=None,
+                    help="the --roadLength the campaign ran with, in metres. "
+                         "Defaults to the road_length_m file beside the tables")
     ap.add_argument("--max-time-ms", type=float, default=None,
                     help="ignore records after this time; use it to make an "
                          "interrupted run internally consistent")
@@ -501,7 +577,8 @@ def main():
     a = ap.parse_args()
 
     agg = build_features(a.run_dir, a.tag, window_ms=a.window_ms,
-                         max_time_ms=a.max_time_ms)
+                         max_time_ms=a.max_time_ms,
+                         road_length=a.road_length)
     out = attach_labels(agg, a.run_dir, a.tag, window_ms=a.window_ms,
                         max_time_ms=a.max_time_ms)
 

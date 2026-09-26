@@ -43,7 +43,6 @@ DESC = {
     "key_rxNodeId": "Receiver that made this observation.",
     "key_claimedStationId": "Station identifier as claimed over the air.",
     "key_window": "Time window index.",
-    "key_txRnti_mode": "Modal radio identifier seen for this station in this window.",
     "key_observer_role": "Whether the receiver is a vehicle or a roadside unit.",
     "key_seed": "Simulation seed. Eight independent realisations.",
     # labels, ground truth, never features
