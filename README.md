@@ -139,7 +139,11 @@ ordering reproduces on an independently generated dataset.
 ### On the headline number, which is 0.5145
 
 Fused macro F1 is **0.5145** across all eleven classes, 0.5659 across the ten
-that have a physical signature, with a Matthews correlation of 0.6635.
+that have a physical signature, with a Matthews correlation of 0.6635. One class
+in it is flattered by the simulator: the Sybil class's radio evidence is pooled
+per physical radio, which a real receiver could not do, so its score is an upper
+bound (dataset card, limitation 9). At most that moves the aggregate by about a
+hundredth.
 
 The eleventh is class 8, semi-persistent scheduling manipulation, and it scores
 zero in every feature block on every corpus generated. That is mechanistic rather
