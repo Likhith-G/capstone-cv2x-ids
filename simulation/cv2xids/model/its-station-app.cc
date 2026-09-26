@@ -888,7 +888,11 @@ ItsStationApp::SendMessage(ItsMsgType type)
         << m_stationId << ',' << claimedStationId << ',' << static_cast<int>(type) << ',' << seq
         << ',' << truePos.x << ',' << truePos.y << ',' << trueSpeed << ',' << trueHeading << ','
         << claimedPos.x << ',' << claimedPos.y << ',' << claimedSpeed << ',' << claimedHeading
-        << ',' << static_cast<int>(m_attack) << ',' << cbr << ',' << (m_attackActive ? 1 : 0);
+        << ',' << static_cast<int>(m_attack) << ',' << cbr << ','
+        // An attack is running: a misbehaving station inside a burst. Benign
+        // stations and roadside units keep m_attackActive set so their own
+        // behaviour is never gated, which is not the same thing.
+        << ((m_attack != ItsAttack::NONE && !m_isRsu && m_attackActive) ? 1 : 0);
     Cv2xTraceStore::Get().Write("tx", row.str());
 
     if (type == ItsMsgType::CAM || type == ItsMsgType::VAM)
