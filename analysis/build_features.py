@@ -14,11 +14,15 @@ a real receiver has: a neighbour it has been hearing from, observed over a
 window. For a Sybil attacker several claimed station ids share one radio, and
 that is exactly the signature the PHY block is meant to catch.
 
-Feature groups, kept separable so the three-way benchmark is a clean ablation:
+Feature groups, kept separable for the three-way benchmark:
   app_*  application layer only, from message content
-  phy_*  PHY and MAC only, from radio measurements
-  key_*  identifiers. NEVER features. Asserted below.
-  label_* ground truth. NEVER features. Asserted below.
+  phy_*  radio measurements, and residuals that set a measurement against what
+         the claim predicts. Thirteen take the claimed position or the
+         application loss rate as an input (phy_rsrp_resid_*, phy_track_*,
+         phy_closest_*, phy_rsrp_vs_claimed, phy_rsrp_voiceprint_min,
+         phy_loss_vs_rsrp), so this block is not a radio only arm.
+  key_*  identifiers. NEVER features. Checked by check_features.
+  label_* ground truth. NEVER features. Checked by check_features.
 """
 import argparse
 import pathlib

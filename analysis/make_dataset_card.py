@@ -90,7 +90,7 @@ DESC = {
     "phy_rsrp_count": "Number of power measurements behind the statistics above.",
     "phy_cbr_pscch_rate": "Control channel occupancy seen by this receiver, a channel busy measure.",
     "phy_pscch_corrupt_rate": "Share of control channel decodes that failed.",
-    "phy_neighbours": "Distinct radio identifiers this receiver heard in this window.",
+    "phy_neighbours": "Distinct claimed stations whose messages this receiver decoded in this window.",
     "phy_track_corr": "Correlation between measured power and the power predicted from the claimed track, over a long window. Undefined below 8 samples or 2 dB of predicted span.",
     "phy_track_slope": "Regression slope of the same pair. One means the claim tracks the radio.",
     "phy_track_resid_std": "Residual spread of the same regression.",
@@ -142,7 +142,7 @@ SCENARIO_NOTES = {
 BLOCKS = [("key_", "Keys and provenance", "Identify a row. **Never features.**"),
           ("label_", "Labels", "Ground truth from the transmit log. **Never features.**"),
           ("app_", "Application layer", "Computable from message contents alone, which is what a detector without radio access sees."),
-          ("phy_", "Physical and MAC layer", "What the radio measured. This block is what no other public V2X misbehaviour dataset carries.")]
+          ("phy_", "Physical and MAC layer", "What the radio measured, and residuals that set a measurement against what the claim predicts. Thirteen of these columns take the claimed position or the application loss rate as an input: `phy_rsrp_resid_*`, `phy_track_*`, `phy_closest_*`, `phy_rsrp_vs_claimed`, `phy_rsrp_voiceprint_min` and `phy_loss_vs_rsrp`. The rest are radio measurements alone. So this block is not a radio only ablation arm; the radio versus claim residual is the literature's physical layer check, and it is what no other public V2X misbehaviour dataset carries.")]
 
 
 def main():
@@ -286,7 +286,10 @@ def main():
           "not by claimed identity, so a sybil vehicle's several identities stay "
           "together and no vehicle appears on both sides of a boundary. "
           "Stratified so every class reaches every partition. Counts below are "
-          "vehicles.\n")
+          "vehicles over the union of all five scenarios, "
+          f"{sp.drop_duplicates(['key_seed', 'label_txNodeId']).shape[0]:,} in "
+          "total, whereas the Size table above describes the reference scenario "
+          "alone.\n")
         sp = sp.drop_duplicates(["key_seed", "label_txNodeId"])
         tab = sp.pivot_table(index="label_attackId", columns="split",
                              values="label_txNodeId", aggfunc="count",
@@ -387,7 +390,20 @@ def main():
       "heading error reaches at most about 0.3 degrees where the model allows up "
       "to 20. The `app_heading_*` features therefore see almost no honest heading "
       "noise, which makes heading-based checks look more reliable here than on a "
-      "road.\n")
+      "road.")
+    w("12. **Every Sybil draws the same ghost constellation.** Each message "
+      "claims one of four identities, placed at fixed offsets from the sender's "
+      "true position: 40 m along the road one way, 28 m to one side, 147 m along "
+      "the other way and 60 m to the other side, with nothing drawn per "
+      "attacker. Two of the four ghosts therefore claim positions off a "
+      "carriageway 12 m either side of the centreline, which a map check alone "
+      "would reject, and every Sybil in the corpus shares one geometry.")
+    w("13. **Vehicle receivers know their own position exactly.** A transmitter's "
+      "claim carries its positioning error, but a vehicle receiver logs, and the "
+      "pooled localisation uses, its true position. Roadside units are surveyed, "
+      "so for them that is realistic; for vehicles, which are most observers, it "
+      "is an optimistic asymmetry whose effect on the pooled estimates has not "
+      "been measured.\n")
 
     w("## Licence\n")
     w("The data is intended for **CC BY 4.0**. The generator is an ns-3 contrib "

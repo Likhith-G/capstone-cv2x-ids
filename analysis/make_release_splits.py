@@ -16,13 +16,14 @@ lists it among this dataset's honest disadvantages. This closes it.
 window and not by seed.**
 
 By transmitter rather than claimed identity, because sybil is the attack whose
-whole nature is that one vehicle claims to be several. Twenty one physical sybil
-nodes here emit four claimed identities each, so grouping on the claimed
-identifier would scatter one vehicle's four identities across train, validation
-and test and let a detector memorise its radio signature in training and be
-scored on the same vehicle in test. The first version of this script did exactly
-that. The corpus has 783 claimed identities and 720 physical transmitters, and
-the difference is entirely sybil.
+whole nature is that one vehicle claims to be several. Each sybil vehicle emits
+four claimed identities or more, so grouping on the claimed identifier would
+scatter one vehicle's identities across train, validation and test and let a
+detector memorise its radio signature in training and be scored on the same
+vehicle in test. The first version of this script did exactly that. In the
+reference scenario alone there are 783 claimed identities and 720 physical
+transmitters, and the difference is entirely sybil. The partition is drawn over
+the union of all five scenarios, so its counts are larger.
 
 By transmitter rather than window, because one station produces thousands of
 windows and a window level split puts the same vehicle on both sides of the
@@ -111,9 +112,9 @@ partition at the cost of leaving stations from one seed on both sides.
 def assign(st, fractions, seed):
     """Stratified station-level partition, deterministic given the seed.
 
-    Stratifying by class matters more here than it usually does: the thinnest
-    class has fifteen stations, so an unstratified draw can empty it out of a
-    partition by chance and the benchmark then cannot be scored on it.
+    Stratifying by class matters more here than it usually does: a class with
+    few stations in one scenario can be emptied out of a partition by chance by
+    an unstratified draw, and the benchmark then cannot be scored on it.
     """
     rng = np.random.default_rng(seed)
     st = st.sort_values(STATION).reset_index(drop=True)
