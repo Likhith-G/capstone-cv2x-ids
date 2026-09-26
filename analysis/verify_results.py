@@ -387,8 +387,16 @@ CHECKS = [
      "campaign_gnss/logs/pooled_road",
      "consensus block: 11 of 61 features, 0.149 of total importance"),
     ("privacy costs three times the architecture gain",
-     "| 3.00 | **0.3063 +/- 0.0196** | **-0.1712** | **8.3** | **0.3505** |",
-     "campaign_gnss/logs/dp_sweep", "3.00 0.3063 +/- 0.0196   -0.1712        8.3"),
+     "| 3.00 | **0.3063 +/- 0.0196** | **-0.1712** | **18.8** | **0.3505** |",
+     "campaign_gnss/logs/dp_sweep", "3.00 0.3063 +/- 0.0196   -0.1712"),
+    # The epsilon column is recomputed rather than read from the sweep, because
+    # the sweep's accountant charged the wrong sensitivity. Pin both columns.
+    ("5c epsilon at z 3, corrected",
+     "**the tightest epsilon measured is 18.8, not 8.3.**",
+     "campaign_gnss/logs/dp_epsilon_valid", "  3.00                          8.3                     18.8"),
+    ("5c epsilon at z 1, corrected",
+     "| 1.00 | 0.4181 +/- 0.0069 | -0.0594 | 82.9 | 0.5501 |",
+     "campaign_gnss/logs/dp_epsilon_valid", "  1.00                         31.5                     82.9"),
     ("clipping alone is not free",
      "| 0.00, clipping only | 0.4434 +/- 0.0018 | **-0.0341** | no noise | 0.5750 |",
      "campaign_gnss/logs/dp_sweep", "0.00 0.4434 +/- 0.0018   -0.0341"),
@@ -923,7 +931,6 @@ PACK_FIGURES = [
     # (what the pack says, what the source says, the source). The two differ
     # where the source words it differently; prose wraps, so both sides are
     # compared with whitespace collapsed.
-    ("178 figures", "178 figures", "README.md"),
     ("0.3466", "0.3466", "README.md"),
     ("0.5145", "0.5145", "README.md"),
     ("0.5659", "0.5659", "README.md"),

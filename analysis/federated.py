@@ -223,22 +223,31 @@ def run_method(method, clients, test, cfg, seed, detail=False):
 
 
 def dp_epsilon(z, rounds, delta=1e-5):
-    """(epsilon, delta) for composing `rounds` Gaussian mechanisms of noise
-    multiplier z, by Renyi differential privacy.
+    """(epsilon, delta) for `rounds` rounds of the DP-FedAvg step above, by
+    Renyi differential privacy, with no subsampling amplification credited.
 
-    A Gaussian mechanism with noise multiplier z is (alpha, alpha/(2 z^2))-RDP,
-    composition adds, and the standard conversion gives
-    eps = rounds * alpha / (2 z^2) + log(1/delta) / (alpha - 1), minimised
-    over alpha.
+    The sensitivity has to match the sampler, and an earlier version of this
+    function did not. Each round samples a FIXED number of clients without
+    replacement and adds Gaussian noise of standard deviation z C to the sum of
+    their clipped updates (z C / m on the mean). Under that sampler, adding or
+    removing one client can do more than add or remove one term: it can change
+    which m clients are drawn, and the coupling that bounds this swaps one
+    sampled client for another. The sum then moves by the difference of two
+    clipped updates, up to 2C. A Gaussian mechanism of sensitivity 2C and noise
+    z C is (alpha, 2 alpha / z^2)-RDP per round, four times what the add/remove
+    form alpha / (2 z^2) charges, and that form is only valid under Poisson
+    sampling with a fixed denominator. So
 
-    No subsampling amplification is credited. Half the clients are sampled per
-    round, which a real accountant would use to report a substantially smaller
-    epsilon, so this is an upper bound and is labelled as one. Inventing a
-    tighter number than the analysis supports is the failure mode to avoid
-    here.
+        eps = rounds * 2 alpha / z^2 + log(1/delta) / (alpha - 1),
+
+    minimised over alpha. It is an upper bound for this sampler. Crediting
+    amplification by fixed-size sampling does not rescue the old figures either:
+    for the worst adjacent pair the sampled mechanism at this sampling rate is
+    still above alpha / (2 z^2) at the orders that set the minimum. So no
+    smaller number is claimed here.
     """
     alphas = np.arange(1.01, 256.0, 0.01)
-    eps = rounds * alphas / (2.0 * z ** 2) + np.log(1.0 / delta) / (alphas - 1.0)
+    eps = rounds * 2.0 * alphas / z ** 2 + np.log(1.0 / delta) / (alphas - 1.0)
     return float(eps.min())
 
 
@@ -400,12 +409,12 @@ def main():
             print(f"{z:6.2f} {scores.mean():.4f} +/- {scores.std():.4f} "
                   f"{scores.mean() - base:+9.4f} {eps_s} "
                   f"{mcc.mean():.4f} +/- {mcc.std():.4f}")
-        print("\nEpsilon is a CONSERVATIVE bound: Renyi composition of one\n"
-              "Gaussian mechanism per round at delta = 1e-5, with NO subsampling\n"
-              "amplification credited even though half the clients are sampled\n"
-              "each round. A proper accountant would report a smaller number.\n"
-              "The clipping norm, the noise multiplier, the round count and the\n"
-              "sampling rate are all stated so it can be recomputed.")
+        print("\nEpsilon is an upper bound for this sampler: Renyi composition\n"
+              "of one Gaussian mechanism per round at delta = 1e-5, sensitivity 2C\n"
+              "because a fixed number of clients is sampled without replacement,\n"
+              "so one client can displace another. No subsampling amplification\n"
+              "is credited. The clipping norm, the noise multiplier, the round\n"
+              "count and the sampling rate are all stated so it can be recomputed.")
         return
 
     results, results_mcc = {}, {}
