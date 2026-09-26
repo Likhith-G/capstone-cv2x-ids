@@ -2,13 +2,13 @@
 """
 Does the calibrated propagation correction generalise, or is it shrinkage?
 
-RESULTS.md 3h4 found a corrected estimator sitting BELOW its own Cramer-Rao
-bound, 20.1 m against 25.9 m, which an unbiased estimator cannot do. The bound
-constrains unbiased estimators only, so an estimator tuned to the population it
-is scored on can beat it and routinely does. The correction in 3h3 is calibrated
-on benign traffic against the position that traffic claims, which for a benign
-station is where it actually is, and is then scored on benign stations. Held out
-across seeds is not held out across populations.
+RESULTS.md 3h4 first read a corrected estimator as sitting below its own
+Cramer-Rao bound. That comparison set a median against an RMS, and the like for
+like bound is computed by geometry_bound.py --corrected. The question it raised
+survives: the bound constrains unbiased estimators only, so an estimator tuned to
+the population it is scored on can beat it. The correction in 3h3 is calibrated
+on benign traffic against the position that traffic claims and is then scored on
+benign stations. Held out across seeds is not held out across populations.
 
 Two tests, and they fail in different ways so both are worth running.
 

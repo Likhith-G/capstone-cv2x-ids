@@ -407,12 +407,10 @@ def main():
 
     mu = None
     if a.debias:
-        truth = true_positions(a.run_dir, a.tags)
-        b = df[df.label_attackId == 0].merge(
-            truth, how="inner",
-            on=["key_seed", "key_claimedStationId", "key_window"])
-        b = b[b.phy_rsrp_mean.notna()]
-        dd = np.hypot(b.rxX - b.trueX, b.rxY - b.trueY).values
+        # Against the claimed distance, as a deployment calibrates and as
+        # estimator_study.py does; the true position would be an oracle.
+        b = df[(df.label_attackId == 0) & df.phy_rsrp_mean.notna()]
+        dd = np.hypot(b.rxX - b.claimedX, b.rxY - b.claimedY).values
         keep = dd > 1.0
         dd, rr = dd[keep], b.phy_rsrp_mean.values[keep]
         L_ = 10.0 * np.log10(dd)

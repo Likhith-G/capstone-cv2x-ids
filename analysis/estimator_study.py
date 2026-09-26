@@ -259,19 +259,12 @@ localisation failure on a benign station is what produces a false alert.
     print(f"                                after "
           f"{'':30s}{post.std():6.3f} dB")
     print("""
-The Cramer-Rao bound reported elsewhere was computed under the single slope law,
-with this deterministic term absorbed into sigma as though it were noise. That
-model is misspecified, so the gap it showed between the bound and the fit was
-measuring model error and estimator inefficiency together. The corrected bound
-is NOT this one rescaled by sigma: the range dependent offset is itself a
-function of position and so contributes sensitivity as well as removing noise.
-It has not been computed. Do not quote a rescaled figure as though it had.""")
-
-    print("""
-Read the ratio column. The Cramer-Rao bound for this geometry is 28.0 m as a
-median radial error and the current fit reaches 65.2 m, so the room available
-is a factor of about 2.3. Anything here that does not move the ratio is not
-where the gap lives.
+The single slope bound absorbs this deterministic term into sigma as though it
+were noise. The bound under the corrected law is NOT that one rescaled by sigma,
+because the range dependent offset is itself a function of position and adds
+sensitivity as well as removing noise. geometry_bound.py --corrected computes it
+(RESULTS.md 3h4). The errors above are medians and a bound is an RMS, so compare
+them through the efficiency sweep rather than directly.
 """)
 
 

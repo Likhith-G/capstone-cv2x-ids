@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from pooled_consensus import (observer_geometry, consensus_block, MIN_OBS,
-                              true_positions, calibrate_mean, DEBIAS_EDGES,
+                              calibrate_mean, DEBIAS_EDGES,
                               ROAD_HALFWIDTH)
 from pooled_consensus import require_every_seed, seed_offset
 
@@ -108,12 +108,8 @@ def main():
     if a.debias:
         # Calibrated on benign traffic only, against its own claimed position,
         # which is what a deployment can actually do offline.
-        truth = true_positions(a.run_dir, a.tags)
-        b = df[df.label_attackId == 0].merge(
-            truth, how="inner",
-            on=["key_seed", "key_claimedStationId", "key_window"])
-        b = b[b.phy_rsrp_mean.notna()]
-        d = np.hypot(b.rxX - b.trueX, b.rxY - b.trueY).values
+        b = df[(df.label_attackId == 0) & df.phy_rsrp_mean.notna()]
+        d = np.hypot(b.rxX - b.claimedX, b.rxY - b.claimedY).values
         keep = d > 1.0
         d, r = d[keep], b.phy_rsrp_mean.values[keep]
         L = 10.0 * np.log10(d)

@@ -29,6 +29,7 @@ paper's first result.
 import argparse
 import json
 import pathlib
+import shlex
 import sys
 
 import numpy as np
@@ -74,15 +75,18 @@ def main():
     ap.add_argument("--across", type=float, default=150.0, help="grid half range across it")
     ap.add_argument("--steps", type=int, default=81)
     a = ap.parse_args()
+    print("invocation: " + " ".join(shlex.quote(s) for s in sys.argv) + "\n")
 
     df = pd.read_pickle(a.corpus)
     if "label_clean" in df.columns:
         df = df[df.label_clean == 1]
-    obs, _ = observer_geometry(a.run_dir, a.tags)
+    obs, claim = observer_geometry(a.run_dir, a.tags)
     truth = true_positions(a.run_dir, a.tags)
     df = df.merge(obs, how="inner", on=["key_seed", "key_rxNodeId", "key_window"])
     require_every_seed(df, a.tags, "make_booth_surface")
     df = df.merge(truth, how="inner",
+                  on=["key_seed", "key_claimedStationId", "key_window"])
+    df = df.merge(claim, how="inner",
                   on=["key_seed", "key_claimedStationId", "key_window"])
     df = df[df.phy_rsrp_mean.notna()]
 
@@ -91,13 +95,18 @@ def main():
     # false positive rate, exactly as the plausibility baseline does.
     thresholds = {}
     print("calibrating the verdict threshold on benign units")
-    ben_units = []
-    for k, v in df.groupby(["key_seed", "key_claimedStationId", "key_window"]):
-        v = v[v.phy_rsrp_mean.notna()]
-        if len(v) >= 20 and int(v.label_attackId.iloc[0]) == 0:
-            ben_units.append(v)
-        if len(ben_units) >= 400:
-            break
+    # Sampled across every seed rather than taken as a prefix: groupby sorts, so
+    # the first 400 units would be one seed's lowest numbered stations.
+    ukeys = ["key_seed", "key_claimedStationId", "key_window"]
+    size = df.groupby(ukeys).size()
+    lab = df.groupby(ukeys).label_attackId.first()
+    eligible = size[(size >= 20) & (lab == 0)].index
+    pick = np.random.default_rng(0).choice(len(eligible),
+                                           min(400, len(eligible)), replace=False)
+    grouped = df.groupby(ukeys)
+    ben_units = [grouped.get_group(eligible[i]) for i in sorted(pick)]
+    print(f"  {len(ben_units)} benign units of 20 or more receivers, drawn at "
+          f"random from {len(eligible):,} across {df.key_seed.nunique()} seeds")
     for n in RECEIVER_COUNTS:
         if n and n < 5:
             continue
@@ -105,7 +114,9 @@ def main():
         for v in ben_units:
             o_x, o_y = v.rxX.values, v.rxY.values
             r_ = v.phy_rsrp_mean.values
-            t_x, t_y = float(v.trueX.iloc[0]), float(v.trueY.iloc[0])
+            # The honest claim is what the station said, positioning error and
+            # all; the true position would calibrate against an oracle.
+            t_x, t_y = float(v.claimedX.iloc[0]), float(v.claimedY.iloc[0])
             od = np.argsort(np.abs(o_x - t_x))
             o_x, o_y, r_ = o_x[od], o_y[od], r_[od]
             kk = len(o_x) if n == 0 else min(n, len(o_x))
@@ -116,7 +127,6 @@ def main():
                 fr = float(np.sqrt(np.mean(s.fun ** 2)))
                 if fr <= 0:
                     continue
-                # the honest claim IS the true position for a benign station
                 ratios.append(pooled_rmse(o_x[:kk], o_y[:kk], r_[:kk], t_x, t_y) / fr)
             except Exception:
                 continue

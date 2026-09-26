@@ -241,12 +241,9 @@ def main():
     ap.add_argument("--corrected", action="store_true",
                     help="recompute the bound under the CORRECTED propagation "
                          "law of RESULTS.md 3h3, which adds log-distance "
-                         "curvature to the mean. The published bound absorbs "
+                         "curvature to the mean. The single slope bound absorbs "
                          "that deterministic term into sigma as though it were "
-                         "noise, which inflates the bound, and the corrected "
-                         "estimator reaches 20.1 m against a published bound of "
-                         "28.0 m. An unbiased estimator cannot beat its own "
-                         "bound, so the published one is wrong. Off by default "
+                         "noise. RESULTS.md 3h4 compares the two. Off by default "
                          "so every pinned figure keeps its meaning")
     ap.add_argument("--regions", action="store_true",
                     help="scope each pooled unit to one roadside unit region, "
@@ -256,6 +253,9 @@ def main():
                          "a region has about 8, and the bound is not the same "
                          "at the two scales")
     a = ap.parse_args()
+    if a.debias_scale != 1.0 and not a.corrected:
+        ap.error("--debias-scale scales the correction and does nothing "
+                 "without --corrected")
 
     df = pd.read_pickle(a.corpus)
     if "label_clean" in df.columns:
@@ -285,18 +285,23 @@ def main():
             moved += int(m.sum())
         return moved
 
+    # The law is calibrated the way a deployment would calibrate it: on traffic
+    # it has no reason to doubt, against the position that traffic CLAIMS. A
+    # benign claim carries the sender's positioning error, and the true position
+    # would be an oracle, which estimator_study.py refuses for the same reason.
+    # It is fitted before any counterfactual move, because a moved roadside unit
+    # still carries the power it measured where it actually stood.
+    ben = df[df.label_attackId == 0].merge(
+        claim, how="inner", on=["key_seed", "key_claimedStationId", "key_window"])
+    ben["d"] = np.hypot(ben.rxX - ben.claimedX, ben.rxY - ben.claimedY)
+    ben = ben[ben.d > 1.0].copy()
+
     if a.rsu_lateral is not None:
         moved = move_rsus(df, a.rsu_lateral)
         print(f"counterfactual placement: roadside unit receivers moved to "
               f"+/-{a.rsu_lateral:.0f} m from the centreline, {moved:,} "
               f"observations relocated. Nothing was resimulated.\n")
 
-    # The law is calibrated the way a deployment would calibrate it: on traffic
-    # it has no reason to doubt, against the position that traffic claims, which
-    # for a benign station is where it actually is.
-    ben = df[df.label_attackId == 0].copy()
-    ben["d"] = np.hypot(ben.rxX - ben.trueX, ben.rxY - ben.trueY)
-    ben = ben[ben.d > 1.0]
     A, n_exp, resid = fit_law(ben.d.values, ben.phy_rsrp_mean.values)
     sigma = float(np.std(resid))
 
@@ -316,7 +321,7 @@ def main():
             print(f"CORRECTION SCALED BY {a.debias_scale:.2f}, RESULTS.md 3h7\n")
         sigma_corr = float(np.std(residc))
         print("CORRECTED LAW, RESULTS.md 3h3\n")
-        print("  The published bound treats a deterministic range dependent term")
+        print("  The single slope bound treats a deterministic range dependent term")
         print("  as noise. Correcting it moves the bound two ways at once: sigma")
         print("  falls, and the range sensitivity is reweighted across distance.\n")
         print(f"  {'residual sigma, single slope':34s} {sigma:8.3f} dB")
@@ -461,7 +466,7 @@ all, and the measurement agrees.
                 v = gg.get_group(k)
                 J = fisher(v.rxX.values, v.rxY.values,
                            float(v.trueX.iloc[0]), float(v.trueY.iloc[0]),
-                           n_exp, sigma, profile=True, curve=curve)
+                           n_exp, sig_eff, profile=True, curve=curve)
                 try:
                     C = np.linalg.inv(J)
                 except np.linalg.LinAlgError:
@@ -549,8 +554,8 @@ distance, so a unit set too far back contributes better geometry and less of it.
     print(f"  improvement over the free fit  "
           f"{r.free_across.median() / r.road_along.median():6.1f} times")
     print("""
-Compare these two against the measured localisation error, 65.2 m free and
-18.3 m road constrained, in RESULTS.md 4b. The bound is a lower bound on any
+Compare these two against the measured localisation error, free and road
+constrained, in RESULTS.md 4b. The bound is a lower bound on any
 unbiased estimator, so the measured error should sit above it. If the ratio
 between the two bounds tracks the ratio between the two measurements, the
 road constraint is doing what the geometry says it should and not something

@@ -172,6 +172,9 @@ def main():
                          "is given a fine search because the bound is supposed "
                          "to be generous to it")
     a = ap.parse_args()
+    if a.debias_scale != 1.0 and not a.debias:
+        ap.error("--debias-scale scales the correction and does nothing "
+                 "without --debias")
 
     # Record the invocation in the log itself. Two published sections report
     # the attacker's off-axis angle from runs whose constraint flags differed,
@@ -278,7 +281,9 @@ def run_best_response(df, a, levels):
 
     mu = None
     if getattr(a, "debias", False):
-        dd = np.hypot(ben.rxX - ben.trueX, ben.rxY - ben.trueY).values
+        # Against the claimed distance, as a deployment calibrates and as
+        # estimator_study.py does; the true position would be an oracle.
+        dd = ben.d_claim.values
         keep = dd > 1.0
         dd, rr = dd[keep], ben.phy_rsrp_mean.values[keep]
         L_ = 10.0 * np.log10(dd)
