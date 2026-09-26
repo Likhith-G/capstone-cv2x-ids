@@ -17,8 +17,8 @@ abstract: >-
   receiving it, including per SCI sidelink reference signal received power.
   Benign vehicles carry a realistic receiver positioning error rather than
   claiming their exact position, and position falsification is generated at
-  three non-overlapping magnitude bands chosen against that error so the set
-  brackets the point at which detection becomes possible.
+  three magnitude draws chosen against that error so the set brackets the
+  point at which detection becomes possible.
 keywords:
   - vehicular networks
   - C-V2X

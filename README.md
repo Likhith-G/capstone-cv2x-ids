@@ -63,7 +63,7 @@ two is set by the geometry, and the whole pattern reproduces on a dataset this
 project did not generate.
 
 Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 180 figures and must report no
+`analysis/verify_results.py`, which checks 184 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -130,7 +130,7 @@ that lies sideways is the one that does not have to stay on the road.**
 Run against VeReMi NextGen, the current public benchmark, the same detector
 scores 0.9570 on a position lie that contradicts itself, 0.1460 on a
 self-consistent constant offset, and 0.0352 on the constant offsets here. The
-ordering reproduces on an independently generated dataset and is sharper there.
+ordering reproduces on an independently generated dataset.
 
 ### On the headline number, which is 0.5145
 
@@ -146,7 +146,7 @@ eleven-class figure stays primary so nothing is hidden by the choice.
 
 **That is a low number and it is the right one.** Three things put it there.
 
-Benign vehicles carry a realistic positioning error, median 4.00 m, so a claimed
+Benign vehicles carry a realistic positioning error, median 4.02 m, so a claimed
 position is checked against a benign class that genuinely varies rather than
 against vehicles that always know exactly where they are. An eleventh class sits
 in the magnitude band where detection is hardest, deliberately. And every split is
@@ -216,22 +216,25 @@ vehicle-to-vehicle radio with no base station involved.
 | Stations | 720, of which 519 benign |
 | Classes | 11, being benign and ten misbehaviour types |
 | Features | 50, being 22 application layer and 28 physical and MAC layer |
-| Benign positioning error | median 4.00 m, 95th percentile 5.90 m |
+| Benign positioning error | median 4.02 m, 95th percentile 6.12 m, over all eight seeds |
 | Detection unit | one observer's view of one claimed station over one time window |
 
 The table describes `highway_sparse`, the reference scenario every headline
 figure is measured on. The release ships five scenarios, each varying one factor
 against that reference, under a single partition assigned across all of them.
 
-**Misbehaviour types.** Position falsification at three magnitudes, 20 to 25 m,
-47 to 60 m and 71 to 233 m, plus random position offset, replayed position, speed
-falsification, sybil, high-rate denial of service, low-rate denial of service, and
-sensing manipulation.
+**Misbehaviour types.** Position falsification at three magnitudes, plus random
+position offset, replayed position, speed falsification, sybil, high-rate denial
+of service, low-rate denial of service, and sensing manipulation.
 
 The three position magnitudes are one mechanism at different scales, chosen
 against the benign error so that the set brackets the point at which detection
-becomes possible rather than sitting to one side of it. Their realised
-displacements do not overlap.
+becomes possible rather than sitting to one side of it. Their realised per
+station displacements over the reference scenario are **1 to 25 m** (median 12),
+**47 to 83 m** (median 71) and **22 to 233 m** (median 140). The first two do not
+overlap. The third overlaps both, because it is drawn from a box and has no lower
+bound, so the class label is not a magnitude: the detection floor below is
+measured against realised displacement, not class.
 
 **Benign vehicles do not claim their exact position.** Each carries a receiver
 error drawn from the model VeReMi Extension uses: a per-vehicle bias, a small
@@ -306,7 +309,7 @@ without redoing the work before it. Run `analysis/check_campaign.py` on the firs
 seed before letting the rest generate. It reads only the small transmit table,
 exits non-zero on any problem it finds, and catches the misconfigurations that are
 expensive to find after eight seeds: that the benign positioning error is present,
-and that the position attack magnitudes do not overlap.
+and that the small and medium position offset bands do not overlap.
 
 **Requirements, exact versions and measured runtimes** are in
 [`REPRODUCING.md`](REPRODUCING.md). Short version: ns-3 at the CTTC `v2x-1.1` fork
@@ -327,7 +330,7 @@ capstone-cv2x-ids/
 ├── simulation/                  # ns-3 contrib module
 │   └── cv2xids/                 # ITS messaging, DCC, car following, attacks, traces
 │
-├── analysis/                    # detection pipeline, 43 scripts
+├── analysis/                    # detection pipeline, 44 scripts
 │   ├── baseline_starter.py      # start here to train something
 │   ├── build_features.py        # windowing, application and radio features
 │   ├── validate_dataset.py      # ten adversarial integrity gates

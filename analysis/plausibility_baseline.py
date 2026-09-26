@@ -41,14 +41,20 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.metrics import f1_score, matthews_corrcoef, precision_score, recall_score
 
-# check name -> (feature, direction). "hi" means large values are implausible.
+# check name -> (feature, direction). "hi" means large values are implausible,
+# "lo" small ones, "both" either tail.
 CHECKS = {
     "ART acceptance range":     ("app_claimed_dist_mean", "hi"),
     "DMV distance moved":       ("app_dmv_absmax", "hi"),
     "SSC sudden speed change":  ("app_ssc_absmax", "hi"),
     "MGT position prediction":  ("app_predict_max", "hi"),
     "ACC acceleration":         ("app_accel_absmax", "hi"),
-    "RSS claimed distance":     ("phy_rsrp_mean", "lo"),
+    # The residual of received power against the power the claimed distance
+    # implies, which is what this check is for. It used to threshold raw
+    # phy_rsrp_mean on its low tail, which never reads the claim, so it was blind
+    # to any position lie by construction. A lie can push the residual either
+    # way, so both tails are thresholded.
+    "RSS claimed distance":     ("phy_rsrp_vs_claimed", "both"),
 }
 
 
@@ -63,9 +69,15 @@ def thresholds(train, fpr):
         v = ben[col].replace([np.inf, -np.inf], np.nan).dropna()
         if v.empty:
             continue
-        out[name] = (col, side,
-                     float(np.quantile(v, 1.0 - fpr) if side == "hi"
-                           else np.quantile(v, fpr)))
+        if side == "both":
+            # Split the false positive budget across the two tails so the check
+            # keeps the same per check rate as the one-sided checks.
+            out[name] = (col, side, (float(np.quantile(v, fpr / 2.0)),
+                                     float(np.quantile(v, 1.0 - fpr / 2.0))))
+        else:
+            out[name] = (col, side,
+                         float(np.quantile(v, 1.0 - fpr) if side == "hi"
+                               else np.quantile(v, fpr)))
     return out
 
 
@@ -74,7 +86,10 @@ def fire(df, th):
     cols = {}
     for name, (col, side, t) in th.items():
         v = df[col].replace([np.inf, -np.inf], np.nan)
-        cols[name] = (v > t).fillna(False) if side == "hi" else (v < t).fillna(False)
+        if side == "both":
+            cols[name] = ((v < t[0]) | (v > t[1])).fillna(False)
+        else:
+            cols[name] = (v > t).fillna(False) if side == "hi" else (v < t).fillna(False)
     f = pd.DataFrame(cols, index=df.index)
     return f, f.any(axis=1)
 

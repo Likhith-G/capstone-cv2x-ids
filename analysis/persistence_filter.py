@@ -53,6 +53,14 @@ def main():
     ap.add_argument("--stratify-rule", default="2/3",
                     help="rule used for the contact-time breakdown")
     ap.add_argument("--trees", type=int, default=150)
+    ap.add_argument("--population", default=None,
+                    help="the full pooled table the splits were cut from. The "
+                         "realism set holds only the held-out stations, about a "
+                         "third of the traffic, while a deployed region sees every "
+                         "station that passes it. With this, the false alert rate "
+                         "is scaled by the benign traffic the held-out set covers. "
+                         "Without it the rate describes the held-out stations only, "
+                         "and the script says so")
     a = ap.parse_args()
 
     load = lambda x: pd.read_pickle(x) if x.endswith(".pkl") else pd.read_csv(x)
@@ -79,7 +87,21 @@ def main():
     print(f"{len(te)} windows, {n_tracks} station tracks in "
           f"{n_regions} regions, {int(attack_track.sum())} of them attackers")
     print(f"decision threshold {a.threshold}, observation span {span_s:.0f} s "
-          f"per region\n")
+          f"per region")
+
+    # False alert episodes scale with benign traffic, and the held-out set is a
+    # fraction of it. Dividing held-out episodes by every region, as if they were
+    # each region's full traffic, understated the published rates about threefold.
+    if a.population:
+        pop = load(a.population)
+        cover = (te.label_is_attack == 0).sum() / float((pop.label_is_attack == 0).sum())
+        print(f"held-out benign traffic is {cover:.3f} of the population's, so "
+              f"episode rates are scaled by {1.0 / cover:.2f}\n")
+        scale = 1.0 / cover
+    else:
+        scale = 1.0
+        print("NOTE: no --population given, so the per region-hour rate counts the "
+              "held-out stations only and understates a deployed region's\n")
 
     print(f"{'rule':>6s} {'false alert episodes':>21s} {'per region per hour':>20s} "
           f"{'attackers found':>16s} {'benign flagged':>15s}")
@@ -99,7 +121,7 @@ def main():
         fa = pd.Series(fired_any)
         benign = ~attack_track.astype(bool)
         false_ep = int(ep[benign.values].sum())
-        per_region_hour = false_ep / n_regions / (span_s / 3600.0)
+        per_region_hour = scale * false_ep / n_regions / (span_s / 3600.0)
         found = fa[attack_track.astype(bool).values].mean()
         flagged = fa[benign.values].mean()
         print(f"{rule:>6s} {false_ep:21d} {per_region_hour:20.0f} "

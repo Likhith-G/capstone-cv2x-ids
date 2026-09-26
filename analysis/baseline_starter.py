@@ -39,9 +39,9 @@ from sklearn.model_selection import StratifiedGroupKFold
 # The three constant-offset classes are one mechanism at three magnitudes and
 # they are where the project's central claim lives. A model that lifts the
 # aggregate and leaves these alone has not touched the interesting part.
-POSITION_CLASSES = {11: "pos_small_offset, 20 to 25 m",
-                    13: "pos_medium_offset, 47 to 60 m",
-                    1:  "pos_const_offset, 71 to 233 m"}
+POSITION_CLASSES = {11: "pos_small_offset, 1 to 25 m",
+                    13: "pos_medium_offset, 47 to 83 m",
+                    1:  "pos_const_offset, 22 to 233 m"}
 BEST_OF_FOUR = {11: 0.010, 13: 0.052, 1: 0.167}
 
 # Semi-persistent scheduling manipulation has no signature in this simulator:

@@ -391,9 +391,10 @@ best case rather than the typical one, and it is not itself the detection
 floor because a receiver still has to separate the ambiguity from a lie.
 
 What it does explain is the ordering of the single-observer scores by
-magnitude. Read it against the three constant-offset classes: 20 to 25 m and
-47 to 60 m both sit entirely below this ambiguity, and only 71 to 233 m
-carries mass above it. Those are the classes a single receiver scores 0.002,
+magnitude. Read it against the three constant-offset classes, whose realised
+per station displacements are 1 to 25 m, 47 to 83 m and 22 to 233 m: the first
+sits entirely below this ambiguity, the second at or below it, and only the
+third carries mass above it. Those are the classes a single receiver scores 0.002,
 0.021 and 0.146 on. The bound says which of them could have been detected at
 all, and the measurement agrees.
 """)

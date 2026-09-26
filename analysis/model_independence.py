@@ -32,9 +32,9 @@ from sklearn.metrics import f1_score, matthews_corrcoef
 
 # The three constant-offset classes are one mechanism at three magnitudes and
 # they are what the floor claim is about. Everything else is context.
-POSITION = {11: "pos_small_offset  20 to 25 m",
-            13: "pos_medium_offset 47 to 60 m",
-            1: "pos_const_offset  71 to 233 m"}
+POSITION = {11: "pos_small_offset  1 to 25 m",
+            13: "pos_medium_offset 47 to 83 m",
+            1: "pos_const_offset  22 to 233 m"}
 
 
 def learners(trees, jobs, seed):

@@ -127,6 +127,26 @@ def require_every_seed(df, tags, stage):
             f"corpus does not contain them. Refusing to report on a subset.")
 
 
+# The highway is a loop: a vehicle that passes one end reappears at the other,
+# so density stays stationary. Averaging a node's positions over a window it
+# wrapped in puts it hundreds to thousands of metres from anywhere it was. No
+# vehicle moves a kilometre in one window, so a window whose positions span more
+# than this is a wrap, and it is dropped rather than averaged.
+WRAP_SPAN_M = 1000.0
+
+
+def window_mean(df, keys, cols, xcol):
+    """Per-window mean position, with wrapped windows dropped.
+
+    Returns the frame and the number of windows dropped, so a caller can say how
+    much the loop cost it rather than losing it silently.
+    """
+    g = df.groupby(keys)
+    m = g[cols].mean()
+    keep = (g[xcol].max() - g[xcol].min()) <= WRAP_SPAN_M
+    return m[keep].reset_index(), int((~keep).sum())
+
+
 def observer_geometry(run_dir, tags, window_ms=1000.0):
     """Per (seed, observer, window) observer position, and per (seed, claimed
     station, window) the position that station claimed. Both are things a
@@ -141,16 +161,19 @@ def observer_geometry(run_dir, tags, window_ms=1000.0):
         # A run that is interrupted leaves a partial final row in every table.
         rx = rx.dropna()
         rx["key_window"] = (rx.rxTimeMs // window_ms).astype(int)
-        o = (rx.groupby(["rxNodeId", "key_window"])[["rxX", "rxY"]].mean()
-               .reset_index().rename(columns={"rxNodeId": "key_rxNodeId"}))
+        o, w_o = window_mean(rx, ["rxNodeId", "key_window"], ["rxX", "rxY"], "rxX")
+        o = o.rename(columns={"rxNodeId": "key_rxNodeId"})
         o["key_rxNodeId"] += off
         o["key_seed"] = tag
         obs.append(o)
-        c = (rx.groupby(["claimedStationId", "key_window"])[["claimedX", "claimedY"]]
-               .mean().reset_index()
-               .rename(columns={"claimedStationId": "key_claimedStationId"}))
+        c, w_c = window_mean(rx, ["claimedStationId", "key_window"],
+                             ["claimedX", "claimedY"], "claimedX")
+        c = c.rename(columns={"claimedStationId": "key_claimedStationId"})
         c["key_seed"] = tag
         claim.append(c)
+        if w_o or w_c:
+            print(f"{tag}: dropped {w_o} receiver-windows and {w_c} claim-windows "
+                  f"that wrap the road")
     return pd.concat(obs, ignore_index=True), pd.concat(claim, ignore_index=True)
 
 
@@ -163,10 +186,12 @@ def true_positions(run_dir, tags, window_ms=1000.0):
                          on_bad_lines="skip")
         tx = tx.dropna()
         tx["key_window"] = (tx.txTimeMs // window_ms).astype(int)
-        t = (tx.groupby(["claimedStationId", "key_window"])[["trueX", "trueY"]]
-               .mean().reset_index()
-               .rename(columns={"claimedStationId": "key_claimedStationId"}))
+        t, w_t = window_mean(tx, ["claimedStationId", "key_window"],
+                             ["trueX", "trueY"], "trueX")
+        t = t.rename(columns={"claimedStationId": "key_claimedStationId"})
         t["key_seed"] = tag
+        if w_t:
+            print(f"{tag}: dropped {w_t} true-position windows that wrap the road")
         out.append(t)
     return pd.concat(out, ignore_index=True)
 

@@ -26,16 +26,16 @@ import pandas as pd
 
 CLASSES = {
     0:  ("benign", "Honest station. Carries receiver positioning error rather than claiming its exact position."),
-    1:  ("pos_const_offset", "Position falsification at a constant offset, realised displacement 71 to 233 m."),
+    1:  ("pos_const_offset", "Position falsification at a constant offset, offset drawn from a box of plus or minus 250 m along the road by 30 m across it, so it has no lower bound; realised per station 22 to 233 m over the reference scenario, median 140 m."),
     3:  ("pos_offset_random", "Position falsification redrawn every message, so the claim is self inconsistent."),
     4:  ("pos_replay", "A previously transmitted position re-sent, so the claim lags the truth."),
     5:  ("speed_falsify", "Claimed speed inconsistent with claimed displacement."),
     6:  ("sybil", "One physical station transmitting under several identities."),
     7:  ("dos_rate", "High rate transmission, denial of service against the channel."),
     8:  ("sps_manipulation", "Semi persistent scheduling manipulation. INERT in this simulator, see limitations."),
-    11: ("pos_small_offset", "Position falsification at a constant offset, realised displacement 20 to 25 m."),
+    11: ("pos_small_offset", "Position falsification at a constant offset, magnitude drawn uniformly from 4 to 25 m; realised per station 1 to 25 m over the reference scenario, median 12 m, and two stations lie inside the benign 95th percentile."),
     12: ("dos_low_rate", "Low rate denial of service, below the obvious volumetric signature."),
-    13: ("pos_medium_offset", "Position falsification at a constant offset, realised displacement 47 to 60 m."),
+    13: ("pos_medium_offset", "Position falsification at a constant offset, magnitude drawn uniformly from 50 to 80 m; realised per station 47 to 83 m over the reference scenario, median 71 m."),
 }
 
 DESC = {
@@ -127,7 +127,12 @@ SCENARIO_NOTES = {
         "Attackers misbehave in bursts at a duty of about 0.2 rather than "
         "continuously. This exists to attack persistence based alerting, which a "
         "continuously lying attacker satisfies trivially, and it is the axis the "
-        "VASP framework calls persistent against sporadic."),
+        "VASP framework calls persistent against sporadic. **Three classes do not "
+        "burst:** the two rate attacks, 7 and 12, flood through a code path that "
+        "never consults the duty cycle, so they attack continuously here exactly as "
+        "in the reference scenario, and class 8 is inert in every scenario. Read "
+        "this scenario as bursty for the position, replay, speed and sybil classes "
+        "only."),
     "offset_receivers": ("what varies: **receiver placement**",
         "Roadside units moved off the centreline to a lateral offset, which "
         "changes the conditioning of the receiver array without changing anything "
@@ -264,9 +269,14 @@ def main():
     w("The three constant offset classes, 11 then 13 then 1, are **one mechanism "
       "at three magnitudes**, chosen against the benign positioning error so the "
       "set brackets the point at which detection becomes possible rather than "
-      "sitting to one side of it. Their realised displacements do not overlap. "
-      "Treating them as three unrelated classes loses the axis they were built "
-      "to provide.\n")
+      "sitting to one side of it. **The small and medium draws do not overlap. The "
+      "constant offset class overlaps both**, because it is drawn from a box and has "
+      "no lower bound: over the reference scenario one of its stations lies by 22 m "
+      "and six by less than 71 m (`magnitude_ladder.py`). So the class label is not a "
+      "magnitude. An analysis that needs magnitude as a variable should bin by "
+      "realised displacement, as the detection floor does, not by class. An earlier "
+      "version of this card gave the three ranges as 20 to 25, 47 to 60 and 71 to "
+      "233 m; those were three stations a class on seed 1.\n")
 
     if a.splits and pathlib.Path(a.splits).exists():
         sp = pd.read_csv(a.splits)
@@ -351,7 +361,30 @@ def main():
       "be collected, because nobody performs position falsification on a public "
       "road, but that argument does not extend to the benign propagation law, "
       "and public benign C-V2X sidelink measurement sets do exist. Treat the "
-      "fitted path loss exponent as a property of this corpus.\n")
+      "fitted path loss exponent as a property of this corpus.")
+    w("9. **The received power statistics are pooled per physical radio, which "
+      "overstates Sybil detection.** 5G-LENA gives every device one fixed source "
+      "L2 identifier for the whole run, and the window statistics `phy_rsrp_mean`, "
+      "`phy_rsrp_std`, `phy_rsrp_min`, `phy_rsrp_max` and `phy_rsrp_count` are "
+      "aggregated per radio and then attached to every claimed identity that radio "
+      "sends. A real station rotates its L2 identifier with its pseudonym (TS "
+      "33.536), so a real receiver sees each Sybil identity as a separate source "
+      "and cannot pool them. Here the identities of one Sybil vehicle carry "
+      "byte-identical power statistics, `phy_rsrp_voiceprint_min` is exactly zero "
+      "for most Sybil rows and for no row of any other class, and `phy_rsrp_count` "
+      "counts messages across identities. The physical signature is real, since "
+      "two identities from one radio do arrive at nearly the same power, but its "
+      "exactness here is a simulator artefact. **Treat class 6 scores as an upper "
+      "bound.** The position classes, where the dataset's central measurements "
+      "sit, do not depend on it.")
+    w("10. **The road wraps at its ends, and a vehicle crossing the seam jumps a "
+      "road length inside one window.** The highway is a loop so that density "
+      "stays stationary. Features that difference successive claims, "
+      "`app_dmv_absmax` and `app_predict_max` among them, record a jump of about "
+      "6 km for a benign station in the window it crosses. It is rare, about 0.07 "
+      "percent of benign rows in the released sample, and it inflates the benign "
+      "tail of those features rather than any attack class. Drop rows whose claim "
+      "jump exceeds half the road length if a threshold is being set on them.\n")
 
     w("## Licence\n")
     w("The data is intended for **CC BY 4.0**. The generator is an ns-3 contrib "

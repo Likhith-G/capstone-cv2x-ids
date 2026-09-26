@@ -60,16 +60,23 @@ every position attack is easier to detect than it could be in deployment.
 `analysis/check_campaign.py` fails a seed whose benign error is identically
 zero for that reason.
 
-**The three constant offset attacks are one ladder.** Class 11 displaces 20 to
-25 m, class 13 displaces 47 to 60 m and class 1 displaces 71 to 233 m, and the
-bands are chosen against the benign error so the set brackets the point where
-detection becomes possible. `MediumOffsetMin` and `MediumOffsetMax` set the
+**The three constant offset attacks are one ladder.** Class 11 draws its
+magnitude uniformly from 4 to 25 m (`SmallOffsetMin`, `SmallOffsetMax`), class 13
+from 50 to 80 m (`MediumOffsetMin`, `MediumOffsetMax`), and class 1 from a box of
+plus or minus 250 m along the road by 30 m across it (`OffsetX`, `OffsetY`), which
+has no lower bound and so overlaps the other two. Realised per station over the
+reference scenario: 1 to 25 m, 47 to 83 m and 22 to 233 m
+(`analysis/magnitude_ladder.py`). The bands are chosen against the benign error
+so the set brackets the point where detection becomes possible. `MediumOffsetMin` and `MediumOffsetMax` set the
 middle rung. If any two bands are changed so they overlap, the campaign check
 fails, because a ladder whose rungs overlap cannot bracket a threshold.
 
 **Attackers can misbehave in bursts.** `--sporadicDuty 0.2` makes each attacker
 spend a fifth of the run attacking, in exponential bursts, and keep its label
-throughout. It is off by default. It exists to attack persistence based
+throughout. It is off by default. **It does not apply to the rate attacks**,
+classes 7 and 12: their flooding branch never consults the duty cycle, so they
+flood continuously whatever the setting, and class 8 is inert. The transmit table
+has no column recording the phase. It exists to attack persistence based
 alerting, which a continuously lying attacker satisfies trivially.
 
 Run one simulation at a time on a machine with 8 GB. Six in parallel exhausts

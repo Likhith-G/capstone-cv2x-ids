@@ -233,7 +233,7 @@ project learned.
 ## Things that will surprise you
 
 **The scores look low.** They are honest. Benign vehicles carry a realistic
-positioning error, median 4.00 m, so a claimed position is checked against a
+positioning error, median 4.02 m, so a claimed position is checked against a
 benign class that actually varies. Remove that and any displacement becomes
 separable in principle, which makes position falsification far easier to detect
 than it could ever be on a road.
@@ -248,6 +248,19 @@ across receivers is what recovers it, down to a floor at 47.2 m of displacement.
 **Some classes are easy and some are impossible.** Denial of service and random
 position offset sit near 0.98. Replay sits near 0.12. The aggregate is an average
 over a very uneven problem, which is why per-class numbers are asked for above.
+
+**The Sybil class is easier here than it would be on a road.** The simulator
+gives each radio one fixed link-layer identifier, and the received power
+statistics are pooled per radio, so every identity a Sybil vehicle claims carries
+exactly the same `phy_rsrp_*` values and a voiceprint of exactly zero. A real
+receiver would see each pseudonym as a separate source and could not pool them.
+Report class 6 as an upper bound, and do not build a Sybil result on those
+columns alone. Limitation 9 in the dataset card has the detail.
+
+**The class label is not a magnitude.** The constant offset class is drawn from a
+box and overlaps the other two position classes, and the small offset class
+realises lies of 1 to 25 m. If magnitude matters to your argument, bin by
+realised displacement.
 
 ## If you need something that is not here
 

@@ -132,9 +132,9 @@ best any of the four reached:
 
 | class | best of four |
 |---|---|
-| position offset, 20 to 25 m | 0.010 |
-| position offset, 47 to 60 m | 0.052 |
-| position offset, 71 to 233 m | 0.167 |
+| position offset, 1 to 25 m, median 12 m | 0.010 |
+| position offset, 47 to 83 m, median 71 m | 0.052 |
+| position offset, 22 to 233 m, median 140 m | 0.167 |
 
 **Those three numbers are the target.** The aggregate is almost beside the point.
 Note that the four rows above come from grouped cross-validation on 250,000

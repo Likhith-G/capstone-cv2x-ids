@@ -1,6 +1,6 @@
 # Dataset card: CV2X-IDS
 
-Generated from `corpus.pkl` on 2026-09-19 by `analysis/make_dataset_card.py`. Every count below is read from the corpus at generation time rather than written by hand.
+Generated from `corpus.pkl` on 2026-09-26 by `analysis/make_dataset_card.py`. Every count below is read from the corpus at generation time rather than written by hand.
 
 ## What this is
 
@@ -40,7 +40,7 @@ Five campaigns, each varying one factor. They ship together because a detector t
 
 **`magnitude_sweep`**, what varies: **attack magnitude coverage**. The same geometry as the reference with both position offset draws widened, so attackers span 4 to 233 m with eleven of them inside the 30 to 50 m band that the reference has only three in. Built to sample the detectability transition rather than its ends. **Shares its vehicles with the reference scenario**, see the warning below.
 
-**`bursty_attackers`**, what varies: **attack strategy**. Attackers misbehave in bursts at a duty of about 0.2 rather than continuously. This exists to attack persistence based alerting, which a continuously lying attacker satisfies trivially, and it is the axis the VASP framework calls persistent against sporadic.
+**`bursty_attackers`**, what varies: **attack strategy**. Attackers misbehave in bursts at a duty of about 0.2 rather than continuously. This exists to attack persistence based alerting, which a continuously lying attacker satisfies trivially, and it is the axis the VASP framework calls persistent against sporadic. **Three classes do not burst:** the two rate attacks, 7 and 12, flood through a code path that never consults the duty cycle, so they attack continuously here exactly as in the reference scenario, and class 8 is inert in every scenario. Read this scenario as bursty for the position, replay, speed and sybil classes only.
 
   Marked *supplementary*: under the shared partition 1 class and split combination(s) are empty, so it supports auxiliary evaluation but not headline scoring. Specifically: class 1 has no transmitter in test.
 
@@ -63,18 +63,18 @@ Station counts, not row counts. One station produces thousands of windows, so a 
 | id | name | stations | windows | description |
 |---|---|---|---|---|
 | 0 | `benign` | 519 | 1,152,169 | Honest station. Carries receiver positioning error rather than claiming its exact position. |
-| 1 | `pos_const_offset` | 18 | 37,312 | Position falsification at a constant offset, realised displacement 71 to 233 m. |
+| 1 | `pos_const_offset` | 18 | 37,312 | Position falsification at a constant offset, offset drawn from a box of plus or minus 250 m along the road by 30 m across it, so it has no lower bound; realised per station 22 to 233 m over the reference scenario, median 140 m. |
 | 3 | `pos_offset_random` | 22 | 47,797 | Position falsification redrawn every message, so the claim is self inconsistent. |
 | 4 | `pos_replay` | 15 | 36,534 | A previously transmitted position re-sent, so the claim lags the truth. |
 | 5 | `speed_falsify` | 23 | 50,391 | Claimed speed inconsistent with claimed displacement. |
 | 6 | `sybil` | 21 | 114,257 | One physical station transmitting under several identities. |
 | 7 | `dos_rate` | 21 | 29,776 | High rate transmission, denial of service against the channel. |
 | 8 | `sps_manipulation` | 18 | 37,876 | Semi persistent scheduling manipulation. INERT in this simulator, see limitations. |
-| 11 | `pos_small_offset` | 22 | 46,837 | Position falsification at a constant offset, realised displacement 20 to 25 m. |
+| 11 | `pos_small_offset` | 22 | 46,837 | Position falsification at a constant offset, magnitude drawn uniformly from 4 to 25 m; realised per station 1 to 25 m over the reference scenario, median 12 m, and two stations lie inside the benign 95th percentile. |
 | 12 | `dos_low_rate` | 21 | 41,711 | Low rate denial of service, below the obvious volumetric signature. |
-| 13 | `pos_medium_offset` | 20 | 46,342 | Position falsification at a constant offset, realised displacement 47 to 60 m. |
+| 13 | `pos_medium_offset` | 20 | 46,342 | Position falsification at a constant offset, magnitude drawn uniformly from 50 to 80 m; realised per station 47 to 83 m over the reference scenario, median 71 m. |
 
-The three constant offset classes, 11 then 13 then 1, are **one mechanism at three magnitudes**, chosen against the benign positioning error so the set brackets the point at which detection becomes possible rather than sitting to one side of it. Their realised displacements do not overlap. Treating them as three unrelated classes loses the axis they were built to provide.
+The three constant offset classes, 11 then 13 then 1, are **one mechanism at three magnitudes**, chosen against the benign positioning error so the set brackets the point at which detection becomes possible rather than sitting to one side of it. **The small and medium draws do not overlap. The constant offset class overlaps both**, because it is drawn from a box and has no lower bound: over the reference scenario one of its stations lies by 22 m and six by less than 71 m (`magnitude_ladder.py`). So the class label is not a magnitude. An analysis that needs magnitude as a variable should bin by realised displacement, as the detection floor does, not by class. An earlier version of this card gave the three ranges as 20 to 25, 47 to 60 and 71 to 233 m; those were three stations a class on seed 1.
 
 ## Partitions
 
@@ -201,6 +201,8 @@ Stated here rather than left for a user to discover.
 6. **Three classes have fewer than twenty stations**, so a per class score on them rests on single figures per partition and must be read with the station count beside it.
 7. **The observation unit cannot be varied from this release.** Every row is already aggregated into a 1000 ms window. Changing the window length, or deriving any feature the pipeline did not compute, means rebuilding from the raw per packet simulator tables, and those are 36 GB and are not part of this bundle. So a user can train any model on these features, and cannot ask a question that needs different features. The published window sweep at 200, 500 and 1000 ms is the curve that exists.
 8. **Every measurement is a simulator output and none has been checked against a real radio.** Received power comes from the 3GPP TR 37.885 V2V highway channel model with log normal shadowing, which is a standardised model rather than a measured one. Labelled real world misbehaviour cannot be collected, because nobody performs position falsification on a public road, but that argument does not extend to the benign propagation law, and public benign C-V2X sidelink measurement sets do exist. Treat the fitted path loss exponent as a property of this corpus.
+9. **The received power statistics are pooled per physical radio, which overstates Sybil detection.** 5G-LENA gives every device one fixed source L2 identifier for the whole run, and the window statistics `phy_rsrp_mean`, `phy_rsrp_std`, `phy_rsrp_min`, `phy_rsrp_max` and `phy_rsrp_count` are aggregated per radio and then attached to every claimed identity that radio sends. A real station rotates its L2 identifier with its pseudonym (TS 33.536), so a real receiver sees each Sybil identity as a separate source and cannot pool them. Here the identities of one Sybil vehicle carry byte-identical power statistics, `phy_rsrp_voiceprint_min` is exactly zero for most Sybil rows and for no row of any other class, and `phy_rsrp_count` counts messages across identities. The physical signature is real, since two identities from one radio do arrive at nearly the same power, but its exactness here is a simulator artefact. **Treat class 6 scores as an upper bound.** The position classes, where the dataset's central measurements sit, do not depend on it.
+10. **The road wraps at its ends, and a vehicle crossing the seam jumps a road length inside one window.** The highway is a loop so that density stays stationary. Features that difference successive claims, `app_dmv_absmax` and `app_predict_max` among them, record a jump of about 6 km for a benign station in the window it crosses. It is rare, about 0.07 percent of benign rows in the released sample, and it inflates the benign tail of those features rather than any attack class. Drop rows whose claim jump exceeds half the road length if a threshold is being set on them.
 
 ## Licence
 
