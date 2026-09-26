@@ -10,6 +10,12 @@ never built the fused model. The interesting result here is per class: which
 layer catches what.
 
 Splits are grouped by transmitting station so no station appears on both sides.
+
+The phy block is not radio only: thirteen of its columns set a measurement
+against what the claimed position predicts. A fourth arm, radio-only, drops them
+and keeps the measurements alone, so the claim that neither layer suffices by
+itself is tested against an arm that holds one layer. It is appended after the
+other three so their columns and figures keep their meaning.
 """
 import argparse
 import numpy as np
@@ -17,6 +23,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.metrics import f1_score, classification_report, matthews_corrcoef
+
+from build_features import CLAIM_INPUT
 
 
 def main():
@@ -50,7 +58,8 @@ def main():
             print(f"dropped {before - len(df)} windows below the label purity floor")
     app = [c for c in df.columns if c.startswith("app_")]
     phy = [c for c in df.columns if c.startswith("phy_")]
-    blocks = {"app-only": app, "phy-only": phy, "fused": app + phy}
+    blocks = {"app-only": app, "phy-only": phy, "fused": app + phy,
+              "radio-only": [c for c in phy if c not in set(CLAIM_INPUT)]}
 
     if a.sample and len(df) > a.sample:
         df = df.sample(n=a.sample, random_state=0).reset_index(drop=True)

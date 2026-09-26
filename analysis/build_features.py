@@ -544,6 +544,18 @@ FEATURES = (
     "phy_corrupt_vs_rsrp", "phy_tbler_vs_rsrp",
 )
 
+# The phy_ columns that take the claimed position or the application loss rate
+# as an input. They set a radio measurement against what the claim predicts, the
+# literature's physical layer check, so they are cross-layer by construction and
+# a radio only ablation leaves them out.
+CLAIM_INPUT = (
+    "phy_rsrp_resid_mean", "phy_rsrp_resid_std", "phy_rsrp_resid_absmax",
+    "phy_track_corr", "phy_track_slope", "phy_track_resid_std",
+    "phy_track_span", "phy_closest_lag_s", "phy_closest_lag_abs",
+    "phy_closest_power_gap", "phy_rsrp_vs_claimed", "phy_rsrp_voiceprint_min",
+    "phy_loss_vs_rsrp",
+)
+
 
 def feature_columns(df):
     return [c for c in df.columns if c.startswith(("app_", "phy_"))]
