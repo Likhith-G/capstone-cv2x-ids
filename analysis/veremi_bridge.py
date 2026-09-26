@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run this project's application-layer detector on VeReMi Extension.
+Run this project's application-layer detector on VeReMi.
 
 Report 16 is explicit that deferring cross-dataset evaluation only holds "if
 your method cannot reasonably be applied there". Half of this method can. The
@@ -276,7 +276,12 @@ def _angdiff(a, b):
     return np.abs(d)
 
 
-def residuals_and_windows(rx, window_ms=1000.0):
+def _unwrap(d, length):
+    """build_features._unwrap: a difference along the road, the short way round."""
+    return d if length is None else d - length * np.round(d / length)
+
+
+def residuals_and_windows(rx, window_ms=1000.0, road_length=None):
     """The seventeen transferable features, by the same definitions as
     `build_features.py`.
 
@@ -286,13 +291,17 @@ def residuals_and_windows(rx, window_ms=1000.0):
     stay in step, so any change to a residual definition there has to be made
     here too, and the feature names are asserted against a corpus at the end of
     a run so a drift is caught rather than assumed absent.
+
+    `road_length` is this project's road loop. The self test passes it so the
+    two claim differences are unwrapped exactly as the feature builder does;
+    VeReMi is a city map with no seam and passes nothing.
     """
     rx = rx.sort_values(["rxNodeId", "claimedStationId", "rxTimeMs"]).copy()
     g = rx.groupby(["rxNodeId", "claimedStationId"], sort=False)
 
     rx["claimedDist"] = np.hypot(rx.claimedX - rx.rxX, rx.claimedY - rx.rxY)
     rx["dt"] = g.rxTimeMs.diff() / 1000.0
-    rx["dClaimedX"] = g.claimedX.diff()
+    rx["dClaimedX"] = _unwrap(g.claimedX.diff(), road_length)
     rx["dClaimedY"] = g.claimedY.diff()
     rx["claimedMoved"] = np.hypot(rx.dClaimedX, rx.dClaimedY)
 
@@ -304,7 +313,8 @@ def residuals_and_windows(rx, window_ms=1000.0):
     prev_heading_rad = np.deg2rad(g.claimedHeading.shift())
     pred_x = g.claimedX.shift() + prev_speed * rx.dt * np.sin(prev_heading_rad)
     pred_y = g.claimedY.shift() + prev_speed * rx.dt * np.cos(prev_heading_rad)
-    rx["predict_residual"] = np.hypot(rx.claimedX - pred_x, rx.claimedY - pred_y)
+    rx["predict_residual"] = np.hypot(_unwrap(rx.claimedX - pred_x, road_length),
+                                      rx.claimedY - pred_y)
 
     move_bearing = np.rad2deg(np.arctan2(rx.dClaimedX, rx.dClaimedY)) % 360.0
     rx["heading_residual"] = np.where(rx.claimedMoved > 1.0,
@@ -480,27 +490,35 @@ def main():
     # consecutive pair of messages, so the self consistency features should
     # catch it. If they do not, they are broken and nothing below means
     # anything.
-    c = run(vm, "VeReMi, FIXED position (control)", SELF_INCONSISTENT)
-    v = run(vm, "VeReMi, constant OFFSET", CONST_OFFSET)
-    o = run(ours, "this corpus, constant OFFSET", {1, 11, 13})
-    print(f"\ncontrol {c:.4f}, VeReMi offset {v:.4f}, this corpus {o:.4f}\n")
-    print(f"\nBoth near zero is the result. It says the application layer "
-          f"cannot see a constant\nposition offset, on two independently "
-          f"generated datasets with different mobility,\ndifferent radio "
-          f"stacks and different attack implementations, which makes it a "
-          f"property\nof the attack rather than of this simulator.")
-    print(f"A high score on VeReMi and a low one here would mean the opposite, "
-          f"that something\nabout this corpus is hiding a signal the "
-          f"application layer can normally find.")
-    print(f"\nVeReMi {v:.4f}, this corpus {o:.4f}")
-    print("\nThis is a BINARY task over seventeen features: constant-offset "
-          "attackers against benign, on the\nsubset both datasets support. It "
-          "is NOT the same number as the per class figure\nin the cross layer "
-          "benchmark, which is one class of eleven over twenty two\nfeatures. "
-          "A small positive here and an exact zero there are consistent, "
-          "and\nquoting one against the other compares two different "
-          "questions. What both\nsay is that the application layer cannot "
-          "separate a constant position offset.")
+    #
+    # Each arm runs only if its attack is in the input. VeReMi runs a trace once
+    # per attack type, so a type 1 run and a type 2 run of the same repetition
+    # share every benign vehicle and the twin guard above refuses them together.
+    # The control and the offset are therefore separate invocations on separate
+    # directories, and the corpus arm, which is the comparison for the offset,
+    # runs with the offset.
+    def present(classes):
+        return bool(vm.label_attackId.isin(list(classes)).any())
+
+    c = v = o = None
+    if present(SELF_INCONSISTENT):
+        c = run(vm, "VeReMi, FIXED position (control)", SELF_INCONSISTENT)
+    if present(CONST_OFFSET):
+        v = run(vm, "VeReMi, constant OFFSET", CONST_OFFSET)
+        o = run(ours, "this corpus, constant OFFSET", {1, 11, 13})
+    if c is None and v is None:
+        raise SystemExit("neither VeReMi ConstPos (1) nor ConstPosOffset (2) "
+                         "senders are in the input, so there is nothing to run")
+    print("\n" + ", ".join(f"{n} {x:.4f}" for n, x in
+                           [("control", c), ("VeReMi offset", v),
+                            ("this corpus", o)] if x is not None))
+    print("\nReading: the control shows the seventeen features can catch a "
+          "self inconsistent\nposition lie on VeReMi. The offset arms ask "
+          "whether a self consistent one is caught\non either dataset. This "
+          "is a BINARY task over seventeen features, constant offset\n"
+          "attackers against benign on the subset both datasets support, and "
+          "is not the same\nnumber as the per class figure in the cross "
+          "layer benchmark.")
 
 
 def selftest(run_dir, tag, corpus_path, tol=1e-6):
@@ -520,7 +538,9 @@ def selftest(run_dir, tag, corpus_path, tol=1e-6):
         "msgUid", "rxTimeMs", "rxNodeId", "claimedStationId", "claimedX",
         "claimedY", "claimedSpeed", "claimedHeading", "rxX", "rxY"]].copy()
     rx["label_attackId"] = 0
-    mine = residuals_and_windows(rx)
+    lf = pathlib.Path(run_dir) / "road_length_m"
+    mine = residuals_and_windows(
+        rx, road_length=float(lf.read_text()) if lf.exists() else None)
 
     corpus = pd.read_pickle(corpus_path).copy()
     feats = transferable(mine)
