@@ -160,7 +160,7 @@ you waste a day on a confusing result:
 |---|---|---|
 | `highway_sparse` | yes | |
 | `highway_dense` | yes | |
-| `magnitude_sweep` | yes | |
+| `magnitude_sweep` | yes, for the aggregate | its position classes are drawn wider on purpose, so do not read or compare them per class; bin by realised displacement |
 | `bursty_attackers` | **no** | class 1 has no transmitter in test |
 | `offset_receivers` | **no** | class 1 has none in test, class 4 none in validation |
 

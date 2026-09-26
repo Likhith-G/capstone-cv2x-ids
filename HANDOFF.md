@@ -91,10 +91,11 @@ leakage.
 `fit` and `predict` works. Doing it that way means the protocol cannot drift,
 and your row is comparable by construction rather than by careful reading.
 
-Run it once unmodified first. On 120,000 windows it reaches macro F1 0.4985 and
-MCC 0.6560 against the published 0.5145 and 0.6635, the difference being the
-smaller sample, and it puts `pos_const_offset` at 0.145 against the published
-forest's 0.146.
+Run it once unmodified first. On the 358 MB reference package as shipped it
+reproduces the published row exactly: **macro F1 0.5145 +/- 0.0016, MCC 0.6635**,
+and 0.146 on the constant offset class. If your unmodified run does not print
+those, something differs in your setup, and it is worth finding before you
+change the model.
 
 ### What that pins, and why each part matters
 

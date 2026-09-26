@@ -58,6 +58,10 @@ CHECKS = [
      "| a baseline trained on train and scored on test, reference scenario | **macro F1 0.5396, MCC 0.6918** |",
      "campaign_gnss/logs/check_release_bundle",
      "reference scenario (highway_sparse): trained on 400,000, scored on 333,990, 84s  ->  macro F1 0.5396, MCC 0.6918"),
+    ("starter reproduces the benchmark from the bundle",
+     "shipped, `logs/baseline_starter_cv.log`: macro F1 **0.5145 +/- 0.0016**, MCC",
+     "campaign_gnss/logs/baseline_starter_cv",
+     "macro F1, all 11 classes   0.5145 +/- 0.0016      (published 0.5145)"),
     # 3h, the bound from geometry with no classifier involved
     ("geometry law fitted",
      "path loss exponent **2.466**, residual **3.821 dB**",
