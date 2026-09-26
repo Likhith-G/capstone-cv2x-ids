@@ -285,15 +285,21 @@ def main():
             moved += int(m.sum())
         return moved
 
-    # The law is calibrated the way a deployment would calibrate it: on traffic
-    # it has no reason to doubt, against the position that traffic CLAIMS. A
-    # benign claim carries the sender's positioning error, and the true position
-    # would be an oracle, which estimator_study.py refuses for the same reason.
+    # The law is fitted against the TRUE distance. This is the one place where
+    # that is right rather than an oracle: the bound is a validation instrument,
+    # never deployed, and it describes the measurement model, in which power
+    # falls with the true distance. Fitting against the claim would put each
+    # sender's positioning error into sigma, mostly at short range where the
+    # information concentrates, and loosen the bound, which flatters every
+    # efficiency ratio read against it. The corrections a detector deploys are
+    # calibrated on the claim, in pooled_consensus, pooled_regions and
+    # power_evasion. On highway_sparse seed 1 the two choices differ by half a
+    # percent in sigma and in the median bound.
+    #
     # It is fitted before any counterfactual move, because a moved roadside unit
     # still carries the power it measured where it actually stood.
-    ben = df[df.label_attackId == 0].merge(
-        claim, how="inner", on=["key_seed", "key_claimedStationId", "key_window"])
-    ben["d"] = np.hypot(ben.rxX - ben.claimedX, ben.rxY - ben.claimedY)
+    ben = df[df.label_attackId == 0].copy()
+    ben["d"] = np.hypot(ben.rxX - ben.trueX, ben.rxY - ben.trueY)
     ben = ben[ben.d > 1.0].copy()
 
     if a.rsu_lateral is not None:
