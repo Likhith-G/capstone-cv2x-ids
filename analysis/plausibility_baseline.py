@@ -18,8 +18,11 @@ as catalogued by van der Heijden, Dietzel, Leinmuller and Kargl (IEEE COMST
     MGT   movement graph / position prediction. The next claim must be near
           where the last one predicted.
     ACC   acceleration plausibility, a physical bound on the claimed dynamics.
-    RSS   received signal strength against claimed distance under the fitted
-          propagation law. This is the single receiver version of the check
+    RSS   received signal strength against claimed distance, as the mean power
+          minus the free space power at 23 dBm and 5.89 GHz for the claimed
+          distance (phy_rsrp_vs_claimed), thresholded on both sides. It is a
+          fixed law, not the one fitted on this corpus; the threshold absorbs
+          the offset. This is the single receiver version of the check
           this paper pools across receivers, and it belongs in the baseline
           because it is what the prior work actually proposed.
 
