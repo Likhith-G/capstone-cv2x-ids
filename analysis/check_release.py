@@ -38,9 +38,10 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, matthews_corrcoef
 
-# What the paper reports for the fused block over eleven classes, from
-# RESULTS.md section 3. A single fixed split will not reproduce it exactly.
-PAPER_FUSED_F1 = 0.5145
+# The fused block over eleven classes under grouped cross-validation on release
+# 1.1.0, campaign_gnss/logs/benchmark.log. A single fixed split will not
+# reproduce it exactly. Release 1.0.0 was 0.5145.
+PAPER_FUSED_F1 = 0.5068
 TOLERANCE = 0.10
 
 fails = []
