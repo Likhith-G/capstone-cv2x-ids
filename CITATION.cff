@@ -6,8 +6,8 @@ authors:
   - family-names: "Gowda"
     given-names: "Likhith Lokesh"
     affiliation: "RMIT University, School of Engineering"
-version: "1.0.0"
-date-released: "2026-09-06"
+version: "1.1.0"
+date-released: "2026-09-27"
 license: CC-BY-4.0
 abstract: >-
   A labelled intrusion detection dataset for C-V2X, generated in ns-3 with the

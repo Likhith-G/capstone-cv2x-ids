@@ -16,7 +16,7 @@ not the data.
     cd capstone-cv2x-ids
 
 **2. Ask Likhith for the dataset.** It is **not in the repository**, because it is
-1.6 GB and GitHub is the wrong place for it. It arrives as a directory called
+1.7 GB and GitHub is the wrong place for it. It arrives as a directory called
 `release/`, over a shared drive. Put it wherever you like and pass its path to the
 scripts below.
 
@@ -35,7 +35,7 @@ Then, from the repository directory:
     python3 analysis/check_release.py /path/to/release      # confirm it arrived intact
     python3 analysis/baseline_starter.py /path/to/release   # train the baseline
 
-If you were sent the single-scenario package, the 358 MB one holding only
+If you were sent the single-scenario package, the 377 MB one holding only
 `highway_sparse`, add `--subset` to the first command. Without it the check looks
 for the four scenarios you were not sent and reports the bundle as incomplete.
 
@@ -43,7 +43,7 @@ for the four scenarios you were not sent and reports the bundle as incomplete.
 
 ## What you get
 
-One directory, about 1.6 GB.
+One directory, about 1.7 GB. This describes release 1.1.0.
 
     release/
       shards/                  five scenarios, gzipped CSV, one file per seed
@@ -107,7 +107,7 @@ Columns are prefixed by what they are:
 |---|---|---|
 | `app_` | 22 | application layer, computed from message contents |
 | `phy_` | 28 | radio measurements, and residuals that set a measurement against what the claimed position predicts |
-| `key_` | 6 | identifiers. **Never a feature.** |
+| `key_` | 5 | identifiers. **Never a feature.** |
 | `label_` | 5 | ground truth. **Never a feature.** |
 
 `label_clean` marks a window that passes the label purity threshold. It is set on
@@ -122,8 +122,9 @@ rate as an input (`phy_rsrp_resid_*`, `phy_track_*`, `phy_closest_*`,
 the physical layer check the literature uses, power against the claim, so the
 `phy_` block is not a radio-only ablation. Drop those thirteen for one.
 
-The six keys are `key_rxNodeId`, `key_claimedStationId`, `key_window`,
-`key_txRnti_mode`, `key_observer_role` and `key_seed`. The five labels are
+The five keys are `key_rxNodeId`, `key_claimedStationId`, `key_window`,
+`key_observer_role` and `key_seed`. Release 1.0.0 had a sixth, `key_txRnti_mode`,
+which named the physical radio; 1.1.0 drops it. The five labels are
 `label_attackId`, `label_txNodeId`, `label_attack_purity`, `label_is_attack` and
 `label_clean`.
 
@@ -183,7 +184,7 @@ Under the global partition those two have empty class and split combinations, so
 a macro F1 computed on them averages in a class that could not be scored. They
 support auxiliary evaluation, such as asking whether a detector trained elsewhere
 survives a bursty attacker, and they are genuinely useful for that. They just
-cannot produce a number you put beside 0.5145.
+cannot produce a number you put beside 0.5068.
 
 ## What to report
 
@@ -202,39 +203,44 @@ disagreement is information rather than an inconvenience.
 
 ## What to beat
 
-Measured on the reference scenario, 250,000 windows, three folds grouped by
-transmitting station.
+Measured on the reference scenario of release 1.1.0, 250,000 windows, three folds
+grouped by transmitting station.
 
 | block | features | macro F1 | MCC |
 |---|---|---|---|
-| application only | 22 | 0.4878 | 0.6222 |
-| radio only | 28 | 0.3554 | 0.5275 |
-| **both** | **50** | **0.5145** | **0.6635** |
+| application only | 22 | 0.4880 | 0.6236 |
+| `phy_` block | 28 | 0.3363 | 0.4745 |
+| radio measurements alone | 15 | 0.2495 | 0.3891 |
+| **both** | **50** | **0.5068** | **0.6438** |
 
-Across the ten classes that have a physical signature rather than all eleven,
-fused macro F1 is 0.5659. The eleventh class, sensing manipulation, scores zero in
+The radio measurements alone, the `phy_` block without the thirteen columns that
+use the claim, score exactly zero on the constant offset class; the `phy_`
+block's 0.135 there comes entirely from setting power against the claim. Across
+the ten classes that have a physical signature rather than all eleven, fused
+macro F1 is 0.5575. The eleventh class, sensing manipulation, scores zero in
 every block on every corpus, because resource grants in this simulator are data
 driven and an attacker cannot hoard the channel, so it has no signature to find.
 
 Four learner families have been run over identical rows and folds: a random
-forest, gradient boosting, an MLP and logistic regression. The spread between the
-top three is about 0.013 macro F1, so nothing here rests on a lucky model choice.
+forest, gradient boosting, an MLP and logistic regression. On release 1.0.0 the
+spread between the top three was about 0.013 macro F1, so nothing rested on a
+lucky model choice; the comparison is being rerun on 1.1.0.
 
 **You will see a slightly different number and that is expected.** The acceptance
 test trains a small forest on the frozen split using only what is in the bundle,
-and reaches **macro F1 0.5396, MCC 0.6918** on the reference scenario. The
-published 0.5145 comes from a stricter protocol: 250,000 windows under three
+and reaches **macro F1 0.5319, MCC 0.6746** on the reference scenario. The
+published 0.5068 comes from a stricter protocol: 250,000 windows under three
 grouped cross-validation folds rather than a single train-and-score on the frozen
 partition. Both are correct measurements of different protocols, and the gap
 between them is the ordinary optimism of scoring once rather than averaging folds.
 
-If you want to compare directly against 0.5145, use grouped cross-validation. If
-you want a fast number to iterate on, the frozen split is fine, and 0.5396 is what
+If you want to compare directly against 0.5068, use grouped cross-validation. If
+you want a fast number to iterate on, the frozen split is fine, and 0.5319 is what
 a baseline gets there.
 
 ## The rule that matters most
 
-**A 1-nearest-neighbour classifier scores 0.3466 on this corpus.**
+**A 1-nearest-neighbour classifier scores 0.3533 on this corpus.**
 
 That number is the evidence the task is not being won by memorisation. It is also
 your alarm. If your model reports a macro F1 near 1.0, you have not solved the
@@ -262,16 +268,17 @@ two of position and two of propagation, so the information is not there. Pooling
 across receivers is what recovers it, down to a floor at 47.2 m of displacement.
 
 **Some classes are easy and some are impossible.** Denial of service and random
-position offset sit near 0.98. Replay sits near 0.12. The aggregate is an average
+position offset sit between 0.91 and 0.99. Replay sits near 0.11. The aggregate is an average
 over a very uneven problem, which is why per-class numbers are asked for above.
 
-**The Sybil class is easier here than it would be on a road.** The simulator
-gives each radio one fixed link-layer identifier, and the received power
-statistics are pooled per radio, so every identity a Sybil vehicle claims carries
-exactly the same `phy_rsrp_*` values and a voiceprint of exactly zero. A real
-receiver would see each pseudonym as a separate source and could not pool them.
-Report class 6 as an upper bound, and do not build a Sybil result on those
-columns alone. Limitation 9 in the dataset card has the detail.
+**Received power is attributed per claimed identity.** The simulator gives each
+radio one fixed link-layer identifier where a real station rotates it with its
+pseudonym, so release 1.0.0 pooled power per radio and every identity of a Sybil
+carried identical `phy_rsrp_*` values, which made the class easier than on a
+road. Release 1.1.0 gives each decoded control channel to the claimed identity
+whose message is nearest in time, as a receiver seeing each pseudonym as its own
+source would, and Sybil falls from 0.959 fused to 0.895. The split is inferred
+from timing rather than measured; limitation 9 in the dataset card has the detail.
 
 **The class label is not a magnitude.** The constant offset class is drawn from a
 box and overlaps the other two position classes, and the small offset class

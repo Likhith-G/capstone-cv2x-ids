@@ -136,14 +136,14 @@ scores 0.9570 on a position lie that contradicts itself, 0.1460 on a
 self-consistent constant offset, and 0.0352 on the constant offsets here. The
 ordering reproduces on an independently generated dataset.
 
-### On the headline number, which is 0.5145
+### On the headline number, which is 0.5068
 
-Fused macro F1 is **0.5145** across all eleven classes, 0.5659 across the ten
-that have a physical signature, with a Matthews correlation of 0.6635. One class
-in it is flattered by the simulator: the Sybil class's radio evidence is pooled
-per physical radio, which a real receiver could not do, so its score is an upper
-bound (dataset card, limitation 9). At most that moves the aggregate by about a
-hundredth.
+Fused macro F1 is **0.5068** across all eleven classes, 0.5575 across the ten
+that have a physical signature, with a Matthews correlation of 0.6438, on release
+1.1.0. Release 1.0.0 reported 0.5145: it pooled the Sybil class's radio evidence
+per physical radio, which a real receiver could not do, and 1.1.0 attributes it
+per claimed identity instead (dataset card, limitation 9). Sybil fell from 0.959
+to 0.895 and the aggregate by eight thousandths.
 
 The eleventh is class 8, semi-persistent scheduling manipulation, and it scores
 zero in every feature block on every corpus generated. That is mechanistic rather
@@ -161,7 +161,7 @@ in the magnitude band where detection is hardest, deliberately. And every split 
 grouped by physical transmitter, so no vehicle appears on both sides.
 
 The check that the task is not trivial is that a 1-nearest-neighbour classifier
-reaches only **0.3466** here. A dataset a nearest-neighbour lookup can solve is a
+reaches only **0.3533** here. A dataset a nearest-neighbour lookup can solve is a
 dataset that has been memorised rather than learned.
 
 ---
@@ -188,7 +188,7 @@ So the pipeline was rebuilt from the simulator upward, over a direct
 vehicle-to-vehicle sidelink rather than an uplink to a server, with realistic
 mobility, standards-compliant message triggering, benign positioning error, and
 ground truth kept out of the feature list by construction. The honest
-number is 0.5145.
+number is 0.5068.
 
 Two things were kept from that experience and they shape everything here.
 
@@ -197,7 +197,7 @@ integrity checks and passed all 57, because they checked what the generator
 intended. The current gates try to *show the dataset is trivial*, and the run
 fails if any of them succeeds: duplicate rows at measurement precision, verbatim
 train and test overlap, nearest-neighbour triviality, single-feature
-separability, correlation with any ground-truth column. Ten gates: nine can fail
+separability, and any single feature reading one class off almost perfectly. Ten gates: nine can fail
 the run and the class-balance gate warns.
 
 **Every reported number is pinned to its log.** `verify_results.py` ties each of
@@ -280,12 +280,13 @@ The six scripts that matter most, if you are reading the code for the first time
 | `baseline_starter.py` | where to start if you are training something. The protocol is already correct in it |
 | `build_features.py` | windowing, and the 50 application and radio features |
 | `validate_dataset.py` | the ten adversarial integrity gates |
-| `benchmark.py` | application against radio against fused, the 0.5145 |
+| `benchmark.py` | application against radio against fused, the 0.5068, plus radio measurements alone |
 | `pooled_consensus.py` | cross-receiver position verification, result 2 |
 | `geometry_bound.py` | the Cramer-Rao bound and the error ellipse, result 3 |
 
-Every split is grouped by transmitting station, false positive rate is reported at
-true prevalence rather than on a balanced set, and detection latency counts the
+Every split is grouped by transmitting station, false positive rate is reported on
+unbalanced data with precision at a stated deployment prevalence rather than on a
+balanced set, and detection latency counts the
 time a window takes to fill rather than the forward pass alone. Aggregate scores
 are reported as both macro F1 and the Matthews correlation, because the two do not
 always agree and reporting one hides the disagreement.

@@ -13,20 +13,20 @@ Read [`USING_THE_DATA.md`](USING_THE_DATA.md) first. Everything below assumes it
 
 You both get the same thing, and you both have to use it unchanged:
 
-- the release bundle, 1.6 GB, five scenarios
+- release 1.1.0 of the bundle, 1.7 GB, five scenarios
 - `release_splits.csv`, the frozen partition inside it
 - `analysis/check_release.py`, the acceptance test
 
 ### Getting it
 
-The full bundle is 1.6 GB, which is more than most ways of sending a file will
+The full bundle is 1.7 GB, which is more than most ways of sending a file will
 take. Two options.
 
-**The whole thing**, 1.6 GB, over OneDrive or a shared drive. Preferred, because
+**The whole thing**, 1.7 GB, over OneDrive or a shared drive. Preferred, because
 it is the only form the acceptance test covers completely.
 
 **One scenario**, if that is impractical. `highway_sparse` plus the nine small
-files beside it is **358 MB** and is enough for everything in section A, because
+files beside it is **377 MB**, `cv2x-ids-1.1.0-highway_sparse.zip`, and is enough for everything in section A, because
 it is the reference scenario where every published figure is measured. Use the
 packaged zip, or copy the `shards/highway_sparse/` directory and every file at
 the top level of the bundle. One of the nine, `.zenodo.json`, is hidden and a
@@ -93,11 +93,13 @@ leakage.
 `fit` and `predict` works. Doing it that way means the protocol cannot drift,
 and your row is comparable by construction rather than by careful reading.
 
-Run it once unmodified first. On the 358 MB reference package as shipped it
-reproduces the published row exactly: **macro F1 0.5145 +/- 0.0016, MCC 0.6635**,
-and 0.146 on the constant offset class. If your unmodified run does not print
-those, something differs in your setup, and it is worth finding before you
-change the model.
+Run it once unmodified first. On the 1.1.0 reference package as shipped it
+reproduces the benchmark's fused row exactly: **macro F1 0.5068 +/- 0.0019, MCC
+0.6438**, and 0.145 on the constant offset class. If your unmodified run does not
+print those, something differs in your setup, and it is worth finding before you
+change the model. Release 1.0.0 printed 0.5145 here; 1.1.0 attributes received
+power per claimed identity, which makes the Sybil class honestly harder, and
+that is most of the difference.
 
 ### What that pins, and why each part matters
 
@@ -123,6 +125,11 @@ Do the comparable run first. It is the one that slots into the existing table.
 
 ### What you are trying to beat
 
+**The four family rows below were measured on release 1.0.0 and are being rerun
+on 1.1.0; this table will be replaced when they land.** The random forest on
+1.1.0 is macro F1 0.5068, MCC 0.6438, and the other three move with it. Compare
+your transformer against the 1.1.0 rows, not these.
+
 | learner | macro F1 | MCC |
 |---|---|---|
 | random forest | 0.5145 | 0.6635 |
@@ -143,14 +150,14 @@ best any of the four reached:
 Note that the four rows above come from grouped cross-validation on 250,000
 windows, not from a single pass over the frozen split. Score the same way if you
 want your row to sit in that table; `USING_THE_DATA.md` explains the difference
-and why the acceptance test reports 0.5396 instead.
+and why the acceptance test reports 0.5319 on 1.1.0 instead.
 A transformer that moves the aggregate from 0.51 to 0.53 and leaves the position
 classes at 0.01 has confirmed the bound. A transformer that moves the position
 classes is the finding.
 
 ### The rule
 
-**A 1-nearest-neighbour classifier scores 0.3466 on this corpus.** If your model
+**A 1-nearest-neighbour classifier scores 0.3533 on this corpus**, release 1.1.0. If your model
 reports anything near 1.0, stop and find the leak. It will almost certainly be a
 split that is not grouped by physical transmitter. The first version of this
 project reported 1.0000 from three model families and the cause was that 96.39
@@ -179,7 +186,9 @@ will save yourselves a fortnight.
   the same protocol on the bundle as shipped.
 - `analysis/validate_dataset.py`, the ten integrity gates, if you want to check
   any subset you construct.
-- `analysis/benchmark.py`, which is where the 0.5145 comes from.
+- `analysis/benchmark.py`, which is where the 0.5068 comes from. It now has a
+  fourth arm, radio measurements alone, which scores exactly zero on the constant
+  offset class.
 
 ---
 
