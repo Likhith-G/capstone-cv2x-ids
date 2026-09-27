@@ -303,24 +303,25 @@ The plan also had you re-run feature selection on the regenerated dataset. **Do
 not run it as the headline method**, and this is a finding rather than a
 cancellation.
 
-**This was measured on the superseded 30 August corpus and has not been rerun on
-the released one**, so treat it as a hypothesis for your workstream to test, not a
-result to report. On that corpus, ranking all 50 features by importance and keeping
-the top 15 cost only 0.0315 macro F1, which reads as a sensible trade. But of that
-top 15, **fourteen were application features and exactly one was a radio
-feature**, `phy_rsrp_voiceprint_min`, and that feature's strength is partly a
-simulator artefact (dataset card, limitation 9). The radio block earns
-its place by catching attacks the application layer misses entirely, not by
-containing the single strongest signal, and its contribution is spread across many
-individually weak features. Importance ranking keeps the best one and discards the
-other 27.
+**Measured on release 1.1.0**, `campaign_gnss/logs/feature_selection.log`, 150,000
+windows under five grouped folds. Ranking all 50 features by importance and
+keeping the top 15 costs only 0.0050 macro F1, which reads as a free trade. But
+of that top 15, chosen identically in all five folds, **fourteen are application
+features and exactly one is a radio feature**, `phy_rsrp_count`, which is the
+per identity message rate rather than a radio versus claim check. The radio
+block earns its place by catching attacks the application layer misses entirely,
+not by containing the single strongest signal, and its contribution is spread
+across many individually weak features. Importance ranking keeps the best one and
+discards the other 27.
 
-If it holds on the released corpus, the routine procedure would quietly delete
-the cross-layer result the project rests on while the headline metric barely
-moved. **Rerunning `feature_selection.py` on the released data and reporting the
-block composition is the useful piece of work here**: it either confirms that
-top-k selection destroys a finding spread across many weak features, or shows it
-does not once the Sybil artefact is accounted for. Either answer is reportable.
+So the routine procedure would quietly delete the cross-layer result the project
+rests on while the headline metric barely moved. On the superseded August corpus
+the one radio feature it kept was the Sybil voiceprint, whose strength was partly
+the power pooling artefact that 1.1.0 removed; the conclusion survived the fix.
+What is still worth doing, if you want it, is scoring the selected set per
+class. The benchmark's radio-only arm scores zero on the constant offset class,
+so the selected set is expected to lose that class too, but that has not been
+run.
 
 If a selection step is kept at all, report the block composition beside it, never
 a count alone.
