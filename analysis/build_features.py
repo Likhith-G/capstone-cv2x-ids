@@ -45,14 +45,19 @@ def _angdiff(a, b):
     return np.minimum(d, 360.0 - d)
 
 
-def _read(path, time_col, max_time_ms):
+def _read(path, time_col, max_time_ms, usecols=None):
     """Read one table, tolerating a truncated final line.
 
     A run that is interrupted leaves a partial row in every table, and the
     tables flush to different points. Callers pass a cutoff comfortably below
     the earliest flush point so every table describes the same interval.
+
+    `usecols` keeps only the columns the builder reads. The dense scenario's
+    control channel table is 1.2 GB a seed, and loading all twenty columns of
+    it pushed an 8 GB machine into swap for hours; the values of the columns
+    kept are parsed exactly as before.
     """
-    df = pd.read_csv(path, on_bad_lines="skip")
+    df = pd.read_csv(path, on_bad_lines="skip", usecols=usecols)
     df = df[df[time_col].notna()]
     if max_time_ms is not None:
         df = df[df[time_col] <= max_time_ms]
@@ -85,8 +90,11 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
                    max_time_ms=None, long_window_factor=10, road_length=None):
     L_road = road_length_m(run_dir, road_length)
     rx = _read(f"{run_dir}/rx_app_{tag}.csv", "rxTimeMs", max_time_ms)
-    pscch = _read(f"{run_dir}/rx_pscch_{tag}.csv", "timeMs", max_time_ms)
-    pssch = _read(f"{run_dir}/rx_pssch_{tag}.csv", "timeMs", max_time_ms)
+    pscch = _read(f"{run_dir}/rx_pscch_{tag}.csv", "timeMs", max_time_ms,
+                  usecols=["timeMs", "rxNodeId", "txRnti", "slRsrpDbm", "corrupt"])
+    pssch = _read(f"{run_dir}/rx_pssch_{tag}.csv", "timeMs", max_time_ms,
+                  usecols=["timeMs", "rxNodeId", "txRnti", "sinr", "sinrMin",
+                           "tbler", "corrupt", "mcs"])
 
     # ---- per-message application-layer residuals ------------------------
     rx = rx.sort_values(["rxNodeId", "claimedStationId", "rxTimeMs"]).copy()
@@ -141,7 +149,8 @@ def build_features(run_dir, tag, window_ms=1000.0, short_ms=200.0,
     # has by construction. No kinematic truth, no attack label, and nothing
     # about the transmitter beyond which radio it used, crosses this line.
     link = _read(f"{run_dir}/tx_{tag}.csv", "txTimeMs", max_time_ms)[["msgUid", "txNodeId"]]
-    txp = _read(f"{run_dir}/tx_pssch_{tag}.csv", "timeMs", max_time_ms)
+    txp = _read(f"{run_dir}/tx_pssch_{tag}.csv", "timeMs", max_time_ms,
+                usecols=["timeMs", "txNodeId", "rnti"])
     node2rnti = txp.groupby("txNodeId").rnti.agg(lambda s: s.mode().iloc[0])
     link["radio_txRnti"] = link.txNodeId.map(node2rnti)
     rx = rx.merge(link[["msgUid", "radio_txRnti"]], on="msgUid", how="left")
