@@ -138,7 +138,7 @@ your transformer against the 1.1.0 rows, not these.
 | logistic regression | 0.4160 | 0.5889 |
 
 And on the three position classes, which is where the claim actually lives, the
-best any of the four reached:
+best any of the four reached, also on 1.0.0 until the rerun lands:
 
 | class | best of four |
 |---|---|

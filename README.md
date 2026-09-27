@@ -71,7 +71,8 @@ failures.
 Not at any magnitude in this dataset. Four learner families were run over
 identical rows and folds: a random forest, gradient boosting, a neural network
 and logistic regression. On the three constant-offset position classes the best
-score any of them reached is **0.010, 0.052 and 0.167**.
+score any of them reached is **0.010, 0.052 and 0.167** (release 1.0.0; the
+comparison is being rerun on 1.1.0).
 
 That is not four models failing. The measurement itself is the reason. A receiver
 estimating where a transmitter really is has four unknowns to solve for, two of
@@ -83,7 +84,8 @@ information is not there to be found.
 
 Combine the received power several receivers measured for the same transmitter
 and the position becomes checkable. Detection against displacement crosses 50
-percent at **47.2 m**, with a 95 percent interval of 39.3 to 57.4 m.
+percent at **47.2 m**, with a 95 percent interval of 39.3 to 57.4 m (release
+1.0.0; being regenerated on 1.1.0).
 
 So there is a band of lies too small to catch and a band large enough to catch,
 and the boundary can be measured rather than guessed.
