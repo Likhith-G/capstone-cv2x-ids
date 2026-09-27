@@ -225,28 +225,33 @@ cost?**
 
 That is a real engineering trade with real numbers on both sides, and it is yours.
 
-Already measured:
+Already measured, on release 1.1.0:
 
 | | |
 |---|---|
-| single-window inference | 3.390 ms |
+| single-window inference | 3.085 ms |
 | window fill | 1000 ms |
-| inference as a share of latency | **0.34 percent** |
-| cooperative pooling block | 0.4054 ms |
+| inference as a share of fill plus inference | **0.31 percent** |
+| cooperative pooling block, the road bounded fit | 1.34 ms per unit |
+
+Feature extraction is not timed, so the latency total is a lower bound and the
+inference share an upper bound. The pooling block costs about 0.43 times the
+inference, which is still 0.13 percent of a 1000 ms window.
 
 | window | fused macro F1, mean +/- fold spread |
 |---|---|
-| 200 ms | 0.6166 +/- 0.0541 |
-| 500 ms | 0.6468 |
-| 1000 ms | 0.6514 +/- 0.0225 |
+| 200 ms | 0.4105 +/- 0.0035 |
+| 500 ms | 0.3978 +/- 0.0199 |
+| 1000 ms | 0.4520 +/- 0.0057 |
 
-**Read this table with two cautions.** It comes from the superseded 30 August
-corpus, a 1.2 km road before benign positioning error was added, which is why its
-fused score at 1000 ms, 0.6514, is not the released 0.5145. And the 0.035 it
-suggests shortening the window costs is smaller than the fold spread at 200 ms,
-so it is not a measured trade-off at that precision. It says the direction, not
-the size. Measuring the trade on the current corpus needs a rebuild per window
-length, which is the constraint below.
+Each point is its own corpus rebuilt at that window length from the reference
+scenario's first three seeds, benchmarked on 150,000 windows under three grouped
+folds, so the 1000 ms point is not the headline 0.5068, which uses all eight
+seeds. **Shortening the window from 1000 to 200 ms costs 0.042 fused macro F1**,
+about seven times the fold spread, so on this corpus it is a measured trade
+rather than a direction. The 500 ms point sits below the 200 ms one, but its
+spread is three to six times theirs; treat the curve as two well measured ends until
+more seeds say otherwise.
 
 ### One constraint, so you do not lose a week to it
 
@@ -288,8 +293,8 @@ measurement that shows where the deadline actually lives.
 ### You are given
 
 - `analysis/measure_latency.py`, which counts window fill rather than the forward
-  pass alone, and is where 3.390 ms comes from.
-- `analysis/measure_pooling_cost.py`, the 0.4054 ms figure.
+  pass alone, and is where 3.085 ms comes from.
+- `analysis/measure_pooling_cost.py`, the 1.34 ms figure.
 - `analysis/benchmark.py`, for the window sweep.
 
 ### One thing that is not yours any more, and why
