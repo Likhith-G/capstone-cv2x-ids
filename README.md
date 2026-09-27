@@ -83,8 +83,7 @@ information is not there to be found.
 
 Combine the received power several receivers measured for the same transmitter
 and the position becomes checkable. Detection against displacement crosses 50
-percent at **47.2 m**, with a 95 percent interval of 39.3 to 57.4 m (release
-1.0.0; being regenerated on 1.1.0).
+percent at **38.9 m**, with a 95 percent interval of 34.5 to 45.5 m.
 
 So there is a band of lies too small to catch and a band large enough to catch,
 and the boundary can be measured rather than guessed.

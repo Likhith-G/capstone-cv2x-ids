@@ -264,7 +264,7 @@ constant-offset classes the best score any of the four learner families reached
 is 0.008, 0.056 and 0.158. This is not a bug and it is not a weak model. One
 receiver at a fixed geometry supplies one equation per window for four unknowns,
 two of position and two of propagation, so the information is not there. Pooling
-across receivers is what recovers it, down to a floor at 47.2 m of displacement on 1.0.0.
+across receivers is what recovers it, down to a floor at 38.9 m of displacement.
 
 **Some classes are easy and some are impossible.** Denial of service and random
 position offset sit between 0.91 and 0.99. Replay sits near 0.11. The aggregate is an average
