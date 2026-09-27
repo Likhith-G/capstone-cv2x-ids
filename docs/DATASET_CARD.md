@@ -78,7 +78,7 @@ The three constant offset classes, 11 then 13 then 1, are **one mechanism at thr
 
 ## Partitions
 
-Frozen, shipped with the dataset, and reproducible from `analysis/make_release_splits.py`. Split **by physical transmitter**, not by claimed identity, so a sybil vehicle's several identities stay together and no vehicle appears on both sides of a boundary. Stratified so every class reaches every partition. Counts below are vehicles.
+Frozen, shipped with the dataset, and reproducible from `analysis/make_release_splits.py`. Split **by physical transmitter**, not by claimed identity, so a sybil vehicle's several identities stay together and no vehicle appears on both sides of a boundary. Stratified so every class reaches every partition. Counts below are vehicles over the union of all five scenarios, 1,170 in total, whereas the Size table above describes the reference scenario alone.
 
 | class | train | validation | test |
 |---|---|---|---|
@@ -155,7 +155,7 @@ Computable from message contents alone, which is what a detector without radio a
 
 ### Physical and MAC layer (28)
 
-What the radio measured. This block is what no other public V2X misbehaviour dataset carries.
+What the radio measured, and residuals that set a measurement against what the claim predicts. Thirteen of these columns take the claimed position or the application loss rate as an input: `phy_rsrp_resid_*`, `phy_track_*`, `phy_closest_*`, `phy_rsrp_vs_claimed`, `phy_rsrp_voiceprint_min` and `phy_loss_vs_rsrp`. The rest are radio measurements alone. So this block is not a radio only ablation arm; the radio versus claim residual is the literature's physical layer check, and it is what no other public V2X misbehaviour dataset carries.
 
 | column | type | meaning |
 |---|---|---|
@@ -174,7 +174,7 @@ What the radio measured. This block is what no other public V2X misbehaviour dat
 | `phy_rsrp_count` | float64 | Number of power measurements behind the statistics above. |
 | `phy_cbr_pscch_rate` | float64 | Control channel occupancy seen by this receiver, a channel busy measure. |
 | `phy_pscch_corrupt_rate` | float64 | Share of control channel decodes that failed. |
-| `phy_neighbours` | float64 | Distinct radio identifiers this receiver heard in this window. |
+| `phy_neighbours` | float64 | Distinct claimed stations whose messages this receiver decoded in this window. |
 | `phy_track_corr` | float64 | Correlation between measured power and the power predicted from the claimed track, over a long window. Undefined below 8 samples or 2 dB of predicted span. |
 | `phy_track_slope` | float64 | Regression slope of the same pair. One means the claim tracks the radio. |
 | `phy_track_resid_std` | float64 | Residual spread of the same regression. |
@@ -200,9 +200,11 @@ Stated here rather than left for a user to discover.
 6. **Three classes have fewer than twenty stations**, so a per class score on them rests on single figures per partition and must be read with the station count beside it.
 7. **The observation unit cannot be varied from this release.** Every row is already aggregated into a 1000 ms window. Changing the window length, or deriving any feature the pipeline did not compute, means rebuilding from the raw per packet simulator tables, and those are 36 GB and are not part of this bundle. So a user can train any model on these features, and cannot ask a question that needs different features. The published window sweep at 200, 500 and 1000 ms is the curve that exists.
 8. **Every measurement is a simulator output and none has been checked against a real radio.** Received power comes from the 3GPP TR 37.885 V2V highway channel model with log normal shadowing, which is a standardised model rather than a measured one. Labelled real world misbehaviour cannot be collected, because nobody performs position falsification on a public road, but that argument does not extend to the benign propagation law, and public benign C-V2X sidelink measurement sets do exist. Treat the fitted path loss exponent as a property of this corpus.
-9. **Received power is attributed per claimed identity, the way a real receiver would, and one Sybil caveat remains.** 5G-LENA never rotates a radio's link layer identifier, while a real station rotates it with its pseudonym (TS 33.536), so a real receiver sees each identity as a separate source. A radio carrying one identity in a window keeps every control channel it sent, which is exactly what a receiver would see. A radio carrying several has each identity take only the control channels matched to its own decoded messages, and a control channel matched to two identities is given to neither. So about a fifth of Sybil rows carry no `phy_rsrp_*` reading, a conservative loss rather than a leak. Release 1.0.0 pooled power per radio and gave a Sybil's identities identical statistics; that is fixed here, and the radio identifier column that named the physical transmitter is gone.
+9. **Received power is attributed per claimed identity, the way a real receiver would.** 5G-LENA never rotates a radio's link layer identifier, while a real station rotates it with its pseudonym (TS 33.536), so a real receiver sees each identity as a separate source. Each decoded control channel is given to the claimed identity whose decoded message, from that radio at that receiver, is nearest in time. For a radio that only ever sends one identity that is every channel it sent; for a Sybil it splits the channels, retransmissions included, between the identities they served. The split is an emulation rather than a measurement: which identity a retransmission belonged to is inferred from timing. Release 1.0.0 pooled power per radio and gave a Sybil's identities identical statistics; that is fixed here, and the radio identifier column that named the physical transmitter is gone.
 10. **The road is a loop.** A vehicle that passes one end reappears at the other, so density stays stationary. Differences between successive claims are taken the short way round the loop, so crossing the seam does not register as a jump. Release 1.0.0 did not do this and carried jumps of a road length in benign distance moved and prediction features. The road length is 6 km in every scenario but the dense one, which is 2 km.
 11. **Benign heading error is about 57 times smaller than the model intends.** The simulator converts the per-vehicle heading error bound from degrees to radians and then adds it to a heading kept in degrees, so benign heading error reaches at most about 0.3 degrees where the model allows up to 20. The `app_heading_*` features therefore see almost no honest heading noise, which makes heading-based checks look more reliable here than on a road.
+12. **Every Sybil draws the same ghost constellation.** Each message claims one of four identities, placed at fixed offsets from the sender's true position: 40 m along the road one way, 28 m to one side, 147 m along the other way and 60 m to the other side, with nothing drawn per attacker. Two of the four ghosts therefore claim positions off a carriageway 12 m either side of the centreline, which a map check alone would reject, and every Sybil in the corpus shares one geometry.
+13. **Vehicle receivers know their own position exactly.** A transmitter's claim carries its positioning error, but a vehicle receiver logs, and the pooled localisation uses, its true position. Roadside units are surveyed, so for them that is realistic; for vehicles, which are most observers, it is an optimistic asymmetry whose effect on the pooled estimates has not been measured.
 
 ## Licence
 
