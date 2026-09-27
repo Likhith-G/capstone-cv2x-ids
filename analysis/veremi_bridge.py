@@ -528,7 +528,8 @@ def main():
 
     c = v = o = None
     if present(SELF_INCONSISTENT):
-        c = run(vm, "VeReMi, FIXED position (control)", SELF_INCONSISTENT)
+        c = run(vm, "VeReMi, RANDOM offset (control)" if a.nextgen
+                else "VeReMi, FIXED position (control)", SELF_INCONSISTENT)
     if present(CONST_OFFSET):
         v = run(vm, "VeReMi, constant OFFSET", CONST_OFFSET)
         o = run(ours, "this corpus, constant OFFSET", {1, 11, 13})
