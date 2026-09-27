@@ -64,15 +64,24 @@ def fig_placement():
                 f"anisotropy {aniso[0]:.2f}",
                 xy=(off[0], across[0]), xytext=(4, across[0] + 0.7),
                 fontsize=8, color="#555555")
-    ax.plot([40], [across[best]], "*", ms=16, color="#a0522d", zorder=5)
-    # Sits under the curve's right arm, which is the only clear region: at this
-    # y-limit the space above the optimum is crossed by the curve itself and by
-    # the 80 m sample, and the text ran straight through that marker before.
+    # The campaign generated with the units at 40 m is the test of the sweep.
+    # Its reduction is measured against the same three seeds on the centreline,
+    # both read from their logs, so the annotation cannot outlive a rerun.
+    def across_of(log):
+        return float(grab(log, r"^\s+across the road\s+([\d.]+) m",
+                          f"the across-road bound in {log}")[0])
+    base = across_of("campaign_gnss/logs/geometry_bound_3seed.log")
+    moved = across_of("campaign_offset_rsu/logs/geometry_bound.log")
+    measured = 100.0 * (base - moved) / base
+    i40 = off.index(40.0)
+    predicted = 100.0 * (across[0] - across[i40]) / across[0]
+    ax.plot([off[best]], [across[best]], "*", ms=16, color="#a0522d", zorder=5)
+    top = max(across)
     ax.annotate(f"optimum at {off[best]:.0f} m: {across[best]:.1f} m, "
                 f"anisotropy {aniso[best]:.2f}\n"
-                f"generated at this offset and measured,\n"
-                f"19.1 percent against 19.6 predicted",
-                xy=(40, across[best]), xytext=(202, 29.2),
+                f"a campaign generated at 40 m measures\n"
+                f"{measured:.1f} percent against {predicted:.1f} predicted",
+                xy=(off[best], across[best]), xytext=(max(off), top + 1.2),
                 fontsize=8, color="#a0522d", va="bottom", ha="right",
                 arrowprops=dict(arrowstyle="->", lw=0.8, color="#a0522d",
                                 shrinkA=2, shrinkB=6))
@@ -80,7 +89,7 @@ def fig_placement():
     ax.set_ylabel("Cramer-Rao bound,\nacross the road (m)")
     ax.set_title("Geometry improves with offset, information falls with distance",
                  fontsize=10)
-    ax.set_ylim(28.9, 42.2)
+    ax.set_ylim(min(across) - 1.5, top + 5.5)
     ax.grid(alpha=0.25)
     save(fig, "placement")
 
@@ -98,8 +107,14 @@ def fig_direction():
                   "the ellipse orientation percentiles")
     q25, q50, q75 = [float(a) for a in angles[:3]]
 
+    # The band is where the unconstrained attacker's best lies fell across the
+    # displacements searched, read from the best response log rather than typed.
+    rows = grab("drift/logs/br_gnss_free.log",
+                r"^\s+\d+ m(?:\s+[-\d.]+){7}\s+([\d.]+)\s+[-\d.]+$",
+                "the off-axis angle of the best lies")
+    lo, hi = min(float(r) for r in rows), max(float(r) for r in rows)
     fig, ax = plt.subplots(figsize=(5.4, 2.0))
-    ax.axvspan(75, 85, color="#a0522d", alpha=0.22,
+    ax.axvspan(lo, hi, color="#a0522d", alpha=0.22,
                label="where a 72 direction search put the best lie (4b)")
     ax.plot([q25, q75], [1, 1], color="#1f4e79", lw=3,
             solid_capstyle="butt",
