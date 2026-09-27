@@ -125,26 +125,24 @@ Do the comparable run first. It is the one that slots into the existing table.
 
 ### What you are trying to beat
 
-**The four family rows below were measured on release 1.0.0 and are being rerun
-on 1.1.0; this table will be replaced when they land.** The random forest on
-1.1.0 is macro F1 0.5068, MCC 0.6438, and the other three move with it. Compare
-your transformer against the 1.1.0 rows, not these.
+Release 1.1.0, `campaign_gnss/logs/model_independence.log`, identical rows and
+folds for all four:
 
 | learner | macro F1 | MCC |
 |---|---|---|
-| random forest | 0.5145 | 0.6635 |
-| hist gradient boosting | 0.5015 | 0.6081 |
-| MLP 128-64 | 0.5028 | 0.6397 |
-| logistic regression | 0.4160 | 0.5889 |
+| random forest | 0.5068 | 0.6438 |
+| hist gradient boosting | 0.4945 | 0.5871 |
+| MLP 128-64 | 0.5030 | 0.6291 |
+| logistic regression | 0.4274 | 0.5969 |
 
 And on the three position classes, which is where the claim actually lives, the
-best any of the four reached, also on 1.0.0 until the rerun lands:
+best any of the four reached:
 
 | class | best of four |
 |---|---|
-| position offset, 1 to 25 m, median 12 m | 0.010 |
-| position offset, 47 to 83 m, median 71 m | 0.052 |
-| position offset, 22 to 233 m, median 140 m | 0.167 |
+| position offset, 1 to 25 m, median 12 m | 0.008 |
+| position offset, 47 to 83 m, median 71 m | 0.056 |
+| position offset, 22 to 233 m, median 140 m | 0.158 |
 
 **Those three numbers are the target.** The aggregate is almost beside the point.
 Note that the four rows above come from grouped cross-validation on 250,000
@@ -172,7 +170,7 @@ will save yourselves a fortnight.
    observation unit, which is the protocol the four rows above used. The frozen
    partition is for iterating; it reads high and does not sit in that table.
 2. Its row added to the four above: MCC, macro F1, per-class F1.
-3. Its three position-class scores stated explicitly against 0.010 / 0.052 / 0.167.
+3. Its three position-class scores stated explicitly against 0.008 / 0.056 / 0.158.
 4. The `check_release.py` output alongside.
 5. One paragraph on whether it confirms or breaks the bound, and why you think so.
 

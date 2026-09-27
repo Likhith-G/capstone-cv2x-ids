@@ -222,9 +222,8 @@ every block on every corpus, because resource grants in this simulator are data
 driven and an attacker cannot hoard the channel, so it has no signature to find.
 
 Four learner families have been run over identical rows and folds: a random
-forest, gradient boosting, an MLP and logistic regression. On release 1.0.0 the
-spread between the top three was about 0.013 macro F1, so nothing rested on a
-lucky model choice; the comparison is being rerun on 1.1.0.
+forest, gradient boosting, an MLP and logistic regression. The spread between the
+top three is about 0.012 macro F1, so nothing here rests on a lucky model choice.
 
 **You will see a slightly different number and that is expected.** The acceptance
 test trains a small forest on the frozen split using only what is in the bundle,
@@ -262,7 +261,7 @@ than it could ever be on a road.
 
 **Position attacks are nearly undetectable from one receiver.** On the three
 constant-offset classes the best score any of the four learner families reached
-is 0.010, 0.052 and 0.167, on release 1.0.0 while 1.1.0 is rerun. This is not a bug and it is not a weak model. One
+is 0.008, 0.056 and 0.158. This is not a bug and it is not a weak model. One
 receiver at a fixed geometry supplies one equation per window for four unknowns,
 two of position and two of propagation, so the information is not there. Pooling
 across receivers is what recovers it, down to a floor at 47.2 m of displacement on 1.0.0.

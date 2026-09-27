@@ -71,8 +71,7 @@ failures.
 Not at any magnitude in this dataset. Four learner families were run over
 identical rows and folds: a random forest, gradient boosting, a neural network
 and logistic regression. On the three constant-offset position classes the best
-score any of them reached is **0.010, 0.052 and 0.167** (release 1.0.0; the
-comparison is being rerun on 1.1.0).
+score any of them reached is **0.008, 0.056 and 0.158**.
 
 That is not four models failing. The measurement itself is the reason. A receiver
 estimating where a transmitter really is has four unknowns to solve for, two of

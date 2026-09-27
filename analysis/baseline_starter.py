@@ -11,7 +11,7 @@ flattering direction. Run this once unmodified to see the baseline, then replace
 Two protocols, and they answer different questions:
 
     --protocol cv       grouped cross-validation, which is how the published
-                        0.5145 was measured. Use this if you want your number to
+                        0.5068 was measured. Use this if you want your number to
                         sit beside the published ones.
 
     --protocol frozen   a single pass over the frozen partition shipped in the
@@ -42,14 +42,14 @@ from sklearn.model_selection import StratifiedGroupKFold
 POSITION_CLASSES = {11: "pos_small_offset, 1 to 25 m",
                     13: "pos_medium_offset, 47 to 83 m",
                     1:  "pos_const_offset, 22 to 233 m"}
-BEST_OF_FOUR = {11: 0.010, 13: 0.052, 1: 0.167}
+BEST_OF_FOUR = {11: 0.008, 13: 0.056, 1: 0.158}
 
 # Semi-persistent scheduling manipulation has no signature in this simulator:
 # Mode 2 grants are data driven, so the attacker cannot hoard the channel. It
 # scores zero in every block on every corpus. Reported, never quietly dropped.
 INERT_CLASS = 8
 
-PUBLISHED = {"macro_f1": 0.5145, "mcc": 0.6635, "one_nn": 0.3466}
+PUBLISHED = {"macro_f1": 0.5068, "mcc": 0.6438, "one_nn": 0.3533}
 
 
 def build_model():
