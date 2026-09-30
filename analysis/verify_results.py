@@ -29,21 +29,6 @@ CHECKS = [
     # 3g, the floor under four learner families rather than one
     # The magnitude ladder over all eight seeds. It replaced three stations a
     # class on seed 1, which had been carried forward as the scenario's ranges.
-    ("ladder small offset",
-     "| 11 pos_small_offset | uniform 4 to 25 m | **1.3 to 24.7 m** | 12.3 m | 2 of 22 |",
-     "campaign_gnss/logs/magnitude_ladder",
-     " 11 pos_small_offset       22     1.3     8.6    12.3    20.1    24.7  2"),
-    ("ladder medium offset",
-     "| 13 pos_medium_offset | uniform 50 to 80 m | **47.3 to 83.2 m** | 70.7 m | 0 of 20 |",
-     "campaign_gnss/logs/magnitude_ladder",
-     " 13 pos_medium_offset       20    47.3    60.1    70.7    76.4    83.2  0"),
-    ("ladder constant offset",
-     "| 1 pos_const_offset | box, 250 m by 30 m | **21.5 to 232.7 m** | 139.9 m | 0 of 18 |",
-     "campaign_gnss/logs/magnitude_ladder",
-     "  1 pos_const_offset       18    21.5    70.0   139.9   192.0   232.7  0"),
-    ("ladder benign error",
-     "Benign error over the same eight seeds: median 4.02 m, 95th percentile 6.12 m.",
-     "campaign_gnss/logs/magnitude_ladder", "benign error: median 4.02 m, p95 6.12 m"),
     # The acceptance test on the bundle as sent. The public documents quote it,
     # and it had no log until 26 Sep.
     # 3h, the bound from geometry with no classifier involved
@@ -72,8 +57,6 @@ CHECKS = [
     # 3f2, the cross dataset test on the current benchmark
     # 3h2, the placement prediction tested against a real campaign
     # 3h3, the estimator study
-    ("corpus size", "| windows | 1,641,002 |",
-     "campaign_gnss/logs/merge", "merged: 1641002 windows, 720 stations, 8 seeds"),
     # The epsilon column is recomputed rather than read from the sweep, because
     # the sweep's accountant charged the wrong sensitivity. Pin both columns.
     # The p-values in section 5 are recomputed exactly from the logged per-seed
@@ -1179,6 +1162,45 @@ CHECKS = [
     ('9 heading flag bursty',
      'dense and bursty corpora (dataset card, limitation 11)',
      'campaign_sporadic/logs/check_seed1', 'benign heading error is far below its configured bound'),
+    ('1 main windows',
+     '| windows | 1,641,002 |',
+     'campaign_gnss/logs/merge', 'merged: 1641002 windows, 720 stations, 8 seeds'),
+    ('1 benign stations',
+     '| stations | 720, of which 519 benign |',
+     'campaign_gnss/logs/merge', '0     519'),
+    ('1 benign error',
+     'median 4.02 m, 95th percentile 6.12 m, maximum 19.66 m',
+     'campaign_gnss/logs/magnitude_ladder', 'benign error: median 4.02 m, p95 6.12 m, max 19.66 m'),
+    ('1 small rung',
+     '| 11 pos_small_offset | uniform 4 to 25 m | **1.3 to 24.7 m** | 12.3 m | 2 of 22 |',
+     'campaign_gnss/logs/magnitude_ladder', ' 11 pos_small_offset       22     1.3     8.6    12.3    20.1    24.7  2'),
+    ('1 const rung',
+     '| 1 pos_const_offset | box, 250 m by 30 m | **21.5 to 232.7 m** | 139.9 m | 0 of 18 |',
+     'campaign_gnss/logs/magnitude_ladder', '  1 pos_const_offset       18    21.5    70.0   139.9   192.0   232.7  0'),
+    ('1 dense windows',
+     '| 3,657,495 |',
+     'campaign_dense_gnss/logs/merge', 'merged: 3657495 windows, 720 stations, 3 seeds'),
+    ('1 floor windows',
+     '| 1,220,021 |',
+     'campaign_floor/logs/merge', 'merged: 1220021 windows, 540 stations, 6 seeds'),
+    ('1 offset rsu windows',
+     '| 605,481 |',
+     'campaign_offset_rsu/logs/merge', 'merged: 605481 windows, 270 stations, 3 seeds'),
+    ('1 sporadic windows',
+     '| 792,709 |',
+     'campaign_sporadic/logs/merge', 'merged: 792709 windows, 360 stations, 4 seeds'),
+    ('1 floor ladder overlap',
+     'the small class spans 1.6 to 41.8 m and the mid class 23.7 to 86.8 m',
+     'campaign_floor/logs/magnitude_ladder', 'pos_small_offset      1.6 to   41.8 m   pos_medium_offset    23.7 to   86.8 m   OVERLAP'),
+    ('8 dense DCC staircase top',
+     'and 1000 ms above 0.7, which is T_GenCam_Max',
+     'campaign_dense_gnss/logs/check_seed1', '(0.7, 1.01]  3030     1000.0'),
+    ('8 dense busy ratio',
+     'ratio of 0.748, p95 0.983, and there the staircase',
+     'campaign_dense_gnss/logs/check_seed1', 'CBR mean 0.748 p95 0.983 max 1.000'),
+    ('8 main DCC above 0.4',
+     '400 ms in the 34 CAMs above it',
+     'campaign_gnss/logs/check_seed1', '(0.4, 0.5]    34      400.0'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
