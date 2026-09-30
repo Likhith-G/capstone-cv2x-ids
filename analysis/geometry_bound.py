@@ -405,9 +405,9 @@ What it does explain is the ordering of the single-observer scores by
 magnitude. Read it against the three constant-offset classes, whose realised
 per station displacements are 1 to 25 m, 47 to 83 m and 22 to 233 m: the first
 sits entirely below this ambiguity, the second at or below it, and only the
-third carries mass above it. Those are the classes a single receiver scores 0.002,
-0.021 and 0.146 on. The bound says which of them could have been detected at
-all, and the measurement agrees.
+third carries mass above it. Section 3's benchmark log gives the single
+receiver's score on each, which rises in the same order. The bound says which of
+them could have been detected at all, and the measurement agrees.
 """)
 
     # Which sigma goes into the bound depends on what is being bounded, and
