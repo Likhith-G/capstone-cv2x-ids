@@ -150,9 +150,14 @@ def curve(det, offsets, floor95, label, edges, min_stations,
     if save_to:
         path = pathlib.Path(save_to)
         prev = pd.read_csv(path) if path.exists() else None
+        # A rerun replaces its own rows rather than appending a second copy,
+        # which would count every station twice in a --locate-with fit.
+        if prev is not None:
+            prev = prev[~((prev.corpus == keep.corpus.iloc[0])
+                          & (prev.arm == label))]
         pd.concat([prev, keep] if prev is not None else [keep],
                   ignore_index=True).to_csv(path, index=False)
-        print(f"  station table appended to {path}")
+        print(f"  station table updated at {path}")
 
     pooled_in = keep
     if borrow is not None and len(borrow):
