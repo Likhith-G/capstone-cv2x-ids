@@ -555,10 +555,23 @@ distance, so a unit set too far back contributes better geometry and less of it.
           f"truth, so this\n    is the row to compare it against. The per axis "
           f"figures above are standard\n    deviations and are not the same "
           f"statistic.")
+    # A bound on an estimator's mean square error over a population of units is
+    # the mean of the per-unit traces, not the trace at the median unit. An
+    # estimator's RMS must be compared against this, never against a median.
+    tr = r.free_along ** 2 + r.free_across ** 2
+    top = tr <= tr.quantile(0.99)
+    print(f"  RMS radial error of an efficient estimator, root of the mean trace "
+          f"over units {np.sqrt(tr.mean()):9.1f} m")
+    print(f"    the same without the 1 percent of units with the largest trace "
+          f"{np.sqrt(tr[top].mean()):9.1f} m")
+    print(f"    compare an estimator's RMS error with these; the heavy upper tail "
+          f"of the per-unit\n    bound is why they sit well above the median unit")
     print(f"\nroad constrained, the across-road coordinate pinned to the carriageway")
     print(f"  along the road            {r.road_along.median():9.1f} m")
     print(f"  improvement over the free fit  "
           f"{r.free_across.median() / r.road_along.median():6.1f} times")
+    print(f"  along-road RMS over units, root of the mean variance "
+          f"{np.sqrt((r.road_along ** 2).mean()):9.1f} m")
     print("""
 Compare these two against the measured localisation error, free and road
 constrained, in RESULTS.md 4b. The bound is a lower bound on any
