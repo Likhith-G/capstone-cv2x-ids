@@ -493,7 +493,7 @@ def main():
         y = (sub.label_attackId != benign).astype(int).values
         groups = sub.label_txNodeId.values
         sg = StratifiedGroupKFold(n_splits=a.folds, shuffle=True, random_state=0)
-        f1s, mccs = [], []
+        f1s, mccs, imps = [], [], []
         for tr, te in sg.split(X, y, groups):
             clf = RandomForestClassifier(n_estimators=a.trees, n_jobs=a.jobs,
                                          random_state=0)
@@ -501,11 +501,23 @@ def main():
             p = clf.predict(X[te])
             f1s.append(f1_score(y[te], p, average="binary", zero_division=0))
             mccs.append(matthews_corrcoef(y[te], p))
+            imps.append(clf.feature_importances_)
         print(f"{name:34s} {len(sub):>9,} windows  "
               f"{int(sub.label_txNodeId.nunique()):>4} stations  "
               f"{int((sub.label_attackId != benign).sum()):>8,} attack rows  "
               f"F1 {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}  "
               f"MCC {np.mean(mccs):.4f}")
+        # What the model separates on, so a score can be read as range
+        # plausibility or as self consistency rather than guessed at.
+        imp = pd.Series(np.mean(imps, axis=0), index=feats).sort_values(
+            ascending=False)
+        print("    most important: " + ", ".join(
+            f"{k} {v:.3f}" for k, v in imp.head(3).items()))
+        att = (sub.label_attackId != benign).values
+        for col in ("app_claimed_dist_mean", "app_dmv_mean"):
+            vals = sub[col].abs()
+            print(f"    median |{col}|: benign {vals[~att].median():.4f}, "
+                  f"attack {vals[att].median():.4f}")
         return float(np.mean(f1s))
 
     print("position falsification against benign, application layer only, the "
