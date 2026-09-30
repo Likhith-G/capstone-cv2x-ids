@@ -100,7 +100,7 @@ not a small effect. For a typical transmitter the receivers that hear it spread
 
 A hundred-to-one array is poor at resolving position *across* the road, because
 every receiver is measuring from roughly the same direction. Working that out
-from the geometry alone predicts the error ellipse points **79.3 degrees** off
+from the geometry alone predicts the error ellipse points **79.7 degrees** off
 the road axis. An attacker found independently by brute-force search over 72 directions
 lies at **75 to 85 degrees**, with no knowledge of the prediction.
 
@@ -133,7 +133,7 @@ that lies sideways is the one that does not have to stay on the road.**
 
 Run against VeReMi NextGen, the current public benchmark, the same detector
 scores 0.9570 on a position lie that contradicts itself, 0.1460 on a
-self-consistent constant offset, and 0.0352 on the constant offsets here. The
+self-consistent constant offset, and 0.0397 on the constant offsets here. The
 ordering reproduces on an independently generated dataset.
 
 ### On the headline number, which is 0.5068

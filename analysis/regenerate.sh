@@ -76,6 +76,12 @@ $PY -u $A/pooled_consensus.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     --class-weight none --validate --road-halfwidth \
     --out $DIR/pooled_road.pkl > $L/pooled_road.log 2>&1
 $PY -u $A/pool_separation.py $DIR/pooled_road.pkl > $L/pool_separation_road.log 2>&1
+# Receivers per pooled unit, which the collusion argument reads, and the share
+# of honest claims a map check rejects at each half-width. RESULTS 3h6 quotes
+# the latter on the first three seeds, so it is run on those.
+$PY -u $A/receiver_counts.py $DIR/pooled_road.pkl > $L/receiver_counts.log 2>&1
+$PY -u $A/carriageway_share.py $DIR ${TAGS[1,3]} --widths 12 15 18 \
+    > $L/carriageway_share.log 2>&1
 $PY -u $A/claim_permutation.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
     > $L/claim_permutation.log 2>&1
 $PY -u $A/power_evasion.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \
