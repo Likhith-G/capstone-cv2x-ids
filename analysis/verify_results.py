@@ -123,14 +123,6 @@ CHECKS = [
      "seed 9  F1 0.4098  MCC +0.5896  predicts  6 of 11 classes   |w|   123.49"),
     # 3b2, the floor located from a campaign built to sample the transition
     # 3c2, does the cooperative architecture survive the shift
-    ("pooled drift into light traffic",
-     "| **into light traffic** | **pooled fused** | **0.4193 +/- 0.0204** | **0.6274 +/- 0.0121** | **-0.2081** |",
-     "drift/logs/density_pooled",
-     "campaign_gnss    pooled fused    0.4193 +/- 0.0204    0.6274 +/- 0.0121  -0.2081"),
-    ("pooled drift into congestion",
-     "| **into congestion** | **pooled fused** | **0.3063 +/- 0.0104** | **0.6711 +/- 0.0174** | **-0.3648** |",
-     "drift/logs/density_pooled",
-     "campaign_dense_gnss pooled fused    0.3063 +/- 0.0104    0.6711 +/- 0.0174  -0.3648"),
     # 3f2, the cross dataset test on the current benchmark
     # 3h2, the placement prediction tested against a real campaign
     ("federated drift reverse direction",
@@ -1047,6 +1039,24 @@ CHECKS = [
     ('3c training rows',
      '98,023 and 99,684 training rows per arm',
      'drift/logs/density_gnss', '99,684 training rows per arm'),
+    ('3c2 light fused',
+     '| **into light traffic** | **pooled fused** | **0.4067 +/- 0.0065** | **0.6007 +/- 0.0208** | **-0.1940** |',
+     'drift/logs/density_pooled', 'campaign_gnss    pooled fused    0.4067 +/- 0.0065    0.6007 +/- 0.0208  -0.1940'),
+    ('3c2 congested fused',
+     '| **into congestion** | **pooled fused** | **0.3480 +/- 0.0084** | **0.6959 +/- 0.0336** | **-0.3479** |',
+     'drift/logs/density_pooled', 'campaign_dense_gnss pooled fused    0.3480 +/- 0.0084    0.6959 +/- 0.0336  -0.3479'),
+    ('3c2 light consensus',
+     '| into light traffic | consensus block | 0.2289 +/- 0.0114 | 0.2813 +/- 0.0144 | -0.0524 |',
+     'drift/logs/density_pooled', 'campaign_gnss    consensus block    0.2289 +/- 0.0114    0.2813 +/- 0.0144  -0.0524'),
+    ('3c2 congested means',
+     '| into congestion | pooled means | 0.3308 +/- 0.0112 | 0.6770 +/- 0.0343 | -0.3462 |',
+     'drift/logs/density_pooled', 'campaign_dense_gnss pooled means    0.3308 +/- 0.0112    0.6770 +/- 0.0343  -0.3462'),
+    ('3c2 dense receivers',
+     'one on the congested corpus has 135',
+     'campaign_dense_gnss/logs/pooled_road_veh', 'observers per unit: median 135, min 5, max 239'),
+    ('3c2 sparse receivers',
+     'median of 34 cooperating vehicle',
+     'campaign_gnss/logs/pooled_road_veh', 'observers per unit: median 34, min 5, max 60'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
