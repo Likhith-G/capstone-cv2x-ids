@@ -1215,14 +1215,14 @@ FRESHNESS = [("campaign_gnss/logs/pool_separation.log", "campaign_gnss/pooled.pk
 # likely to be edited in isolation and left quietly disagreeing with the
 # evidence it summarises. Each entry is a string that must appear in both.
 CLAIMS_CONSISTENCY = [
-    "0.131",          # single receiver, class 1
-    "0.590",          # pooled consensus, class 1
-    "0.412",          # pooled consensus, class 13, the band that decides
-    "0.019",          # and the same class to one receiver
-    "18.2",           # localisation error, which sets the detection floor
-    "0.0156",         # FedLC over FedAvg on MCC, the pre-specified aggregate
-    "7.16",           # permutation control, benign given a false claim
-    "0.905",          # pooled AUC, unchanged under every power adversary
+    "0.128",          # single receiver, class 1
+    "0.571",          # pooled consensus, class 1
+    "0.379",          # pooled consensus, class 13, the band that decides
+    "0.027",          # and the same class to one receiver
+    "18.3",           # localisation error, which sets the detection floor
+    "0.0318",         # FedLC over FedAvg on MCC, the pre-specified aggregate
+    "12.79",          # permutation control, benign given a false claim
+    "0.915",          # pooled AUC, unchanged under every power adversary
 ]
 
 # Prose files the dash ban is enforced over, as repository relative paths.
@@ -1491,7 +1491,7 @@ def check_claims(bad):
     ctext, rtext = claims.read_text(), DOC.read_text()
     if draft.exists():
         dtext = draft.read_text()
-        for token in ["0.5145", "0.412", "0.0578", "18.2"]:
+        for token in ["0.5068", "0.379", "0.0558", "18.3"]:
             ok = token in dtext and token in rtext
             bad += not ok
             print(f"{'ok  ' if ok else 'FAIL'} draft agrees on {token:8s}"
