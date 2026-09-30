@@ -151,8 +151,6 @@ CHECKS = [
      "Benign stations flagged at 2 of 3 rise\nfrom 0.086 to 0.360.",
      "campaign_sporadic/logs/persistence",
      "   2/3                   382                  503            0.736           0.360"),
-    ("collusion needs twenty receivers",
-     "| a half | 20 | 13 |", None, None),
     # Drift. These live under runs/drift/logs because drift.py reads several
     # corpora at once and has no single run directory to write into.
     # Superseded pair, kept because section 3d is a statement about the filter
@@ -1071,6 +1069,24 @@ CHECKS = [
     ('3e train rows',
      '30 s, 56,400 windows',
      'drift/logs/temporal', 'train 56,400 windows'),
+    ('4c median receivers',
+     '| median | 39 |',
+     'campaign_gnss/logs/receiver_counts', 'median                 39'),
+    ('4c 10th percentile',
+     '| 10th percentile | 25 |',
+     'campaign_gnss/logs/receiver_counts', '10th percentile        25'),
+    ('4c half colluders',
+     '| a half | 20 | 13 |',
+     'campaign_gnss/logs/receiver_counts', 'a half               20           13'),
+    ('4c third colluders',
+     '| a third | 13 | 9 |',
+     'campaign_gnss/logs/receiver_counts', 'a third              13            9'),
+    ('4c thin units',
+     'Only 3.2 percent of units have fewer than twenty',
+     'campaign_gnss/logs/receiver_counts', 'units with fewer than 20 receivers: 3.2 percent'),
+    ('4c 25 m on road',
+     'caught 1.4 percent of the time at 25 m',
+     'drift/logs/br_gnss_both', '25 m       3.111     0.441       1.014      0.374         0.014'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
