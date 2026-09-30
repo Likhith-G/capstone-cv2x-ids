@@ -78,17 +78,6 @@ CHECKS = [
     # the sweep's accountant charged the wrong sensitivity. Pin both columns.
     # The p-values in section 5 are recomputed exactly from the logged per-seed
     # scores, because the logged ones came from a normal approximation.
-    ("bursty attacker destroys the operating point",
-     "| **5/7** | **7** | **139** | 0.540 | 0.503 |",
-     "campaign_sporadic/logs/persistence",
-     "   5/7                   106                  139            0.503"),
-    ("bursty attacker collapses per window classification",
-     "| **fused** | **0.5145** | **0.3762** |",
-     "campaign_sporadic/logs/benchmark", "fused            50  0.3762"),
-    ("bursty benign flag rate",
-     "Benign stations flagged at 2 of 3 rise\nfrom 0.086 to 0.360.",
-     "campaign_sporadic/logs/persistence",
-     "   2/3                   382                  503            0.736           0.360"),
     # Drift. These live under runs/drift/logs because drift.py reads several
     # corpora at once and has no single run directory to write into.
     # Superseded pair, kept because section 3d is a statement about the filter
@@ -1127,6 +1116,30 @@ CHECKS = [
     ('6b2c class 13',
      '0.415 on class 13',
      'campaign_gnss/logs/pooled_road_debias_full', 'class 13: single 0.027 -> consensus 0.415'),
+    ('6c bursty fused',
+     '| **fused** | **0.5068** | **0.3637** |',
+     'campaign_sporadic/logs/benchmark', 'fused            50  0.3637 +/- 0.0135  0.7684  0.4159'),
+    ('6c bursty app',
+     '| application only | 0.4880 | 0.3400 |',
+     'campaign_sporadic/logs/benchmark', 'app-only         22  0.3400 +/- 0.0123'),
+    ('6c bursty speed',
+     '| 5 speed_falsify | 0.627 | **0.065** |',
+     'campaign_sporadic/logs/benchmark', '     5         0.068         0.000         0.065         0.000'),
+    ('6c bursty random offset',
+     '| 3 pos_offset_random | 0.987 | **0.352** |',
+     'campaign_sporadic/logs/benchmark', '     3         0.329         0.253         0.352         0.000'),
+    ('6c bursty 5 of 7',
+     '| **5/7** | **11** | **503** | 0.503 | 0.498 |',
+     'campaign_sporadic/logs/persistence', '5/7                   115                  503            0.498           0.132'),
+    ('6c bursty 2 of 3',
+     '| 2/3 | 295 | **1631** | 0.607 | 0.764 |',
+     'campaign_sporadic/logs/persistence', '2/3                   373                 1631            0.764           0.349'),
+    ('6c tracks',
+     '48 regions, 880 station tracks, 275 of',
+     'campaign_sporadic/logs/persistence', '24762 windows, 880 station tracks in 48 regions, 275 of them attackers'),
+    ('6c continuous 5 of 7',
+     '| **5/7** | **11** |',
+     'campaign_gnss/logs/persistence', '5/7                     5                   11            0.503           0.004'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
