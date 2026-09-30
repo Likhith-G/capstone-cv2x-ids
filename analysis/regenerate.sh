@@ -55,6 +55,8 @@ $PY -u $A/calibration.py $DIR ${TAGS[1]} > $L/calibration.log 2>&1 || true
 echo "[5/9] cross-layer benchmark"
 $PY -u $A/benchmark.py $DIR/corpus.pkl --report --sample 250000 --folds 3 \
     --trees 100 > $L/benchmark.log 2>&1
+# The realised lie per position class, which the evasion section quotes
+$PY -u $A/magnitude_ladder.py $DIR $TAGS > $L/magnitude_ladder.log 2>&1
 
 echo "[6/9] multi-observer pooling"
 $PY -u $A/pooled_consensus.py $DIR/corpus.pkl --run-dir $DIR --tags $TAGS \

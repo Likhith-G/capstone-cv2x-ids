@@ -298,17 +298,6 @@ CHECKS = [
      "debiased and weighted                   12.8 m"),
     ("corpus size", "| windows | 1,641,002 |",
      "campaign_gnss/logs/merge", "merged: 1641002 windows, 720 stations, 8 seeds"),
-    ("power evasion class 1", "| 1 | power-targeted | **0.500** | **0.905** |",
-     "campaign_gnss/logs/power_evasion",
-     "     1 power-targeted             0.500             0.905"),
-    ("power evasion class 13 invariant",
-     "| 13 | power-targeted | **0.500** | **0.784** |",
-     "campaign_gnss/logs/power_evasion",
-     "    13 power-targeted             0.500             0.784"),
-    ("power evasion class 4", "| 4 pos_replay | none | 0.561 | 0.835 |",
-     "campaign_gnss/logs/power_evasion", "4       none             0.561             0.835"),
-    ("power evasion class 6", "| 6 sybil | none | 0.561 | 0.600 |",
-     "campaign_gnss/logs/power_evasion", "6       none             0.561             0.600"),
     # The epsilon column is recomputed rather than read from the sweep, because
     # the sweep's accountant charged the wrong sensitivity. Pin both columns.
     # The p-values in section 5 are recomputed exactly from the logged per-seed
@@ -423,9 +412,6 @@ CHECKS = [
     # unconstrained versions are the whole point and quoting one without the
     # other is the misreading this section exists to prevent.
     # cross-checks kept from the other corpora
-    ("dense stealth position",
-     "| position falsification, stealthy | **14.0 m** median error (sd 6.2) | **0.001** |",
-     "benchmark_dense3", "    11         0.002         0.002         0.001"),
     # release 1.1.0 rewrite: sections 2, 3g, 3i, 5, 5b, 5c, 6, 6b, 7, 8, 8c
     ('2 gate count',
      'All 10 gates pass',
@@ -961,6 +947,36 @@ CHECKS = [
     ('3b2 stations',
      '**44 position attacker stations',
      'campaign_floor/logs/offset_floor_located', 'locating the floor from all 44 stations'),
+    ('4 dense loud flood',
+     '| rate flooding, loud (7) | 10 ms interval, 100 Hz | 0.963 |',
+     'campaign_dense_gnss/logs/benchmark', '     7         0.960         0.699         0.963         0.644'),
+    ('4 dense stealthy flood',
+     '| rate flooding, stealthy (12) | 40 to 80 ms interval, 12.5 to 25 Hz | 0.958 |',
+     'campaign_dense_gnss/logs/benchmark', '    12         0.956         0.734         0.958         0.688'),
+    ('4 dense loud position',
+     '| position falsification, loud (1) | 135.2 m median, 28 stations | 0.212 |',
+     'campaign_dense_gnss/logs/benchmark', '     1         0.002         0.212         0.212         0.000'),
+    ('4 dense loud magnitude',
+     '135.2 m median, 28 stations',
+     'campaign_dense_gnss/logs/magnitude_ladder', '  1 pos_const_offset       28    21.1    90.4   135.2   217.1   247.1  0'),
+    ('4 dense stealthy magnitude',
+     '**11.6 m** median, 26 stations',
+     'campaign_dense_gnss/logs/magnitude_ladder', ' 11 pos_small_offset       26     3.3     9.2    11.6    14.8    24.7  3'),
+    ('4 dense benign rate',
+     'Benign CAMs in this scenario run at 1.13 Hz',
+     'campaign_dense_gnss/logs/check_seed1', 'benign CAM: median 1000 ms, mean 887, 1.13 Hz'),
+    ('4b class 1 none',
+     '| 1 pos_const_offset | none | 0.641 | **0.915** |',
+     'campaign_gnss/logs/power_evasion', '     1       none             0.641             0.915'),
+    ('4b class 1 targeted',
+     '| 1 | power-targeted | **0.500** | **0.915** |',
+     'campaign_gnss/logs/power_evasion', '     1 power-targeted             0.500             0.915'),
+    ('4b class 13',
+     '**The mid-magnitude class behaves the same way**, 0.811 pooled',
+     'campaign_gnss/logs/power_evasion', '    13 power-targeted             0.500             0.811'),
+    ('4b sybil pooled',
+     '| 6 | power-targeted | 0.500 | 0.917 |',
+     'campaign_gnss/logs/power_evasion', '     6 power-targeted             0.500             0.917'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
