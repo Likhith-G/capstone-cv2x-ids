@@ -156,24 +156,6 @@ CHECKS = [
     # the sweep's accountant charged the wrong sensitivity. Pin both columns.
     # The p-values in section 5 are recomputed exactly from the logged per-seed
     # scores, because the logged ones came from a normal approximation.
-    ("cross dataset positive control",
-     "| **VeReMi, FIXED position (control)** | 214,247 | 2,509 | 35,952 | "
-     "**0.9644 +/- 0.0014** | **0.9575** |",
-     "drift/logs/veremi_crossdataset",
-     "VeReMi, FIXED position (control)     214,247 windows  2509 stations    "
-     "35,952 attack rows  F1 0.9644 +/- 0.0014  MCC 0.9575"),
-    ("cross dataset VeReMi offset partly detectable",
-     "| **VeReMi, constant OFFSET** | 214,048 | 2,509 | 35,753 | "
-     "**0.3382 +/- 0.0071** | **0.3149** |",
-     "drift/logs/veremi_crossdataset",
-     "VeReMi, constant OFFSET              214,048 windows  2509 stations    "
-     "35,753 attack rows  F1 0.3382 +/- 0.0071  MCC 0.3149"),
-    ("cross dataset ours near zero",
-     "| **this corpus, constant OFFSET** | 195,359 | 579 | 19,934 | "
-     "**0.0290 +/- 0.0194** | **0.0496** |",
-     "drift/logs/veremi_crossdataset",
-     "this corpus, constant OFFSET         195,359 windows   579 stations    "
-     "19,934 attack rows  F1 0.0290 +/- 0.0194  MCC 0.0496"),
     ("bursty attacker destroys the operating point",
      "| **5/7** | **7** | **139** | 0.540 | 0.503 |",
      "campaign_sporadic/logs/persistence",
@@ -1031,6 +1013,30 @@ CHECKS = [
     ('3h6 road18 localisation',
      'widens from 17.9 m to 21.0 m',
      'campaign_gnss/logs/ac_attacker_road18', 'median 21.0 m, 90th 41.8 m'),
+    ('3f control',
+     '| **VeReMi, FIXED position (control)** | 400,000 | 2472 | 117,807 | **0.9688 +/- 0.0018** | **0.9562** |',
+     'campaign_gnss/logs/veremi_control', 'F1 0.9688 +/- 0.0018  MCC 0.9562'),
+    ('3f VeReMi offset',
+     '| **VeReMi, constant OFFSET** | 400,000 | 2472 | 117,807 | **0.4961 +/- 0.0093** | **0.3659** |',
+     'campaign_gnss/logs/veremi_offset', 'F1 0.4961 +/- 0.0093  MCC 0.3659'),
+    ('3f corpus offset',
+     '| **this corpus, constant OFFSET** | 312,624 | 579 | 31,930 | **0.0539 +/- 0.0222** | **0.0816** |',
+     'campaign_gnss/logs/veremi_offset', '312,624 windows   579 stations    31,930 attack rows  F1 0.0539 +/- 0.0222  MCC 0.0816'),
+    ('3f range importance',
+     '`app_claimed_dist_mean`, 0.365 of total importance',
+     'campaign_gnss/logs/veremi_offset', 'most important: app_claimed_dist_mean 0.365'),
+    ('3f VeReMi claimed distance',
+     "VeReMi's offset attackers claim a **median distance of 311.4 m from the",
+     'campaign_gnss/logs/veremi_offset', 'median |app_claimed_dist_mean|: benign 164.8458, attack 311.4193'),
+    ('3f corpus claimed distance',
+     '**On this corpus the same feature carries nothing.** Attackers claim a median',
+     'campaign_gnss/logs/veremi_offset', 'median |app_claimed_dist_mean|: benign 613.5534, attack 603.2576'),
+    ('3f selftest',
+     'builder produced from the same log: **all seventeen match across 218,782',
+     'campaign_gnss/logs/veremi_selftest', '218,782 windows compared against corpus.pkl'),
+    ('3f twin guard',
+     'share 28 to 48 of 4,000',
+     'campaign_gnss/logs/veremi_offset', 'twin check 1 and 3: 48 of 4000 benign positions shared'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
