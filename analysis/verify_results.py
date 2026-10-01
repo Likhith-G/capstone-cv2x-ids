@@ -25,51 +25,9 @@ RUNS = pathlib.Path.home() / "ns3-v2x" / "runs"
 
 # label, exact string in RESULTS.md, log stem, exact string in that log
 CHECKS = [
-    # campaign_v3 is the corpus. Its logs live under campaign_v3/logs/.
-    # 3g, the floor under four learner families rather than one
-    # The magnitude ladder over all eight seeds. It replaced three stations a
-    # class on seed 1, which had been carried forward as the scenario's ranges.
-    # The acceptance test on the bundle as sent. The public documents quote it,
-    # and it had no log until 26 Sep.
-    # 3h, the bound from geometry with no classifier involved
-    # 3h5: the predicted rotation to 86 degrees, tested against the corrected
-    # estimator and refuted. The off-axis column is the claim; the caught-at-5%
-    # column beside it is what the correction is worth against this adversary.
-    # 3h8: the replication. The two displacements that carry the claim, on the
-    # two independent seed subsets, plus the 200 m cell that never moves.
-    # 3h7: the correction swept in five steps, with the bound swept alongside
-    # it. The controls are the two endpoints, which must reproduce the published
-    # single slope and corrected columns, and the claim is the monotone gap.
-    # 3h6: the attacker constraint isolated. Same campaign, same triples, same
-    # estimator constraint; only --br-lateral differs. The angle column is the
-    # finding and the caught-at-5% column is what the constraint is worth.
-    # 3i, against the field's standard checks
-    # 5d, does federating across densities recover the shift. Every pin here is
-    # against the regenerated logs; the four federated_drift_* logs are
-    # superseded and 5d4 says why. The pooled arms were unpinned before, which
-    # is part of how a wrong number survived in 5d3, so they are pinned now.
-    # 5d3, the pooled ceiling arms in both directions
-    # 5d3, the exposure matched control. The ratios are derived rather than
-    # printed by the campaign, so they are pinned against drift_exposure.py's
-    # own output, which recomputes them from the arm lines.
-    # 3b2, the floor located from a campaign built to sample the transition
-    # 3c2, does the cooperative architecture survive the shift
-    # 3f2, the cross dataset test on the current benchmark
-    # 3h2, the placement prediction tested against a real campaign
-    # 3h3, the estimator study
-    # The epsilon column is recomputed rather than read from the sweep, because
-    # the sweep's accountant charged the wrong sensitivity. Pin both columns.
-    # The p-values in section 5 are recomputed exactly from the logged per-seed
-    # scores, because the logged ones came from a normal approximation.
-    # Drift. These live under runs/drift/logs because drift.py reads several
-    # corpora at once and has no single run directory to write into.
-    # Superseded pair, kept because section 3d is a statement about the filter
-    # rather than about the corpus and has not been repeated.
-    # The estimator-aware adversary. Two logs, because the constrained and
-    # unconstrained versions are the whole point and quoting one without the
-    # other is the misreading this section exists to prevent.
-    # cross-checks kept from the other corpora
-    # release 1.1.0 rewrite: sections 2, 3g, 3i, 5, 5b, 5c, 6, 6b, 7, 8, 8c
+    # One entry per figure, added by the section that quotes it. Entries are
+    # (label, exact string in RESULTS.md, log stem under runs/, exact string in
+    # that log); a stem of None pins a doc-only string.
     ('2 gate count',
      'All 10 gates pass',
      'campaign_gnss/logs/validate', 'all 10 gates passed'),
@@ -1249,6 +1207,10 @@ CLAIMS_CONSISTENCY = [
     "0.915",          # pooled AUC, unchanged under every power adversary
 ]
 
+# The same kind of agreement for the paper draft, which is the file read while
+# writing and the one most likely to acquire a remembered number.
+DRAFT_TOKENS = ["0.5068", "0.379", "0.0558", "18.3"]
+
 # Prose files the dash ban is enforced over, as repository relative paths.
 # Every document that gets written by hand belongs here. METHODS_DRAFT.md in
 # particular carries the standards prose, which is copied from sources that use
@@ -1301,6 +1263,11 @@ def check_references(bad):
     bad_refs = []
     for m in sorted(set(re.findall(r"runs/[a-z0-9_]+(?:/[a-z0-9_]+){0,2}\.(?:log|pkl)", text))):
         if not (RUNS.parent / m).exists():
+            bad_refs.append(m)
+    # The rewritten record cites logs relative to runs/, without the prefix.
+    for m in sorted(set(re.findall(
+            r"(?<![\w/])((?:campaign_[a-z0-9_]+|drift)/logs/[a-z0-9_]+\.log)", text))):
+        if not (RUNS / m).exists():
             bad_refs.append(m)
     for m in sorted(set(re.findall(r"analysis/[a-z_]+\.(?:py|sh)", text))):
         if not (repo / m).exists():
@@ -1515,7 +1482,7 @@ def check_claims(bad):
     ctext, rtext = claims.read_text(), DOC.read_text()
     if draft.exists():
         dtext = draft.read_text()
-        for token in ["0.5068", "0.379", "0.0558", "18.3"]:
+        for token in DRAFT_TOKENS:
             ok = token in dtext and token in rtext
             bad += not ok
             print(f"{'ok  ' if ok else 'FAIL'} draft agrees on {token:8s}"
@@ -1652,11 +1619,23 @@ def check_pack(bad):
 def main():
     doc = DOC.read_text()
     cache, bad = {}, 0
-    bad = check_style(bad)
-    bad = check_claims(bad)
-    bad = check_references(bad)
-    bad = check_readme(bad)
-    bad = check_log_freshness(bad)
+
+    def single(fn, *args):
+        """Run a check that counts as ONE unit however many problems it lists.
+
+        The total below counts checks, not problems, so a check that prints
+        three failures must still cost the score one unit and not three, or the
+        verified count drifts below what it could ever reach.
+        """
+        before = bad
+        after = fn(before, *args)
+        return before + min(after - before, 1)
+
+    bad = check_style(bad)                    # one unit per style file
+    bad = check_claims(bad)                   # one unit per agreement token
+    bad = single(check_references)
+    bad = single(check_readme)
+    bad = single(check_log_freshness)
     for log_name, artefact in FRESHNESS:
         lg, ar = RUNS / log_name, RUNS / artefact
         if lg.exists() and ar.exists():
@@ -1684,15 +1663,20 @@ def main():
                              if log is not None else
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
+    # Every unit counted once: the pins, the freshness pairs, the style files,
+    # the claims and draft agreement tokens, the AT2 pack figures, and nine
+    # single checks (references, readme, log freshness, script count, tool
+    # URLs, geometry span, public references, doc commands, self count).
     total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + 8)   # refs, readme, freshness, count, public, span, urls, scripts
-    bad = check_script_count(bad)
-    bad = check_no_tool_urls(bad)
-    bad = check_geometry_span(bad)
-    bad = check_public_refs(bad)
-    bad = check_doc_commands(bad)
-    bad = check_pack(bad)
-    bad = check_selfcount(total, bad)
+             + len(CLAIMS_CONSISTENCY) + len(DRAFT_TOKENS) + len(PACK_FIGURES)
+             + 9)
+    bad = single(check_script_count)
+    bad = single(check_no_tool_urls)
+    bad = single(check_geometry_span)
+    bad = single(check_public_refs)
+    bad = single(check_doc_commands)
+    bad = check_pack(bad)                     # one unit per transcribed figure
+    bad = single(lambda b: check_selfcount(total, b))
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0
 
