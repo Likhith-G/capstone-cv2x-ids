@@ -33,11 +33,12 @@ def main():
                                   "claimedX", "claimedY", "attackId"]).dropna()
         st = pd.read_csv(f"{a.run_dir}/stations_{t}.csv")
         veh = set(st.loc[st.role == "vehicle", "stationId"])
-        tx = tx[(tx.attackId == 0) & tx.claimedStationId.isin(veh)].copy()
+        tx = tx[tx.claimedStationId.isin(veh)].copy()
         tx["seed"] = t
         tx["window"] = (tx.txTimeMs // a.window_ms).astype(int)
         parts.append(tx)
-    tx = pd.concat(parts, ignore_index=True)
+    alltx = pd.concat(parts, ignore_index=True)
+    tx = alltx[alltx.attackId == 0]
 
     g = tx.groupby(["seed", "claimedStationId", "window"])
     win = g[["claimedY", "trueY"]].mean()
@@ -55,6 +56,21 @@ def main():
         ms = float((tx.claimedY.abs() > w).mean())
         print(f"  +/-{w:5.1f} m          {100 * sw:6.2f} percent        "
               f"{100 * ms:6.2f} percent")
+
+    # The same share for every attack class. A claim off the carriageway is
+    # rejected by a map check with no radio evidence, so a class whose claims
+    # often leave the road is partly detectable without any of this pipeline,
+    # and a radio result on it should be read against that.
+    ga = alltx.groupby(["seed", "claimedStationId", "window"])
+    wa = ga[["claimedY", "attackId"]].agg({"claimedY": "mean", "attackId": "first"})
+    wa = wa[(ga.claimedX.max() - ga.claimedX.min()) <= WRAP_SPAN_M]
+    print("\nstation-windows whose mean claimed position is off the carriageway, "
+          "per class")
+    print("  class   windows  " + "  ".join(f"> {w:4.1f} m" for w in a.widths))
+    for c, grp in wa.groupby("attackId"):
+        cells = "  ".join(f"{100 * (grp.claimedY.abs() > w).mean():7.2f}%"
+                          for w in a.widths)
+        print(f"  {int(c):>5d}  {len(grp):>8,}  {cells}")
 
 
 if __name__ == "__main__":
