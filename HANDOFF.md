@@ -264,29 +264,33 @@ more points on it, that is a request to Likhith rather than something you can
 run, and each new window length costs a corpus rebuild across six seeds plus a
 benchmark, so ask for the ones you actually need rather than a sweep.
 
-What you *can* do from the bundle is everything on the hardware side, which is
-the part that is yours: the export, the board, the measurement, and the argument
-that follows from it.
+What you *can* do from the bundle is the recommendation and the cost
+comparison below, which are yours.
 
-### What the hardware work actually proves
+### No hardware board, decided 1 Oct
 
-Measure inference on the ARM board and show it **stays negligible against window
-fill**. That is the honest answer, and it is a clean result rather than a
-disappointing one: it says no amount of hardware acceleration changes the timing
-of this class of detector, because the window dominates by more than two orders
-of magnitude, and therefore the design lever is the window and not the silicon.
+The board measurement is dropped. Bringing up firmware on the ZCU106 or any
+other board before the 18 Oct report is not realistic, and the result it was
+meant to produce does not need it.
 
-Do not present the board measurement as "we met the deadline." Present it as the
-measurement that shows where the deadline actually lives.
+Inference is already measured on the development laptop at 3.085 ms, 0.31
+percent of a 1000 ms window. The window dominates by more than two orders of
+magnitude, so even a device ten times slower would keep inference near 3
+percent of the window. **The design lever is the window, not the silicon.**
+State that as the finding, with the laptop as the measured platform, rather
+than presenting any deadline as met.
 
 ### Done looks like
 
-1. The model exported and running on the board.
-2. Inference latency measured there, with its spread, not just a mean.
-3. That number placed against 1000 ms window fill and stated as a percentage.
-4. A recommendation: which window length, and what it costs, for a stated use.
-5. The communication and compute cost comparison across aggregation methods,
-   which has never been run against the current panel.
+1. **A window recommendation for a stated use**, with its cost read from the
+   three measured points above. If one more window length is genuinely needed,
+   ask Likhith for that one, not a sweep.
+2. **The communication and compute cost comparison across the five aggregation
+   methods**, which has never been run against the current panel: bytes sent
+   per client per round, and local compute per round, for FedAvg, FedProx,
+   FedNova, FedLC and FedProto. Prototype sharing changes the payload, which is
+   why this is worth a table.
+3. The `check_release.py` output alongside.
 
 ### You are given
 
@@ -294,6 +298,7 @@ measurement that shows where the deadline actually lives.
   pass alone, and is where 3.085 ms comes from.
 - `analysis/measure_pooling_cost.py`, the 1.34 ms figure.
 - `analysis/benchmark.py`, for the window sweep.
+- `analysis/federated.py`, the five method panel, for the cost comparison.
 
 ### One thing that is not yours any more, and why
 
