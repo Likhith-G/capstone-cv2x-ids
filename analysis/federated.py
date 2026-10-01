@@ -341,6 +341,10 @@ def main():
                          "normally 'rsu' for the edge-based framing")
     ap.add_argument("--mu", type=float, default=0.01)
     ap.add_argument("--tau", type=float, default=1.0)
+    ap.add_argument("--tau-grid", type=float, nargs="+",
+                    default=[0.5, 1.0, 2.0, 4.0, 8.0],
+                    help="FedLC's tuning grid. The default is the published one; "
+                    "widen it when a panel chooses the top edge")
     ap.add_argument("--lam", type=float, default=0.1)
     ap.add_argument("--tune", action="store_true",
                     help="select each method's hyperparameter on the "
@@ -387,7 +391,7 @@ def main():
     # bound on what the method could do. A choice on an edge is now printed as
     # such rather than read as an optimum.
     grids = {"fedprox": ("mu", [0.0001, 0.001, 0.01, 0.1, 1.0]),
-             "fedlc": ("tau", [0.5, 1.0, 2.0, 4.0, 8.0]),
+             "fedlc": ("tau", list(a.tau_grid)),
              "fedproto": ("lam", [0.01, 0.1, 1.0, 10.0])}
     chosen = {}
     if a.tune:
