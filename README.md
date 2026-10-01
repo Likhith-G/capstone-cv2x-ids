@@ -368,7 +368,7 @@ capstone-cv2x-ids/
 
 [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) is the document to read before
 using the data: the five scenarios and what each varies, every class with its
-vehicle count, the frozen partition, all 61 columns described, and the limitations
+vehicle count, the frozen partition, all 60 columns described, and the limitations
 stated rather than left to be found. It is generated from the corpus by
 `analysis/make_dataset_card.py`, so its counts cannot drift from the data, and a
 column with no description fails the run rather than being quietly omitted.
