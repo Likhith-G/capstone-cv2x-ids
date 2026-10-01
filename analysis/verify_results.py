@@ -1260,6 +1260,30 @@ def check_log_freshness(bad):
     return bad + (not ok)
 
 
+def moved_status(rel):
+    """Where a runs/ path that is missing locally went, if it was moved.
+
+    runs/MOVED_TO_EXTERNAL.txt lists paths moved to an external drive to free
+    disk, with the drive root on a '# root:' line, and the drive mirrors runs/.
+    Returns None if rel was never moved, else 'present' or 'missing' when the
+    drive is mounted, or 'unmounted'."""
+    f = RUNS / "MOVED_TO_EXTERNAL.txt"
+    if not f.exists():
+        return None
+    root, moved = None, []
+    for line in f.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("# root:"):
+            root = pathlib.Path(line.split(":", 1)[1].strip())
+        elif line and not line.startswith("#"):
+            moved.append(line)
+    if not any(rel == m or rel.startswith(m + "/") for m in moved):
+        return None
+    if root is None or not root.exists():
+        return "unmounted"
+    return "present" if (root / "runs" / rel).exists() else "missing"
+
+
 def check_references(bad):
     """Every run log, data artefact and script the documents cite must exist.
 
@@ -1271,15 +1295,28 @@ def check_references(bad):
     docs = [f for f in DOC.parent.glob("*.md")]
     text = "\n".join(f.read_text() for f in docs)
     repo = DOC.parent.parent
-    bad_refs = []
+    bad_refs, offline = [], []
+
+    def resolve(rel):
+        if (RUNS / rel).exists():
+            return
+        where = moved_status(rel)
+        if where == "present":
+            return
+        if where == "unmounted":
+            offline.append(rel)
+            return
+        bad_refs.append(rel)
+
     for m in sorted(set(re.findall(r"runs/[a-z0-9_]+(?:/[a-z0-9_]+){0,2}\.(?:log|pkl)", text))):
-        if not (RUNS.parent / m).exists():
-            bad_refs.append(m)
+        resolve(m[len("runs/"):])
     # The rewritten record cites logs relative to runs/, without the prefix.
     for m in sorted(set(re.findall(
             r"(?<![\w/])((?:campaign_[a-z0-9_]+|drift)/logs/[a-z0-9_]+\.log)", text))):
-        if not (RUNS / m).exists():
-            bad_refs.append(m)
+        resolve(m)
+    if offline:
+        print(f"note references: {len(offline)} cited paths are on the external "
+              f"archive drive, which is not mounted")
     for m in sorted(set(re.findall(r"analysis/[a-z_]+\.(?:py|sh)", text))):
         if not (repo / m).exists():
             bad_refs.append(m)
