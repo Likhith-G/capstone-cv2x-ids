@@ -20,8 +20,8 @@ rule built it, and moves the part to the block its seed label calls for. Parts
 built before and after the change merge alike. It also refuses two parts
 carrying the same seed label, because the likeliest way to get one is to merge
 the same seed from two campaigns, and campaigns share their vehicles seed by
-seed (LESSONS.md): renumbering them apart would put one physical vehicle on both
-sides of a grouped fold.
+seed (see the dataset card): renumbering them apart would put one physical
+vehicle on both sides of a grouped fold.
 """
 import argparse
 import pandas as pd

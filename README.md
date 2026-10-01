@@ -63,7 +63,7 @@ two is set by the geometry, and the whole pattern reproduces on a dataset this
 project did not generate.
 
 Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 437 figures and must report no
+`analysis/verify_results.py`, which checks 440 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -112,19 +112,21 @@ before.
 
 The countermeasure follows from the same reasoning, and it does two jobs rather
 than one. Constraining the position estimate to the carriageway removes the
-direction the receivers cannot resolve, and takes localisation error from 65 m to
-18 m. It also takes that direction away from the attacker, because a lie that
-exploits the array's lateral blindness has to be placed laterally, and that puts
-the claimed position off the road where a map check can reject it. That check is
-not free: honest claims carry positioning error, and at the plus or minus 12 m
-used here about one honest window in five falls outside it. A width no honest
-window crosses on these seeds is about plus or minus 18 m, which leaves an
-outer-lane attacker more room than the figures below allow.
+direction the receivers cannot resolve, and takes localisation error from 67.2 m
+to 18.3 m. It also takes that direction away from the attacker, because a lie
+that exploits the array's lateral blindness has to be placed laterally, and that
+puts the claimed position off the road where a map check can reject it.
 
-Holding the attacker to the carriageway and changing nothing else moves it from
-75 degrees off the road axis to 35 at a 25 m lie, and to 0 at 200 m. Its chance
-of being caught at a 5 percent false positive rate goes from 1.3 percent to 37
-percent at 50 m, and from 5.7 percent to 83 percent at 100 m. **The adversary
+That check has to be wide enough for honest traffic. Honest claims carry
+positioning error, so a band of plus or minus 12 m rejects about one honest
+window in five, while plus or minus 18 m rejects none on these seeds. The figures
+below use 18 m.
+
+An attacker free to leave the road lies 75 degrees off the road axis at a 25 m
+lie and 85 at 200 m, and is caught at a 5 percent false positive rate 1.3
+percent of the time at 50 m and 5.6 percent at 100 m. Held to that band it lies
+55 degrees off axis at 25 m and 5 at 200 m, and is caught 23 percent of the time
+at 50 m and 85 percent at 100 m. **The adversary
 that lies sideways is the one that does not have to stay on the road.**
 
 ![The bound against the measured attack direction](docs/figures/direction.png)
@@ -200,8 +202,8 @@ train and test overlap, nearest-neighbour triviality, single-feature
 separability, and any single feature reading one class off almost perfectly. Ten gates: nine can fail
 the run and the class-balance gate warns.
 
-**Every reported number is pinned to its log.** `verify_results.py` ties each of
-155 figures to the exact line of the run log that produced it and fails if either
+**Every reported number is pinned to its log.** `verify_results.py` ties each
+figure to the exact line of the run log that produced it and fails if either
 side is edited alone. Five conclusions in this project have been withdrawn when
 the evidence moved, which is only possible because the evidence and the claims
 are mechanically tied together.
@@ -294,11 +296,8 @@ always agree and reporting one hides the disagreement.
 [`analysis/README.md`](analysis/README.md) documents every script and the
 methodology constraints the pipeline enforces.
 
-The pipeline also carries a federated learning panel, a non-stationarity study
-across a density change, and a differential privacy arm. None of them is part of
-the claim above, which is why they are not in it. They are documented alongside
-everything else in `analysis/README.md`, under `federated.py`,
-`federated_drift.py` and `drift_exposure.py`.
+The federated learning, density drift and differential privacy scripts are side
+studies, not part of the claim above; `analysis/README.md` lists them.
 
 ---
 
@@ -342,7 +341,7 @@ capstone-cv2x-ids/
 ├── simulation/                  # ns-3 contrib module
 │   └── cv2xids/                 # ITS messaging, DCC, car following, attacks, traces
 │
-├── analysis/                    # detection pipeline, 47 scripts
+├── analysis/                    # detection pipeline, 45 scripts
 │   ├── baseline_starter.py      # start here to train something
 │   ├── build_features.py        # windowing, application and radio features
 │   ├── validate_dataset.py      # ten adversarial integrity gates

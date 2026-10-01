@@ -134,11 +134,8 @@ table, drop the folds and the trees and it is a twentieth of the cost.
 ## Checking the result
 
     python3 analysis/verify_results.py     # every reported figure against its log
-    python3 analysis/session_check.py      # the bookkeeping around those figures
 
-The first pins every number in the results document to the exact line of the log
-that produced it and must report no failures. The second checks the state that
-tends to go stale rather than the numbers: whether anything is still running, the
-working tree, disk headroom, whether any path named in a document still exists.
+It pins every number in the results document to the exact line of the log that
+produced it and must report no failures.
 
 Traces are not held in this repository. They are regenerated from source.

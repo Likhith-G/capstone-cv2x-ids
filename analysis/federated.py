@@ -9,14 +9,14 @@ and different observers genuinely see different geography, traffic density and
 channel occupancy. The label skew is therefore a property of the deployment,
 not something injected with a Dirichlet parameter.
 
-Methods, following the panel in PLAN_V2 section 7:
+Methods:
   fedavg     weighted average of client weights                    (baseline)
   fedprox    FedAvg plus a proximal term                           (stability)
   fednova    normalises for unequal local work                     (stability)
   fedlc      logit calibration, aimed straight at label skew
   fedproto   class prototypes shared alongside weights
 
-Protocol, following report 06: at least five seeds, paired Wilcoxon across
+Protocol: at least five seeds, paired Wilcoxon across
 seeds, and a strict client-wise train/validation/test split so no client
 appears in more than one role. Three seeds cannot reach p < 0.05 under a
 two-sided Wilcoxon, so a three-seed comparison cannot support a significance

@@ -84,3 +84,9 @@ docs/CRITIQUE_3.md
 docs/AT2_SECTION3_PACK.md
 docs/AT2_METHODOLOGY_DRAFT.md
 docs/AUDIT_26SEP.md
+
+# Private bookkeeping, kept on the working machine only. session_check.py reads
+# the assistant memory and the internal docs above; upload_zenodo.py belongs to
+# the deferred publication track.
+analysis/session_check.py
+analysis/upload_zenodo.py

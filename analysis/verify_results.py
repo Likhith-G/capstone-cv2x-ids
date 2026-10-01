@@ -1221,11 +1221,16 @@ DRAFT_TOKENS = ["0.5068", "0.379", "0.0558", "18.3"]
 # Every document that gets written by hand belongs here. METHODS_DRAFT.md in
 # particular carries the standards prose, which is copied from sources that use
 # em dashes freely, so it is the file most likely to acquire one.
-STYLE_FILES = ["docs/RESULTS.md", "docs/MASTER_INDEX.md", "docs/BUILD_LOG_V2.md",
-               "docs/PAPER_CLAIMS.md", "docs/METHODS_DRAFT.md",
-               "docs/PAPER_DRAFT.md",
-               "docs/DEFECTS_V2.md", "docs/PLAN_V3.md", "docs/RUNS_MANIFEST.md",
-               "README.md", "analysis/README.md", "simulation/README.md"]
+# Superseded documents move to docs/archive/ and leave this list: the rule governs
+# prose being written now. The docs/ entries are working files kept out of git,
+# so on a fresh clone they are absent; an absent file is reported and left out
+# of the total rather than counted as a pass.
+STYLE_FILES = ["docs/RESULTS.md", "docs/PAPER_CLAIMS.md", "docs/METHODS_DRAFT.md",
+               "docs/PAPER_DRAFT.md", "docs/RUNS_MANIFEST.md",
+               "docs/PARTA_CORRECTIONS.md", "docs/AT2_OUTLINE.md",
+               "docs/AT2_SECTION3_PACK.md", "docs/AT2_METHODOLOGY_DRAFT.md",
+               "README.md", "HANDOFF.md", "USING_THE_DATA.md", "REPRODUCING.md",
+               "analysis/README.md", "simulation/README.md"]
 
 
 def check_log_freshness(bad):
@@ -1288,6 +1293,20 @@ def check_references(bad):
     return bad
 
 
+def tracked_scripts(here):
+    """The scripts the repository publishes. Private bookkeeping scripts sit
+    beside them on the working machine and are kept out of git, so counting
+    the directory would count those too. Falls back to the directory when git
+    is unavailable."""
+    import subprocess
+    try:
+        out = subprocess.run(["git", "ls-files", "*.py", "*.sh"], cwd=here,
+                             capture_output=True, text=True, check=True).stdout
+        return sorted(here / n for n in out.split())
+    except (OSError, subprocess.CalledProcessError):
+        return sorted(list(here.glob("*.py")) + list(here.glob("*.sh")))
+
+
 def check_script_count(bad):
     """The README says how many scripts analysis/ holds. Count them.
 
@@ -1296,7 +1315,7 @@ def check_script_count(bad):
     be wrong, and this one moves every time a script is added.
     """
     here = pathlib.Path(__file__).resolve().parent
-    n = len(list(here.glob("*.py"))) + len(list(here.glob("*.sh")))
+    n = len(tracked_scripts(here))
     readme = here.parent / "README.md"
     want = f"{n} scripts"
     if want not in readme.read_text():
@@ -1458,7 +1477,7 @@ def check_readme(bad):
         return bad
     text = readme.read_text()
     problems = []
-    for f in sorted(list(here.glob("*.py")) + list(here.glob("*.sh"))):
+    for f in tracked_scripts(here):
         if f"`{f.name}`" not in text:
             problems.append(f"{f.name} is not documented in analysis/README.md")
     import re
@@ -1515,6 +1534,7 @@ def check_style(bad):
     for name in STYLE_FILES:
         f = repo / name
         if not f.exists():
+            print(f"skip style: {name:26s}  <- absent, not counted")
             continue
         text = f.read_text()
         n = sum(text.count(c) for c in "\u2014\u2013")
@@ -1673,7 +1693,8 @@ def main():
     # the claims and draft agreement tokens, the AT2 pack figures, and nine
     # single checks (references, readme, log freshness, script count, tool
     # URLs, geometry span, public references, doc commands, self count).
-    total = (len(CHECKS) + len(FRESHNESS) + len(STYLE_FILES)
+    total = (len(CHECKS) + len(FRESHNESS)
+             + sum((DOC.parent.parent / n).exists() for n in STYLE_FILES)
              + len(CLAIMS_CONSISTENCY) + len(DRAFT_TOKENS) + len(PACK_FIGURES)
              + 9)
     bad = single(check_script_count)

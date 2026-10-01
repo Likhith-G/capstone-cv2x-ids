@@ -26,7 +26,7 @@ construction: which radio sent the message it just decoded.
     merge_corpora.py part1.pkl part2.pkl -o corpus.pkl    # if seeds built separately
     validate_dataset.py corpus.pkl                        # ten adversarial gates
     make_splits.py corpus.pkl --out-dir DIR               # balanced + realism
-    benchmark.py corpus.pkl --report --sample 250000 --folds 3 --trees 100   # the published 0.5145
+    benchmark.py corpus.pkl --report --sample 250000 --folds 3 --trees 100   # the published 0.5068
     check_partition_skew.py corpus.pkl                    # BEFORE any federated run
     federated.py corpus.pkl --seeds 8 --rounds 20 --tune
     pooled_regions.py corpus.pkl --run-dir DIR --tags ... --road-halfwidth
@@ -202,20 +202,10 @@ nothing, rather than carrying on over the seeds that survived.
 | `receiver_counts.py` | the distribution of receivers per pooled unit in a table from `pooled_consensus.py`, the share of thin units, and how many colluders a half, a third or a quarter of a unit's receivers takes at the median and 10th percentile unit. The collusion argument rests on these counts |
 | `sybil_residual.py` | why a Sybil's pooled free-fit residual is high: per class channels per receiver behind each identity's power, the residual in matched channel bins, and the share of the Sybil excess a benign fit on channel count predicts. Power is attributed per claimed identity, so a Sybil's identities each average fewer channels |
 | `make_package.sh` | wraps the release bundle into the two zips that actually get sent: 1.7 GB for all five scenarios and 377 MB for the reference one. Store mode, because every shard is already gzipped and deflating them again spends minutes to save nothing. The single scenario package carries all eight top level files beside the shards, because those are what `check_release.py` reads to know what it is looking at, and in subset mode an absent one is tolerated rather than flagged. So it counts them and fails loudly instead. That count is not decoration: the first hand built package silently dropped `.zenodo.json`, because a `*.*` glob does not match a leading dot |
-| `upload_zenodo.py` | stages a Zenodo record from that bundle and stops: it creates the deposition, reserves the DOI, writes the metadata and uploads the files, but never calls publish. Publishing is irreversible and a named record breaks double blind review, so that half stays manual. Defaults to the sandbox, aborts on an empty author list, and resumes by md5 because the raw record is 27.5 GB |
 | `drift_exposure.py` | turns the drift campaign's arm lines into a cost and ratio table. The pooled ceiling arm trains for two local epochs and so sees every row twice per round, while a federation sampling half its clients visits each row about half as often, so half the pooled advantage was extra passes rather than pooling. The matched arms remove that; sequential depth is deliberately left unequal because it is what partitioning IS. Exposure matched, never step matched |
 | `make_dataset_card.py` | the dataset card, generated from the corpus so its counts cannot drift. Exits non-zero if any column has no curated description, so adding a feature forces documenting it |
 | `verify_results.py` | every reported number still matches the log that produced it |
-| `session_check.py` | the project's own bookkeeping: nothing running, git clean and untrailered, disk headroom, no dead paths, memory indexed, every declared blocker still real |
 | `regenerate.sh` | takes a finished campaign through every stage above, in order, each to its own log |
-
-`verify_results.py` checks the figures. `session_check.py` checks everything
-around them, and exists because the state that is narrated rather than measured
-is the state that drifts: three documents here carried a disk figure and all
-three were wrong. Run it before handing off or compacting.
-
-    python3 analysis/session_check.py            # full, includes verify_results.py
-    python3 analysis/session_check.py --quick    # skip the slow figure check
 
 Once a campaign has finished, `regenerate.sh` runs the whole sequence in one
 pass and writes each stage to its own log, so a single stage can be repeated
