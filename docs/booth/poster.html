@@ -98,9 +98,10 @@
     <div>
       <h1>Catching connected cars that lie about where they are</h1>
       <p class="message">A signed message proves which car sent it, but it cannot
-        prove that the position inside is true. One receiver cannot detect a
-        consistent lie. Receivers that pool their radio measurements catch most
-        lies larger than about <b>39 m</b>.</p>
+        prove that the position inside is true. In our simulations one receiver
+        cannot detect a consistent lie, and receivers that pool their radio
+        measurements catch most lies larger than about <b>39 m</b> (95 percent
+        interval 34.5 to 45.5 m).</p>
       <p class="authors"><b>Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong,
         Ken Navarro, Andrew Ng</b></p>
       <p class="affil">Supervisor A/Prof Ke (Desmond) Wang. Research mentor
@@ -184,15 +185,16 @@
         one above about twice the 18.3 m localisation error. Below the floor a lie is too
         small to separate from honest position error; a lie that small does not move a
         car into another lane. Some of the lies caught were also off the road, where a
-        map check would reject them anyway (see 6).</figcaption>
+        map check would reject them anyway (section 6).</figcaption>
     </figure>
     <div>
       <div class="panel">
         <p><b>One receiver sees nothing.</b> A car that shifts every claim by the same
-          amount keeps its speed and heading consistent, so content checks score
-          0.000 on it and four different learning methods reach at most 0.158.</p>
-        <div class="stat"><span class="big">0.000</span>content checks on a
-          consistent lie</div>
+          amount keeps its speed and heading consistent. On a detection score from
+          0 (none caught) to 1 (all caught), content checks score 0.000 on it and
+          four different learning methods reach at most 0.158.</p>
+        <div class="stat"><span class="big">0.000</span>detection score of content
+          checks on a consistent lie</div>
       </div>
       <div class="panel" style="margin-top:7mm">
         <p><b>Pooling has to happen before the decision.</b> When receivers vote
@@ -250,15 +252,15 @@
     <div>
       <h2><span class="n">5</span>Conclusions</h2>
       <ol>
-        <li>A single receiver cannot detect a consistent position lie at any size in
-          this data. The same holds on the public VeReMi datasets [4].</li>
-        <li>Pooling received power across receivers detects lies above a floor of
-          38.9 m, 95 percent interval 34.5 to 45.5 m (Figure 2).</li>
-        <li>Receiver geometry predicts where an informed attacker lies, for the
-          estimator this system runs (Figures 3 and 4). A map check covers that
-          direction (Table 1).</li>
-        <li>Federated learning helped only modestly, and detection delay is set by
-          the one-second window: the model takes 0.31 percent of it.</li>
+        <li><b>Aim 1.</b> A single receiver cannot detect a consistent position lie
+          at any size in this data (Figure 2, flat line). The same holds on the
+          public VeReMi datasets [4].</li>
+        <li><b>Aim 2.</b> Pooling received power across receivers detects lies above
+          a floor of 38.9 m, 95 percent interval 34.5 to 45.5 m (Figure 2). Sharing
+          verdicts instead of measurements detects none.</li>
+        <li><b>Aim 3.</b> Receiver geometry predicts where an informed attacker lies,
+          for the estimator this system runs (Figures 3 and 4). A map check covers
+          that direction (Table 1).</li>
       </ol>
     </div>
     <div>

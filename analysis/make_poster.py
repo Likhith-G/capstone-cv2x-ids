@@ -213,10 +213,9 @@ def audit():
     return json.loads(html.unescape(m.group(1)))
 
 
-# All-capitals words the guide's "avoid acronyms" does not reach: the
-# university's name, units, and the names of datasets and tools cited.
-ALLOWED_CAPS = {"RMIT", "ETSI", "TS", "IEEE", "QR", "CC", "BY", "VeReMi", "ICC",
-                "SecureComm", "NR", "V2X", "E2E", "LENA"}
+# The one all-capitals word the guide's "avoid acronyms" does not reach. The
+# reference list is outside the check.
+ALLOWED_CAPS = {"RMIT"}
 
 
 def numbers(text):
