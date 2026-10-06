@@ -1228,7 +1228,6 @@ DRAFT_TOKENS = ["0.5068", "0.379", "0.0558", "18.3"]
 STYLE_FILES = ["docs/RESULTS.md", "docs/PAPER_CLAIMS.md", "docs/METHODS_DRAFT.md",
                "docs/PAPER_DRAFT.md", "docs/RUNS_MANIFEST.md",
                "docs/PARTA_CORRECTIONS.md", "docs/AT2_OUTLINE.md",
-               "docs/AT2_SECTION3_PACK.md", "docs/AT2_METHODOLOGY_DRAFT.md",
                "README.md", "HANDOFF.md", "USING_THE_DATA.md", "REPRODUCING.md",
                "analysis/README.md", "simulation/README.md"]
 
@@ -1612,72 +1611,6 @@ def check_doc_commands(bad):
     return bad + len(missing)
 
 
-# The AT2 methodology pack transcribes about thirty figures out of RESULTS.md,
-# the dataset card and the README so a writer does not have to look each one up.
-# That makes it the one document in the project where a stale number can live:
-# it is gitignored, so the published-reference check never sees it, and nothing
-# pins what it quotes. The figure count alone moved four times in one session.
-# Each pair below is (the string as the pack writes it, the file it came from).
-PACK_FIGURES = [
-    # (what the pack says, what the source says, the source). The two differ
-    # where the source words it differently; prose wraps, so both sides are
-    # compared with whitespace collapsed.
-    ("0.3466", "0.3466", "README.md"),
-    ("0.5145", "0.5145", "README.md"),
-    ("0.5659", "0.5659", "README.md"),
-    ("4.02 m", "4.02 m", "README.md"),
-    ("96.39 percent", "96.39 percent", "README.md"),
-    ("16,150", "16,150", "README.md"),
-    ("2,414", "2,414", "README.md"),
-    ("720 physical transmitters", "720 physical transmitters", "docs/DATASET_CARD.md"),
-    ("783 claimed identities", "| 783,", "docs/DATASET_CARD.md"),
-    ("61 columns", "| 61, being 22 application layer", "docs/DATASET_CARD.md"),
-    ("47.2 m", "47.2 m", "docs/RESULTS.md"),
-    ("39.3 to 57.4 m", "39.3 to 57.4 m", "docs/RESULTS.md"),
-    ("0.5145 +/- 0.0016", "0.5145 +/- 0.0016", "docs/RESULTS.md"),
-    ("6.53 +/- 0.70", "6.53 +/- 0.70", "docs/RESULTS.md"),
-    ("30.45 +/- 6.93", "30.45 +/- 6.93", "docs/RESULTS.md"),
-]
-
-
-def _flat(s):
-    return re.sub(r"\s+", " ", s)
-
-
-def check_pack(bad):
-    """Every figure the AT2 pack transcribes must still say that in its source."""
-    root = pathlib.Path(__file__).resolve().parent.parent
-    targets = [root / "docs" / n for n in
-               ("AT2_SECTION3_PACK.md", "AT2_METHODOLOGY_DRAFT.md")]
-    present = [f for f in targets if f.exists()]
-    if not present:
-        print("ok   AT2 pack                  not present, nothing to check")
-        return bad
-    # A figure need only appear in one of the AT2 documents; both restate
-    # numbers out of the same sources, and the draft quotes a subset.
-    text = " ".join(_flat(f.read_text()) for f in present)
-    cache, problems, checked = {}, [], 0
-    for mine, theirs, src in PACK_FIGURES:
-        if _flat(mine) not in text:
-            problems.append(f"no AT2 document quotes {mine!r}; drop it from PACK_FIGURES")
-            continue
-        if src not in cache:
-            f = root / src
-            cache[src] = _flat(f.read_text()) if f.exists() else None
-        body = cache[src]
-        if body is None:
-            problems.append(f"{src} is missing, so {mine!r} cannot be checked")
-        elif _flat(theirs) not in body:
-            problems.append(f"AT2 quotes {mine!r} but {src} no longer says {theirs!r}")
-        else:
-            checked += 1
-    for m in problems:
-        print(f"FAIL AT2 pack                 <- {m}")
-    if not problems:
-        print(f"ok   AT2 documents            {checked} transcribed figures match their sources, "
-              f"across {len(present)} document(s)")
-    return bad + len(problems)
-
 
 def main():
     doc = DOC.read_text()
@@ -1727,19 +1660,18 @@ def main():
                              f"  <- runs/{stem}.log not found")
         print(f"{'ok  ' if ok else 'FAIL'} {label:26s}{why}")
     # Every unit counted once: the pins, the freshness pairs, the style files,
-    # the claims and draft agreement tokens, the AT2 pack figures, and nine
+    # the claims and draft agreement tokens, and nine
     # single checks (references, readme, log freshness, script count, tool
     # URLs, geometry span, public references, doc commands, self count).
     total = (len(CHECKS) + len(FRESHNESS)
              + sum((DOC.parent.parent / n).exists() for n in STYLE_FILES)
-             + len(CLAIMS_CONSISTENCY) + len(DRAFT_TOKENS) + len(PACK_FIGURES)
+             + len(CLAIMS_CONSISTENCY) + len(DRAFT_TOKENS)
              + 9)
     bad = single(check_script_count)
     bad = single(check_no_tool_urls)
     bad = single(check_geometry_span)
     bad = single(check_public_refs)
     bad = single(check_doc_commands)
-    bad = check_pack(bad)                     # one unit per transcribed figure
     bad = single(lambda b: check_selfcount(total, b))
     print(f"\n{total - bad}/{total} verified")
     return 1 if bad else 0

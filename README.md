@@ -63,7 +63,7 @@ two is set by the geometry, and the whole pattern reproduces on a dataset this
 project did not generate.
 
 Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 440 figures and must report no
+`analysis/verify_results.py`, which checks 423 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
