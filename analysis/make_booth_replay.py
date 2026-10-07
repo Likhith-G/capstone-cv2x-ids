@@ -159,24 +159,46 @@ def main():
     ben["pooled"] = [win.get((s, w), [None, 0, -1])[2]
                      for s, w in zip(ben.key_claimedStationId, ben.key_window)]
     ben = ben[ben.pooled >= 0]
+
+    # A majority vote is far stricter than the pooled detector: it raises a
+    # fraction of the false alarms, so comparing the two at their defaults
+    # flatters pooling. The vote's threshold is therefore lowered, on honest
+    # seconds alone, to the smallest share of receivers at which it raises no
+    # more false alarms than pooling does, and the page uses that threshold.
+    pooled_false = int((ben.pooled == 1).sum())
+    cands = np.unique(ben.vote.values)
+    thr = next(t for t in np.r_[cands[cands > 0], 1.01]
+               if int((ben.vote >= t).sum()) <= pooled_false)
     summary = {
         "seed": a.seed,
+        "vote_threshold": round(float(thr), 4),
         "position_lie_seconds": int(len(att)),
-        "caught_by_vote": int((att.vote > 0.5).sum()),
+        "caught_by_majority": int((att.vote > 0.5).sum()),
+        "caught_by_vote": int((att.vote >= thr).sum()),
         "caught_by_pooling": int((att.pooled == 1).sum()),
         "honest_seconds": int(len(ben)),
-        "honest_flagged_by_vote": int((ben.vote > 0.5).sum()),
-        "honest_flagged_by_pooling": int((ben.pooled == 1).sum()),
+        "honest_flagged_by_majority": int((ben.vote > 0.5).sum()),
+        "honest_flagged_by_vote": int((ben.vote >= thr).sum()),
+        "honest_flagged_by_pooling": pooled_false,
     }
     print(f"\nseed {a.seed}: {len(stations)} claimed stations, frames {t0} to {t1}, "
           f"road {road:.0f} m, {len(rsu)} roadside units")
+    onroad = {s["id"] for s in stations
+              if np.median([abs(f[4]) / 10 for f in s["frames"]]) <= 18}
+    on = att.key_claimedStationId.isin(onroad)
+    print(f"vote threshold matched to pooling's false alarms: a share of "
+          f"{thr:.4f} of the receivers")
     print(f"position-lie station seconds with a pooled decision: "
-          f"{summary['position_lie_seconds']:,}")
-    print(f"  caught by the vote    {summary['caught_by_vote']:,}")
-    print(f"  caught by pooling     {summary['caught_by_pooling']:,}")
+          f"{summary['position_lie_seconds']:,}, of them on the road {int(on.sum()):,}")
+    print(f"  caught by a majority vote   {summary['caught_by_majority']:,}")
+    print(f"  caught by the matched vote  {summary['caught_by_vote']:,}, "
+          f"on the road {int(((att.vote >= thr) & on).sum()):,}")
+    print(f"  caught by pooling           {summary['caught_by_pooling']:,}, "
+          f"on the road {int(((att.pooled == 1) & on).sum()):,}")
     print(f"honest station seconds with a pooled decision: {summary['honest_seconds']:,}")
-    print(f"  flagged by the vote   {summary['honest_flagged_by_vote']:,}")
-    print(f"  flagged by pooling    {summary['honest_flagged_by_pooling']:,}")
+    print(f"  flagged by a majority vote  {summary['honest_flagged_by_majority']:,}")
+    print(f"  flagged by the matched vote {summary['honest_flagged_by_vote']:,}")
+    print(f"  flagged by pooling          {summary['honest_flagged_by_pooling']:,}")
 
     data = {"road": road, "frame_ms": FRAME_MS, "t0": t0, "t1": t1,
             "names": {str(k): v for k, v in NAMES.items()},

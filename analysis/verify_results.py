@@ -1274,12 +1274,16 @@ CHECKS = [
     ('3b3 near-matched reference', '0.0153 against 0.0162 at\n0.43)', 'campaign_gnss/logs/offset_floor_onroad', 'benign stations 519, false flag rate 0.0153'),
     ('3b3 near-matched reference threshold', '0.0153 against 0.0162 at\n0.43)', 'campaign_gnss/logs/offset_floor_onroad', 'threshold moved from 0.50 to 0.4300'),
     ('3b3 retrained 30 to 50 band', '(1 of 5 caught against 3 of 5)', 'campaign_floor/logs/offset_floor_onroad', '30 to 50 m         5       284      0.449     0.20'),
-    ('3b3 reported 30 to 50 band', '(1 of 5 caught against 3 of 5)', 'campaign_floor/logs/offset_floor_onroad', '30 to 50 m         5       284      0.478     0.60'),    ('7c lie seconds', 'position lies caught (constant offset classes), of 510', 'campaign_gnss/logs/booth_replay', 'position-lie station seconds with a pooled decision: 510'),
-    ('7c vote catches', '| position lies caught (constant offset classes), of 510 | 4 | **283** |', 'campaign_gnss/logs/booth_replay', 'caught by the vote    4'),
-    ('7c pooled catches', '| position lies caught (constant offset classes), of 510 | 4 | **283** |', 'campaign_gnss/logs/booth_replay', 'caught by pooling     283'),
-    ('7c honest seconds', 'honest seconds wrongly flagged, of 3,401', 'campaign_gnss/logs/booth_replay', 'honest station seconds with a pooled decision: 3,401'),
-    ('7c vote false flags', '| honest seconds wrongly flagged, of 3,401 | 2 | 42 |', 'campaign_gnss/logs/booth_replay', 'flagged by the vote   2'),
-    ('7c pooled false flags', '| honest seconds wrongly flagged, of 3,401 | 2 | 42 |', 'campaign_gnss/logs/booth_replay', 'flagged by pooling    42'),
+    ('3b3 reported 30 to 50 band', '(1 of 5 caught against 3 of 5)', 'campaign_floor/logs/offset_floor_onroad', '30 to 50 m         5       284      0.478     0.60'),    ('7c threshold', 'a share of 0.1455, at which both flag 42 honest', 'campaign_gnss/logs/booth_replay', 'a share of 0.1455 of the receivers'),
+    ('7c honest row', '| honest seconds wrongly flagged, of 3,401 | 2 | 42 | 42 |', 'campaign_gnss/logs/booth_replay', 'honest station seconds with a pooled decision: 3,401'),
+    ('7c majority false flags', '| honest seconds wrongly flagged, of 3,401 | 2 | 42 | 42 |', 'campaign_gnss/logs/booth_replay', 'flagged by a majority vote  2'),
+    ('7c matched false flags', '| honest seconds wrongly flagged, of 3,401 | 2 | 42 | 42 |', 'campaign_gnss/logs/booth_replay', 'flagged by the matched vote 42'),
+    ('7c pooled false flags', '| honest seconds wrongly flagged, of 3,401 | 2 | 42 | 42 |', 'campaign_gnss/logs/booth_replay', 'flagged by pooling          42'),
+    ('7c lie row', '| position lies caught (constant offset classes), of 510 | 4 | 141 | **283** |', 'campaign_gnss/logs/booth_replay', 'position-lie station seconds with a pooled decision: 510, of them on the road 169'),
+    ('7c majority catches', '| position lies caught (constant offset classes), of 510 | 4 | 141 | **283** |', 'campaign_gnss/logs/booth_replay', 'caught by a majority vote   4'),
+    ('7c matched catches', '| position lies caught (constant offset classes), of 510 | 4 | 141 | **283** |', 'campaign_gnss/logs/booth_replay', 'caught by the matched vote  141, on the road 28'),
+    ('7c pooled catches', '| position lies caught (constant offset classes), of 510 | 4 | 141 | **283** |', 'campaign_gnss/logs/booth_replay', 'caught by pooling           283, on the road 104'),
+    ('7c on-road row', '| of them on the road, where a map check passes them, of 169 | | 28 | **104** |', 'campaign_gnss/logs/booth_replay', 'caught by pooling           283, on the road 104'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
