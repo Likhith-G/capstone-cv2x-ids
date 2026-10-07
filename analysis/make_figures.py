@@ -36,7 +36,7 @@ def grab(log, pattern, what):
 def save(fig, stem):
     OUT.mkdir(parents=True, exist_ok=True)
     for ext in ("pdf", "png"):
-        fig.savefig(OUT / f"{stem}.{ext}", bbox_inches="tight", dpi=200)
+        fig.savefig(OUT / f"{stem}.{ext}", bbox_inches="tight", dpi=300)
     plt.close(fig)
     print(f"wrote {stem}.pdf and {stem}.png")
 
