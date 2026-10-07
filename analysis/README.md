@@ -175,7 +175,7 @@ nothing, rather than carrying on over the seeds that survived.
 | `pooled_regions.py` | pooled units per roadside unit region, the federated deployment version |
 | `measure_pooling_cost.py` | what forming the cross-receiver statistics costs |
 | `check_partition_skew.py` | is the federated partition actually skewed, or is the panel meaningless |
-| `federated.py` | FedAvg, FedProx, FedNova, FedLC, FedProto, and DP-FedAvg |
+| `federated.py` | FedAvg, FedProx, FedNova, FedLC, FedProto, and DP-FedAvg; `--secure-agg` adds pairwise-masked secure aggregation with dropout recovery, `--dropout` makes sampled clients fail to report, at random or concentrated on a fixed unreliable set |
 | `evaluate_deployment.py` | false positive rate at true prevalence and alerts per hour |
 | `persistence_filter.py` | alert episodes and K-of-M rules, the best available operating point on this corpus |
 | `calibration.py` | PRR, BLER and channel occupancy against TR 37.885 |
