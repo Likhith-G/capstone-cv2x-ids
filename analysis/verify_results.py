@@ -1219,6 +1219,19 @@ CHECKS = [
     ('5f secure with recovery deviation', 'plain sum to 1.156e-13', 'campaign_gnss/logs/secure_agg_dropout', 'largest deviation of any weight in any round 1.156e-13'),
     ('5f recovery reveals', '226.3 seed reveals per round', 'campaign_gnss/logs/secure_agg_dropout', '226.3 per round'),
     ('5f no recovery collapse', 'macro F1 falls to\n0.0316', 'campaign_gnss/logs/secure_agg_dropout_norecover', 'fedavg    arm      macro F1 0.0316'),
+    ('5g transfer', '| transfer, unadapted | 0 | 0.1786 +/- 0.0378 | 0.1728 | 0.544 | 0.024 | 0% |', 'drift/logs/adapt_dense', 'transfer                     0.1786 +/- 0.0378   0.1728      0.544            0.024         0%'),
+    ('5g in-dist', '| trained on the congested density (ceiling) | | 0.3170 +/- 0.0028 | 0.4570 | 0.848 | 0.821 | 100% |', 'drift/logs/adapt_dense', 'in-dist                      0.3170 +/- 0.0028   0.4570      0.848            0.821       100%'),
+    ('5g label-free', '0.2430 +/- 0.0189 | 0.3555 | 0.830 | 0.061 | 47% |', 'drift/logs/adapt_dense', 'label-free                   0.2430 +/- 0.0189   0.3555      0.830            0.061        47%'),
+    ('5g fine-tune 10', '| fine-tune on 10 clients, 5 rounds | 4,245 | 0.2621 +/- 0.0322 | 0.3848 | 0.835 | 0.370 | 60% |', 'drift/logs/adapt_dense', 'fine-tune 10                 0.2621 +/- 0.0322   0.3848      0.835            0.370        60%'),
+    ('5g label-free + fine-tune 10', '| 4,245 | **0.3126 +/- 0.0065** | **0.4406** | 0.846 | 0.755 | **97%** |', 'drift/logs/adapt_dense', 'label-free + fine-tune 10    0.3126 +/- 0.0065   0.4406      0.846            0.755        97%'),
+    ('5g fine-tune 50', '| fine-tune on 50 clients | 19,996 | 0.2680 +/- 0.0314 | 0.3980 | 0.839 | 0.397 | 65% |', 'drift/logs/adapt_dense', 'fine-tune 50                 0.2680 +/- 0.0314   0.3980      0.839            0.397        65%'),
+    ('5g label-free + fine-tune 50', '| 19,996 | 0.3177 +/- 0.0088 | 0.4453 | 0.846 | 0.762 | 100% |', 'drift/logs/adapt_dense', 'label-free + fine-tune 50    0.3177 +/- 0.0088   0.4453      0.846            0.762       100%'),
+    ('5g scratch 10', '| 4,245 | 0.1350 +/- 0.0261 | 0.2061 | 0.814 | 0.001 | -32% |', 'drift/logs/adapt_dense', 'scratch 10                   0.1350 +/- 0.0261   0.2061      0.814            0.001       -32%'),
+    ('5g scratch 50', '| 19,996 | 0.1535 +/- 0.0277 | 0.2439 | 0.817 | 0.015 | -18% |', 'drift/logs/adapt_dense', 'scratch 50                   0.1535 +/- 0.0277   0.2439      0.817            0.015       -18%'),
+    ('5g labelled rows 10', '| 4,245 |', 'drift/logs/adapt_dense', '(4,245 labelled rows)'),
+    ('5g labelled rows 50', '| 19,996 |', 'drift/logs/adapt_dense', '(19,996 labelled rows)'),
+    ('5g density cost', 'The density change costs 0.1384 macro F1', 'drift/logs/adapt_dense', 'the density change costs +0.1384 macro F1'),
+    ('5g test rows', 'clients, 90,084 test rows', 'drift/logs/adapt_dense', '217 target test clients, 90,084 test rows'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The

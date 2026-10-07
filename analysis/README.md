@@ -189,6 +189,7 @@ nothing, rather than carrying on over the seeds that survived.
 | `geometry_bound.py` | what the receiver geometry and the noise allow, derived, with no classifier |
 | `plausibility_baseline.py` | how the work stands against the field's standard checks rather than its own ablations |
 | `federated_drift.py` | does federating across two densities recover what the density change costs |
+| `federated_adapt.py` | can a deployed federated detector catch up after a change of traffic density: refitting input scaling on unlabelled local rows, a few rounds of FedAvg on a handful of labelled clients from the new conditions, and both, against section 5d's own transfer and in-distribution arms, which it must reproduce |
 | `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
 | `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
 | `correction_transfer.py` | whether the calibrated propagation correction is a property of range or shrinkage onto one corpus: calibrate on A, apply to B, and check each bin's mean is flat in along-road position |
