@@ -75,6 +75,7 @@ capstone/
 # Session state files. Volatile status and durable lessons; both name defects
 # and open decisions the team has not seen.
 docs/STATUS.md
+docs/SESSION_LOG.md
 docs/LESSONS.md
 
 
