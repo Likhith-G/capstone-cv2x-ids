@@ -184,8 +184,8 @@
       <figcaption><b>Figure 2.</b> Pooling turns an undetectable lie into a detectable
         one above about twice the 18.3 m localisation error. Below the floor a lie is too
         small to separate from honest position error; a lie that small does not move a
-        car into another lane. Some of the lies caught were also off the road, where a
-        map check would reject them anyway (section 6).</figcaption>
+        car into another lane. Counting only lies that stay on the road, which a map
+        check would let through, the floor is still 38.9 m.</figcaption>
     </figure>
     <div>
       <div class="panel">
@@ -265,11 +265,11 @@
     </div>
     <div>
       <h2><span class="n">6</span>Limits and next step</h2>
-      <p>All measurements are simulated, on one straight highway. Many simulated
-        attackers claimed positions more than 18 m off the road (28.61 percent of the
-        constant shift windows), which a map check rejects with no radio evidence.
-        <b>Next: score pooled detection on on-road claims only</b>, to separate the
-        radio's share of the floor from the map's.</p>
+      <p>All measurements are simulated, on one straight highway, and the radio model
+        has not yet been checked against real sidelink measurements.
+        <b>Next: fit the same propagation law to a public set of real measurements</b>,
+        then test the floor on a junction and a curve, where the receivers no longer
+        sit in a line.</p>
       <div class="qrbox">
         <img src="figures/qr.svg" alt="QR code to the interactive demo">
         <p><b>Try it yourself: you are the attacker.</b> Move a claimed position and
