@@ -1,12 +1,11 @@
 <title>Catch Me Lying</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root{
     --ground:#12171c; --panel:#1a222a; --raised:#212b34; --road:#252f38;
     --ink:#eaf0f4; --dim:#8195a3; --faint:#4c5c69; --line:#2c3742;
     --lie:#f2a65a; --verify:#2e9e9e; --truth:#7fb069; --alarm:#e05c5c;
-    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
@@ -50,7 +49,7 @@
 
   .stage{position:relative;background:var(--ground)}
   canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
-  .hint{position:absolute;left:16px;bottom:12px;font-family:var(--mono);font-size:11px;
+  .hint{position:absolute;right:16px;top:6px;font-family:var(--mono);font-size:11px;
         color:var(--faint);pointer-events:none}
 
   .controls{display:flex;flex-wrap:wrap;gap:22px 34px;padding:18px 24px;
@@ -325,7 +324,7 @@ function draw(){
   ctx.strokeStyle = css("--ground"); ctx.lineWidth = 2; ctx.stroke();
 
   /* labels */
-  ctx.font = '500 11px "IBM Plex Mono", monospace';
+  ctx.font = '500 11px ui-monospace, "SF Mono", Menlo, monospace';
   ctx.fillStyle = css("--truth"); ctx.fillText("actually here", tx + 10, ty - 9);
   ctx.fillStyle = css("--lie");   ctx.fillText("claims to be here", cx + 12, cy + 4);
 
@@ -334,9 +333,9 @@ function draw(){
   ctx.save(); ctx.translate(16, M.t + 74); ctx.rotate(-Math.PI/2);
   ctx.fillText("across →", 0, 0); ctx.restore();
   ctx.textAlign = "right";
-  ctx.fillText("across-road scale exaggerated ×" +
-               ((2*AL/(cv.width-M.l-M.r)) / (2*AC/(cv.height-M.t-M.b))).toFixed(1),
-               W - M.r, H - 14);
+  ctx.fillText("across the road drawn at ×" +
+               ((2*AL/(cv.width-M.l-M.r)) / (2*AC/(cv.height-M.t-M.b))).toFixed(1) +
+               " the along-road scale", W - M.r, H - 14);
   ctx.textAlign = "left";
 }
 

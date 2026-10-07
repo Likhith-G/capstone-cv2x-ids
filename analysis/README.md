@@ -82,6 +82,17 @@ grouped fold. It asserts that afterwards.
         --extra-corpus FLOOR/corpus.pkl --extra-run-dir FLOOR \
         --extra-tags seed1 ... --extra-prefix floor
 
+`--onroad 18` asks how much of the pooled floor rests on attackers whose claimed
+position is off the carriageway, where a map check rejects them with no other
+evidence. It repeats the reported pooled arm as a control, then scores that
+detector on the on-road claims only, and separately retrains it with the
+off-road attackers removed, as a map check run first would leave it, at its own
+threshold and again near the control's false flag rate. `--skip-single` skips
+the single observer arms, which do not touch the pooled one.
+
+    offset_floor.py corpus.pkl --run-dir DIR --tags seed1 ... \
+        --pooled pooled_road.pkl --skip-single --onroad 18
+
 `geometry_bound.py` takes no classifier and simulates no attack. It fits the
 propagation law on benign traffic, splits the residual into the part that
 persists for the life of a link and the part that averages away, and computes

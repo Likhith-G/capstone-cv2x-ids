@@ -82,7 +82,8 @@ def scenario_fingerprint(run_dir, tags):
     return out
 
 
-def per_station_detection(df, feats, folds, trees, jobs):
+def per_station_detection(df, feats, folds, trees, jobs, score=None,
+                          match_benign=None):
     """Fraction of each station's windows flagged as misbehaving.
 
     Binary, attack against benign, because the question is whether the station
@@ -95,14 +96,40 @@ def per_station_detection(df, feats, folds, trees, jobs):
     y = (df.label_attackId != 0).astype(int).values
     groups = df.label_txNodeId.values
     pred = np.zeros(len(df), dtype=int)
+    prob = np.zeros(len(df))
     sg = StratifiedGroupKFold(n_splits=folds, shuffle=True, random_state=0)
     for tr, te in sg.split(X, y, groups):
         clf = RandomForestClassifier(n_estimators=trees, n_jobs=jobs,
                                      random_state=0)
         clf.fit(X[tr], y[tr])
         pred[te] = clf.predict(X[te])
+        prob[te] = clf.predict_proba(X[te])[:, 1]
     out = df[["key_seed", "key_claimedStationId", "label_attackId"]].copy()
     out["flagged"] = pred
+    if match_benign is not None:
+        # Two detectors are only comparable at the same operating point. The
+        # threshold is moved until the mean benign station's false flag rate
+        # equals the target, using benign rows alone, so no attack label sets it.
+        ben = (df.label_attackId == 0).values
+        keys = out.loc[ben, ["key_seed", "key_claimedStationId"]]
+
+        def rate(t):
+            f = pd.Series(prob[ben] >= t, index=keys.index)
+            return f.groupby([keys.key_seed, keys.key_claimedStationId]).mean().mean()
+        lo, hi = 0.0, 1.0
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            if rate(mid) > match_benign:
+                lo = mid
+            else:
+                hi = mid
+        out["flagged"] = (prob >= hi).astype(int)
+        print(f"  threshold moved from 0.50 to {hi:.4f} to match a benign "
+              f"false flag rate of {match_benign:.4f}")
+    if score is not None:
+        # Trained on every row, scored only on the rows the mask keeps, so the
+        # detector is the one already reported and only the population changes.
+        out = out[score]
     return (out.groupby(["key_seed", "key_claimedStationId", "label_attackId"])
             .flagged.agg(["mean", "size"]).reset_index()
             .rename(columns={"mean": "flag_rate", "size": "windows"}))
@@ -306,6 +333,60 @@ def locate(att, label, n_boot=2000, seed=0):
           "spread before reading the point estimate as located.")
 
 
+def onroad_arms(pl, cols, offsets, floor, edges, a):
+    """The floor on the claims a map check would not reject.
+
+    The corpus attackers draw the direction of their offset, so some of them
+    claim positions off the carriageway, where a map check rejects them with no
+    radio evidence at all. The road runs along x with its centreline at y = 0,
+    and no honest window in the corpus claims a position more than 18 m from
+    it. Removing the off-road claims leaves the attackers a map check passes,
+    so the floor measured on them is set by evidence a map check does not
+    supply. The pooled table also carries pooled application features, so it
+    is not radio evidence alone.
+    """
+    hw = a.onroad
+    off = pl.claimedY.abs() > hw
+    attack = pl.label_attackId != 0
+    ladder = pl.label_attackId.isin(LADDER)
+    print(f"\non-road claims only, half-width {hw:g} m from the centreline")
+    print(f"  benign units off the road: {int((off & ~attack).sum())} of "
+          f"{int((~attack).sum()):,}")
+    st = (pl[ladder].assign(off=off[ladder])
+          .groupby(["key_seed", "key_claimedStationId"]).off.mean())
+    print(f"  constant-offset units off the road: {int((off & ladder).sum()):,} "
+          f"of {int(ladder.sum()):,}")
+    print(f"  constant-offset stations: {int((st == 0).sum())} wholly on the "
+          f"road, {int((st == 1).sum())} wholly off, "
+          f"{int(((st > 0) & (st < 1)).sum())} mixed")
+    mixed = ((st > 0) & (st < 1)).sum()
+    if mixed:
+        print("  a mixed station is scored on its on-road units alone")
+
+    keep = ~(off & attack)
+    det = per_station_detection(pl[keep].reset_index(drop=True), cols,
+                                a.folds, a.trees, a.jobs)
+    curve(det, offsets, floor,
+          "pooled across receivers, map check first (off-road attack units "
+          "removed before training)", edges, a.min_stations)
+
+    # The retrained detector settles at its own operating point, so it is also
+    # read at the reported detector's benign false flag rate.
+    full = per_station_detection(pl, cols, a.folds, a.trees, a.jobs)
+    target = full[full.label_attackId == 0].flag_rate.mean()
+    det = per_station_detection(pl[keep].reset_index(drop=True), cols,
+                                a.folds, a.trees, a.jobs, match_benign=target)
+    curve(det, offsets, floor,
+          "pooled across receivers, map check first, at the reported "
+          "detector's benign false flag rate", edges, a.min_stations)
+
+    det = per_station_detection(pl, cols, a.folds, a.trees, a.jobs,
+                                score=keep.values)
+    curve(det, offsets, floor,
+          "pooled across receivers, the reported detector scored on on-road "
+          "units only", edges, a.min_stations)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("corpus")
@@ -348,6 +429,16 @@ def main():
                          "both. Without it the pooled arm sees only the first "
                          "corpus, which is the arm the crossing actually lives "
                          "in, so the locate step would be run on the wrong set")
+    ap.add_argument("--onroad", type=float, default=None, metavar="HALFWIDTH",
+                    help="also score the pooled arm on claims within this many "
+                         "metres of the centreline only, the claims a map check "
+                         "would pass. Two arms: the map check run first, so "
+                         "off-road attack units are removed before training as "
+                         "well as scoring, and the detector already reported "
+                         "scored on on-road units only")
+    ap.add_argument("--skip-single", action="store_true",
+                    help="skip the three single observer arms, which do not "
+                         "touch the pooled arm or its sample")
     ap.add_argument("--extra-prefix", default="x",
                     help="seed tags of the extra corpus are prefixed with this, "
                          "and its node identifiers are pushed clear of the "
@@ -423,9 +514,10 @@ def main():
     print(f"{len(df):,} windows, {df.label_txNodeId.nunique()} stations, "
           f"{len(app)} application and {len(phy)} radio features")
 
-    for name, feats in [("application layer only", app),
-                        ("radio layer only", phy),
-                        ("fused", app + phy)]:
+    for name, feats in ([] if a.skip_single else
+                        [("application layer only", app),
+                         ("radio layer only", phy),
+                         ("fused", app + phy)]):
         det = per_station_detection(df, feats, a.folds, a.trees, a.jobs)
         curve(det, offsets, floor,
               f"single observer, {name}", edges, a.min_stations,
@@ -450,6 +542,8 @@ def main():
         curve(det, offsets, floor,
               "pooled across receivers, all features", edges, a.min_stations,
               a.save_stations, borrow, a.corpus_tag)
+        if a.onroad is not None:
+            onroad_arms(pl, cols, offsets, floor, edges, a)
         print("\nThe pooled rows are (station, window) units rather than "
               "(observer, station, window),\nso its window counts are smaller "
               "by the number of receivers per unit. The flag\nrates are "
