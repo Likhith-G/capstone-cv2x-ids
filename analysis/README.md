@@ -190,6 +190,7 @@ nothing, rather than carrying on over the seeds that survived.
 | `plausibility_baseline.py` | how the work stands against the field's standard checks rather than its own ablations |
 | `federated_drift.py` | does federating across two densities recover what the density change costs |
 | `federated_adapt.py` | can a deployed federated detector catch up after a change of traffic density: refitting input scaling on unlabelled local rows, a few rounds of FedAvg on a handful of labelled clients from the new conditions, and both, against section 5d's own transfer and in-distribution arms, which it must reproduce |
+| `live_demo.py` | **the working demo the project brief asks for.** Trains the release baseline from the bundle alone and replays the held-out test partition one second of traffic at a time, printing each second's decisions, alerts, batch latency and running scores per attack family. `--pace 1.0` plays in real time. Must reproduce the published frozen-split figure, and exits non-zero if it does not |
 | `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
 | `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
 | `correction_transfer.py` | whether the calibrated propagation correction is a property of range or shrinkage onto one corpus: calibrate on A, apply to B, and check each bin's mean is flat in along-road position |

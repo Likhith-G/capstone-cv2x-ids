@@ -63,7 +63,7 @@ two is set by the geometry, and the whole pattern reproduces on a dataset this
 project did not generate.
 
 Every number below is pinned to the log line that produced it by
-`analysis/verify_results.py`, which checks 465 figures and must report no
+`analysis/verify_results.py`, which checks 473 figures and must report no
 failures.
 
 ### 1. A single receiver cannot see a position lie
@@ -341,7 +341,7 @@ capstone-cv2x-ids/
 ├── simulation/                  # ns-3 contrib module
 │   └── cv2xids/                 # ITS messaging, DCC, car following, attacks, traces
 │
-├── analysis/                    # detection pipeline, 47 scripts
+├── analysis/                    # detection pipeline, 48 scripts
 │   ├── baseline_starter.py      # start here to train something
 │   ├── build_features.py        # windowing, application and radio features
 │   ├── validate_dataset.py      # ten adversarial integrity gates

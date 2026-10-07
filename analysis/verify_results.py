@@ -1232,6 +1232,14 @@ CHECKS = [
     ('5g labelled rows 50', '| 19,996 |', 'drift/logs/adapt_dense', '(19,996 labelled rows)'),
     ('5g density cost', 'The density change costs 0.1384 macro F1', 'drift/logs/adapt_dense', 'the density change costs +0.1384 macro F1'),
     ('5g test rows', 'clients, 90,084 test rows', 'drift/logs/adapt_dense', '217 target test clients, 90,084 test rows'),
+    ('7b reproduces the baseline', 'macro F1\n0.5319 and MCC 0.6746', 'campaign_gnss/logs/live_demo', 'final macro F1 0.5319, MCC 0.6746'),
+    ('7b decisions and seconds', '333,990 decisions over 459 seconds of traffic', 'campaign_gnss/logs/live_demo', '333,990 decisions over 459 seconds of traffic'),
+    ('7b batch latency', '| median 14.5 ms, 95th percentile 15.1 ms, worst 66.4 ms |', 'campaign_gnss/logs/live_demo', 'median 14.5 ms, 95th percentile 15.1 ms, worst 66.4 ms'),
+    ('7b per decision', '| median 19.0 us |', 'campaign_gnss/logs/live_demo', 'per decision: median 19.0 us'),
+    ('7b flooding', '| flooding windows flagged as an attack | 0.964 |', 'campaign_gnss/logs/live_demo', 'flooding  windows flagged as an attack 0.964'),
+    ('7b spoofing', '| spoofing windows flagged as an attack | 0.304 |', 'campaign_gnss/logs/live_demo', 'spoofing  windows flagged as an attack 0.304'),
+    ('7b replay', '| replay windows flagged as an attack | 0.117 |', 'campaign_gnss/logs/live_demo', 'replay    windows flagged as an attack 0.117'),
+    ('7b false alarms', '| honest windows falsely flagged | 0.0045 |', 'campaign_gnss/logs/live_demo', 'honest windows falsely flagged 0.0045'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
