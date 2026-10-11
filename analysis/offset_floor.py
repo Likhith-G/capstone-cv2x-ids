@@ -109,7 +109,7 @@ def oof_prob(df, feats, folds, trees, jobs, fold_seed=0):
 
 
 def fed_oof_prob(df, feats, folds, method, fold_seed=0, seed=0, rounds=20,
-                 tau=8.0, min_rows=200):
+                 tau=8.0, min_rows=200, overrides=None, central_epochs=None):
     """Out of fold attack probability from the FEDERATED region detector.
 
     Same folds as oof_prob, grouped by physical transmitter, so the federated
@@ -124,10 +124,11 @@ def fed_oof_prob(df, feats, folds, method, fold_seed=0, seed=0, rounds=20,
     """
     if isinstance(fold_seed, (list, tuple)):
         return np.mean([fed_oof_prob(df, feats, folds, method, f, seed, rounds,
-                                     tau, min_rows) for f in fold_seed], axis=0)
+                                     tau, min_rows, overrides, central_epochs)
+                        for f in fold_seed], axis=0)
     import torch
     from sklearn.preprocessing import StandardScaler
-    from federated import MLP, run_method, load_flat
+    from federated import MLP, evaluate, run_central, run_method, load_flat
     X = (df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
          .to_numpy(dtype=np.float32))
     y_bin = (df.label_attackId != 0).astype(int).values
@@ -142,18 +143,29 @@ def fed_oof_prob(df, feats, folds, method, fold_seed=0, seed=0, rounds=20,
     cfg = dict(d_in=len(feats), n_classes=len(classes), embed_dim=32, lr=0.05,
                batch_size=128, local_epochs=2, rounds=rounds,
                participation=0.5, mu=0.01, tau=tau, lam=0.1)
+    # overrides: the configuration frozen by the panel's validation sweep
+    # (rounds, local epochs, tau, server optimiser), so the floor is read off
+    # the detector the panel reports. None keeps every logged floor identical.
+    cfg.update(overrides or {})
+    if method == "central_sgd" and not central_epochs:
+        # Matched exposure: rounds x local epochs x participation passes.
+        central_epochs = max(1, int(round(cfg["rounds"] * cfg["local_epochs"]
+                                          * cfg["participation"])))
+    print(f"  {method}: rounds {cfg['rounds']}, local epochs {cfg['local_epochs']}, "
+          f"tau {cfg['tau']}" + (f", central epochs {central_epochs}"
+                                 if method == "central_sgd" else ""), flush=True)
     for k, (tr, te) in enumerate(sg.split(X, y_bin, groups)):
         sc = StandardScaler().fit(X[tr])
         Xtr, Xte = sc.transform(X[tr]).astype(np.float32), sc.transform(X[te]).astype(np.float32)
         clients = []
-        if method == "central":
+        if method in ("central", "central_sgd"):
             # The control: the same MLP, settings and rounds, trained on every
             # training-fold row as one client, so the only difference from the
             # federated arms is that the data is not split across regions.
             yi = torch.tensor(codes[tr])
             clients.append((torch.tensor(Xtr), yi,
                             torch.bincount(yi, minlength=len(classes))))
-        for r in ([] if method == "central" else pd.unique(region[tr])):
+        for r in ([] if method in ("central", "central_sgd") else pd.unique(region[tr])):
             m = region[tr] == r
             if m.sum() < min_rows:
                 continue
@@ -161,10 +173,19 @@ def fed_oof_prob(df, feats, folds, method, fold_seed=0, seed=0, rounds=20,
             clients.append((torch.tensor(Xtr[m]), yi,
                             torch.bincount(yi, minlength=len(classes))))
         test = (torch.tensor(Xte), torch.tensor(codes[te]))
-        f1, mcc, info = run_method("fedavg" if method == "central" else method,
-                                   clients, test, cfg, seed=seed, detail=True)
+        if method == "central_sgd":
+            # The panel's central ceiling (federated.run_central): the same MLP
+            # and optimiser on every training-fold row for a stated number of
+            # epochs. "central" above is the older control, FedAvg on one
+            # client, which saw about twice the federated arm's passes.
+            gvec = run_central(clients, cfg, seed, central_epochs)
+            f1, _ = evaluate(cfg, gvec, test)
+        else:
+            f1, mcc, info = run_method("fedavg" if method == "central" else method,
+                                       clients, test, cfg, seed=seed, detail=True)
+            gvec = info["gvec"]
         g = MLP(cfg["d_in"], cfg["n_classes"])
-        load_flat(g, info["gvec"])
+        load_flat(g, gvec)
         g.eval()
         with torch.no_grad():
             pb = torch.softmax(g(test[0]), 1)[:, benign].numpy()
@@ -540,7 +561,18 @@ def region_arms(rg, target, onroad_off, offsets, floor, edges, a):
         prob = oof_prob(rg, cols, a.folds, a.trees, a.jobs, a.fold_seed)
     else:
         print(f"\n  region detector: federated {a.region_learner}, region clients")
-        prob = fed_oof_prob(rg, cols, a.folds, a.region_learner, a.fold_seed)
+        over = {}
+        for item in filter(None, (a.fed_set or "").split(",")):
+            k, v = item.split("=")
+            try:
+                over[k] = int(v) if k in ("rounds", "local_epochs") else float(v)
+            except ValueError:
+                over[k] = v
+        if over or a.central_epochs:
+            print(f"  configuration overrides {over}"
+                  + (f", central epochs {a.central_epochs}" if a.central_epochs else ""))
+        prob = fed_oof_prob(rg, cols, a.folds, a.region_learner, a.fold_seed,
+                            overrides=over, central_epochs=a.central_epochs)
     unit = rg[["key_seed", "key_claimedStationId", "key_window",
                "label_attackId"]].copy()
     unit["p"] = prob
@@ -645,10 +677,16 @@ def main():
                          "false flag rate, so floors from different fold "
                          "assignments or corpora sit at one operating point")
     ap.add_argument("--region-learner", default="forest",
-                    choices=["forest", "central", "fedavg", "fedlc"],
+                    choices=["forest", "central", "central_sgd", "fedavg", "fedlc"],
                     help="the detector the region arms score: the forest, or "
                          "the federated panel's MLP trained across region "
                          "clients inside each fold")
+    ap.add_argument("--fed-set", default=None,
+                    help="federated configuration overrides as key=value,..., "
+                         "e.g. rounds=100,local_epochs=1,server_opt=avgm")
+    ap.add_argument("--central-epochs", type=int, default=None,
+                    help="epochs for --region-learner central_sgd; default "
+                         "is the federated arm's matched exposure")
     ap.add_argument("--extra-prefix", default="x",
                     help="seed tags of the extra corpus are prefixed with this, "
                          "and its node identifiers are pushed clear of the "

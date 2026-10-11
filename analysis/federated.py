@@ -206,7 +206,46 @@ def secure_sum(seed, rnd, sel, alive, vectors, recover=True):
     return out, masked_first, reveals
 
 
-def run_method(method, clients, test, cfg, seed, detail=False, init=None):
+def server_step(cfg, state, prev, avg):
+    """Server optimiser applied to the aggregate (Reddi et al., ICLR 2021).
+
+    The round's aggregate is read as a pseudo-gradient, prev - avg, and the
+    server steps along it with momentum (FedAvgM) or with Adam's per-weight
+    scaling (FedAdam, no bias correction, as in the paper). FedAvgM with server
+    learning rate 1 and momentum 0 is plain FedAvg, which is the check that the
+    option leaves the aggregate alone. It acts on whatever the server receives,
+    so it composes with secure aggregation (the server still gets the sum) and
+    with DP (the noise is added before this step)."""
+    d = prev - avg
+    lr = cfg.get("server_lr", 1.0)
+    if cfg["server_opt"] == "avgm":
+        state["m"] = cfg.get("server_beta1", 0.9) * state.get("m", 0.0) + d
+        return prev - lr * state["m"]
+    if cfg["server_opt"] == "adam":
+        b1, b2 = cfg.get("server_beta1", 0.9), cfg.get("server_beta2", 0.99)
+        state["m"] = b1 * state.get("m", 0.0) + (1 - b1) * d
+        state["v"] = b2 * state.get("v", 0.0) + (1 - b2) * d * d
+        return prev - lr * state["m"] / (state["v"].sqrt() + cfg.get("server_tau", 1e-3))
+    raise SystemExit(f"unknown server optimiser {cfg['server_opt']!r}")
+
+
+def evaluate(cfg, gvec, data):
+    """(macro F1, MCC) of the weights gvec on data = (X, y). Building the MLP
+    draws an initialisation from torch's global generator, which a callback
+    would then shift for every later round; the fork keeps scoring from
+    changing the run it scores."""
+    with torch.random.fork_rng(devices=[]):
+        m = MLP(cfg["d_in"], cfg["n_classes"])
+    load_flat(m, gvec)
+    m.eval()
+    with torch.no_grad():
+        pred = m(data[0]).argmax(1).numpy()
+    truth = data[1].numpy()
+    return f1_score(truth, pred, average="macro"), matthews_corrcoef(truth, pred)
+
+
+def run_method(method, clients, test, cfg, seed, detail=False, init=None,
+               callback=None):
     torch.manual_seed(seed)
     np.random.seed(seed)
     g = MLP(cfg["d_in"], cfg["n_classes"])
@@ -215,8 +254,18 @@ def run_method(method, clients, test, cfg, seed, detail=False, init=None):
     # run identical, since the fresh model above is still drawn either way.
     gvec = flat(g).clone() if init is None else init.clone()
     global_proto = None
+    if cfg.get("server_opt") and method == "fednova":
+        raise SystemExit("a server optimiser is implemented for the "
+                         "weighted-average methods only")
+    sstate = {}
 
+    # callback(round, weights) after every round, for learning curves. It only
+    # reads, so a run with a callback is the run without one; and because the
+    # client draw comes from one stream in round order, round r of a long run
+    # is round r of a short one, so one 200 round run gives the 20, 50 and 100
+    # round models too.
     for rnd in range(cfg["rounds"]):
+        gprev = gvec
         sel = np.random.choice(len(clients),
                                size=max(1, int(cfg["participation"] * len(clients))),
                                replace=False)
@@ -241,6 +290,8 @@ def run_method(method, clients, test, cfg, seed, detail=False, init=None):
             SECAGG_STATS.setdefault("dropped", []).append(int((~alive).sum()))
         if not alive.any():
             SECAGG_STATS.setdefault("empty_rounds", []).append(rnd)
+            if callback is not None:
+                callback(rnd + 1, gvec)
             continue
         for k, ci in enumerate(sel):
             if not alive[k] and not cfg.get("secure_agg"):
@@ -332,6 +383,9 @@ def run_method(method, clients, test, cfg, seed, detail=False, init=None):
         else:
             gvec = (p[:, None] * torch.stack(updates)).sum(0)
 
+        if cfg.get("server_opt"):
+            gvec = server_step(cfg, sstate, gprev, gvec)
+
         if method == "fedproto" and protos:
             # FedProto averages each class prototype over the clients that hold
             # that class. Averaging every client's vector, with zeros for classes
@@ -343,6 +397,9 @@ def run_method(method, clients, test, cfg, seed, detail=False, init=None):
             c = torch.stack([pr[1] for pr in protos]).sum(0)
             global_proto = torch.where(c[:, None] > 0, s / c[:, None].clamp(min=1),
                                        torch.zeros_like(s))
+
+        if callback is not None:
+            callback(rnd + 1, gvec)
 
     load_flat(g, gvec)
     g.eval()
@@ -371,6 +428,61 @@ def run_method(method, clients, test, cfg, seed, detail=False, init=None):
                                   labels=list(range(cfg["n_classes"])),
                                   zero_division=0)],
     }
+
+
+def run_central(clients, cfg, seed, epochs, callback=None):
+    """The ceiling: the same MLP and the same local optimiser (SGD, momentum,
+    learning rate, batch size), trained on the union of the training clients'
+    rows as if they had been pooled at one server. callback(epoch, weights)
+    after every epoch, so one run gives both the matched-exposure model and the
+    early-stopped one. The momentum buffer persists across epochs, as in any
+    central training run."""
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    X = torch.cat([c[0] for c in clients])
+    y = torch.cat([c[1] for c in clients])
+    m = MLP(cfg["d_in"], cfg["n_classes"])
+    opt = torch.optim.SGD(m.parameters(), lr=cfg["lr"], momentum=MOMENTUM)
+    n, bs = len(X), cfg["batch_size"]
+    for ep in range(epochs):
+        perm = torch.randperm(n)
+        for b in range(0, n, bs):
+            idx = perm[b:b + bs]
+            opt.zero_grad()
+            F.cross_entropy(m(X[idx]), y[idx]).backward()
+            opt.step()
+        if callback is not None and callback(ep + 1, flat(m).clone()) is False:
+            break
+    return flat(m).clone()
+
+
+CENTRAL_EPOCHS = 200
+
+
+def central_arms(clients, val, test, cfg, seed, epochs=CENTRAL_EPOCHS):
+    """Two ceilings from one central run. 'matched' stops at the row exposure a
+    federated run gets: each client is sampled with probability about
+    participation per round and does local_epochs passes, so a row is seen
+    about rounds * local_epochs * participation times. 'converged' is the
+    epoch with the best validation macro F1 within a fixed budget of `epochs`,
+    the same definition fed_sweep.py uses. Selection reads validation only;
+    test is recorded at every epoch and read at the epoch validation picked."""
+    matched = max(1, int(round(cfg["rounds"] * cfg["local_epochs"]
+                               * cfg["participation"])))
+    hist = {}
+    best = {"ep": 0, "f1": -1.0}
+
+    def cb(ep, w):
+        v = evaluate(cfg, w, val)
+        hist[ep] = (v, evaluate(cfg, w, test))
+        if v[0] > best["f1"]:
+            best.update(ep=ep, f1=v[0])
+
+    run_central(clients, cfg, seed, max(epochs, matched), callback=cb)
+    return {"matched": hist[matched][1], "matched_val": hist[matched][0],
+            "matched_epochs": matched,
+            "converged": hist[best["ep"]][1], "converged_val": hist[best["ep"]][0],
+            "converged_epochs": best["ep"], "epochs_run": max(hist)}
 
 
 def dp_epsilon(z, rounds, delta=1e-5):
@@ -441,6 +553,83 @@ def build_clients(df, feats, observer_col="key_rxNodeId", min_rows=200):
     return clients, pack(va_obs), pack(te_obs), len(classes)
 
 
+def build_clients_tx(df, feats, splits, observer_col="key_rxNodeId", min_rows=200):
+    """Held-out TRANSMITTERS, the protocol every other number in the report
+    uses. build_clients above holds out observers, but a transmitter is heard
+    by a median of eight regions, so all of its test rows came from vehicles
+    the training clients had also heard: it measures transfer to a new region,
+    not detection of a new vehicle.
+
+    Here every observer is a client and trains on the rows of training
+    transmitters only. Validation and test are the rows of validation and test
+    transmitters, heard at any observer. That is the deployment question: the
+    roadside infrastructure is fixed and trains together, and new vehicles
+    arrive. `splits` is the frozen release partition (release_splits.csv), one
+    row per transmitter and claimed identity, joined on seed and transmitter."""
+    y_all = df.label_attackId.astype("category")
+    classes = list(y_all.cat.categories)
+    codes = y_all.cat.codes.values
+
+    s = splits.drop_duplicates(["key_seed", "label_txNodeId"])
+    if (splits.groupby(["key_seed", "label_txNodeId"]).split.nunique() > 1).any():
+        raise SystemExit("a transmitter sits in more than one split")
+    part = df[["key_seed", "label_txNodeId"]].merge(
+        s[["key_seed", "label_txNodeId", "split"]], how="left",
+        on=["key_seed", "label_txNodeId"]).split.values
+    if pd.isna(part).any():
+        raise SystemExit(f"{int(pd.isna(part).sum())} rows have no split; the "
+                         "split file does not cover this table")
+
+    X = df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0).values.astype(np.float32)
+    tr = part == "train"
+    scaler = StandardScaler().fit(X[tr])
+    X = scaler.transform(X).astype(np.float32)
+
+    obs = df[observer_col].values
+    clients = []
+    for o in pd.unique(obs):
+        m = tr & (obs == o)
+        if m.sum() < min_rows:
+            continue
+        xi = torch.tensor(X[m])
+        yi = torch.tensor(codes[m], dtype=torch.long)
+        clients.append((xi, yi, torch.bincount(yi, minlength=len(classes))))
+
+    def pack(name):
+        m = part == name
+        return (torch.tensor(X[m]), torch.tensor(codes[m], dtype=torch.long))
+
+    return clients, pack("validation"), pack("test"), len(classes)
+
+
+def load_panel_data(path, sample=200000, observer_role=None, restrict_first=False):
+    """The panel's table, cleaned, restricted to an observer role and sampled.
+    The original order samples first and restricts second, which on roadside
+    unit clients kept 24,552 of 199,890 clean rows; restrict_first fixes that
+    and is off by default so every logged panel reproduces."""
+    df = pd.read_pickle(path) if path.endswith(".pkl") else pd.read_csv(path)
+    if "label_clean" in df.columns:
+        df = df[df.label_clean == 1]
+
+    def restrict(df):
+        if observer_role and "key_observer_role" in df.columns:
+            before = df.key_rxNodeId.nunique()
+            df = df[df.key_observer_role == observer_role]
+            print(f"restricted to {observer_role} observers: "
+                  f"{df.key_rxNodeId.nunique()} of {before} clients, {len(df)} rows\n")
+            if df.empty:
+                raise SystemExit(f"no observers with role {observer_role!r}")
+        return df
+
+    if restrict_first:
+        df = restrict(df)
+    if sample and len(df) > sample:
+        df = df.sample(n=sample, random_state=0)
+    if not restrict_first:
+        df = restrict(df)
+    return df
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("features")
@@ -488,21 +677,22 @@ def main():
     ap.add_argument("--tune", action="store_true",
                     help="select each method's hyperparameter on the "
                          "validation clients before the seeded runs")
+    ap.add_argument("--split-file", default=None,
+                    help="release_splits.csv: hold out TRANSMITTERS (every "
+                         "observer trains, on training transmitters only). "
+                         "Without it, observers are held out, the original "
+                         "protocol")
+    ap.add_argument("--restrict-first", action="store_true",
+                    help="apply --observer-role before --sample rather than after")
+    ap.add_argument("--server-opt", choices=["avgm", "adam"], default=None,
+                    help="server optimiser on the aggregate; off is plain averaging")
+    ap.add_argument("--server-lr", type=float, default=1.0)
+    ap.add_argument("--server-beta1", type=float, default=0.9)
+    ap.add_argument("--server-beta2", type=float, default=0.99)
+    ap.add_argument("--server-tau", type=float, default=1e-3)
     a = ap.parse_args()
 
-    df = (pd.read_pickle(a.features) if a.features.endswith(".pkl")
-          else pd.read_csv(a.features))
-    if "label_clean" in df.columns:
-        df = df[df.label_clean == 1]
-    if len(df) > a.sample:
-        df = df.sample(n=a.sample, random_state=0)
-    if a.observer_role and "key_observer_role" in df.columns:
-        before = df.key_rxNodeId.nunique()
-        df = df[df.key_observer_role == a.observer_role]
-        print(f"restricted to {a.observer_role} observers: "
-              f"{df.key_rxNodeId.nunique()} of {before} clients\n")
-        if df.empty:
-            raise SystemExit(f"no observers with role {a.observer_role!r}")
+    df = load_panel_data(a.features, a.sample, a.observer_role, a.restrict_first)
     # pool_ is the cross-receiver consensus block. It exists only in a pooled
     # corpus and it is the part of the feature set a lone receiver cannot
     # compute, so a panel run without it is measuring feature averaging rather
@@ -510,11 +700,24 @@ def main():
     prefixes = ("app_", "phy_") if a.drop_consensus else ("app_", "phy_", "pool_")
     feats = [c for c in df.columns if c.startswith(prefixes)]
 
-    clients, val, test, n_classes = build_clients(df, feats,
-                                                  observer_col=a.observer_col)
+    if a.split_file:
+        clients, val, test, n_classes = build_clients_tx(
+            df, feats, pd.read_csv(a.split_file), observer_col=a.observer_col)
+        print(f"held-out transmitters ({a.split_file}); every observer with "
+              f"at least 200 training rows is a client, "
+              f"{sum(len(c[0]) for c in clients)} training rows")
+    else:
+        clients, val, test, n_classes = build_clients(df, feats,
+                                                      observer_col=a.observer_col)
     cfg = dict(d_in=len(feats), n_classes=n_classes, embed_dim=32, lr=0.05,
                batch_size=128, local_epochs=a.local_epochs, rounds=a.rounds,
                participation=0.5, mu=a.mu, tau=a.tau, lam=a.lam)
+    if a.server_opt:
+        cfg.update(server_opt=a.server_opt, server_lr=a.server_lr,
+                   server_beta1=a.server_beta1, server_beta2=a.server_beta2,
+                   server_tau=a.server_tau)
+        print(f"server optimiser {a.server_opt}: lr {a.server_lr}, beta1 "
+              f"{a.server_beta1}, beta2 {a.server_beta2}, tau {a.server_tau}")
 
     print(f"{len(clients)} training clients, {len(val[0])} validation rows, "
           f"{len(test[0])} test rows, {len(feats)} features, {n_classes} classes, "
@@ -597,6 +800,22 @@ def main():
 
     results, results_mcc = {}, {}
     for method in a.methods.split(","):
+        if method == "central":
+            # The ceiling, on the same clients' training rows and the same
+            # validation and test rows. Two rows: at the federated arms' row
+            # exposure, and early-stopped on validation.
+            arms = [central_arms(clients, val, test, cfg, s) for s in range(a.seeds)]
+            for key, label in (("matched", "central_matched"),
+                               ("converged", "central_conv")):
+                f1s = [r[key][0] for r in arms]
+                mccs = [r[key][1] for r in arms]
+                results[label], results_mcc[label] = f1s, mccs
+                ep = [r[f"{key}_epochs"] for r in arms]
+                print(f"{label:15s} macro F1 {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}   "
+                      f"{[round(s, 4) for s in f1s]}   "
+                      f"MCC multiclass {np.mean(mccs):.4f} +/- {np.std(mccs):.4f}   "
+                      f"epochs {ep}")
+            continue
         c = cfg
         if method in chosen:
             name, v = chosen[method]
@@ -639,6 +858,19 @@ def main():
                       f"{'  significant' if pval < 0.05 else ''}")
             except ValueError as e:
                 print(f"  {m:9s} {e}")
+
+    ceil = results.get("central_conv")
+    if ceil:
+        # Federated as a share of the central ceiling, per seed (the same seed
+        # draws the central model's initialisation), then summarised.
+        print("\nshare of the central ceiling (early-stopped), per seed:")
+        for m, s in results.items():
+            if m.startswith("central"):
+                continue
+            r = np.array(s) / np.array(ceil)
+            rm = np.array(results_mcc[m]) / np.array(results_mcc["central_conv"])
+            print(f"  {m:9s} macro F1 {r.mean():.3f} (min {r.min():.3f})   "
+                  f"MCC {rm.mean():.3f} (min {rm.min():.3f})")
 
 
 def robustness(a, clients, test, cfg):
