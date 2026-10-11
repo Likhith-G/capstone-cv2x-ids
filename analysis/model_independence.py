@@ -64,6 +64,13 @@ def learners(trees, jobs, seed):
     }
 
 
+def transformer(seed):
+    """The fifth family, kept out of learners() so the logged four-family run
+    reproduces unchanged. Imported here because it needs torch."""
+    from tabular_transformer import TabularTransformer
+    return TabularTransformer(seed=seed)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("features")
@@ -75,6 +82,10 @@ def main():
                          "random forest row reproduces the published figure")
     ap.add_argument("--jobs", type=int, default=-1)
     ap.add_argument("--block", default="fused", choices=["app", "phy", "fused"])
+    ap.add_argument("--transformer", action="store_true",
+                    help="add the tabular transformer as a fifth family, on the "
+                         "same rows and folds; its early stopping split is drawn "
+                         "by station inside each training fold")
     a = ap.parse_args()
 
     df = (pd.read_pickle(a.features) if a.features.endswith(".pkl")
@@ -102,13 +113,21 @@ def main():
           "paired.\n")
 
     per_class, summary = {}, {}
-    for name, mk in learners(a.trees, a.jobs, 0).items():
+    families = learners(a.trees, a.jobs, 0)
+    if a.transformer:
+        families["transformer"] = transformer(0)
+    for name, mk in families.items():
         t0 = time.time()
         f1s, mccs, pc = [], [], []
         for tr, te in folds:
             from sklearn.base import clone
             clf = clone(mk)
-            clf.fit(X.iloc[tr], y.iloc[tr])
+            if name == "transformer":
+                clf.fit(X.iloc[tr], y.iloc[tr], groups=groups.iloc[tr])
+                print(f"    fold: best epoch {clf.best_epoch_}, validation "
+                      f"macro F1 {clf.val_f1_:.4f}", flush=True)
+            else:
+                clf.fit(X.iloc[tr], y.iloc[tr])
             p = clf.predict(X.iloc[te])
             f1s.append(f1_score(y.iloc[te], p, average="macro"))
             mccs.append(matthews_corrcoef(y.iloc[te], p))
@@ -141,11 +160,11 @@ def main():
 
     best_pos = {c: max(per_class[n][classes.index(c)] for n in per_class)
                 for c in POSITION if c in classes}
-    print("\nThe 'best' column is the highest score any of these four learners "
+    print(f"\nThe 'best' column is the highest score any of these {len(per_class)} learners "
           "reached on that\nclass. For the floor claim it is the number that "
           "matters: it is what the evidence\nsupports at its most generous, "
           "not what one estimator happened to get.")
-    print("\nbest over all four learners on the position classes: "
+    print(f"\nbest over all {len(per_class)} learners on the position classes: "
           + ", ".join(f"class {c} {v:.3f}" for c, v in best_pos.items()))
 
 

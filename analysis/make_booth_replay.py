@@ -64,6 +64,64 @@ def out_of_fold(X, y, groups, trees, jobs, predict_mask=None, sample=None):
     return flags
 
 
+def label_with_pooled(votes, pl):
+    """Each (seed, station, window) vote beside the pooled verdict on the same
+    unit, keeping only the units both detectors decided."""
+    k = ["key_seed", "key_claimedStationId", "key_window"]
+    m = votes.merge(pl[k + ["flag"]].rename(columns={"flag": "pooled"}),
+                    how="inner", on=k)
+    return m[m.pooled >= 0]
+
+
+def tally_all(votes, pl, seeds):
+    """The replay comparison on every seed, calibrated out of sample.
+
+    On the page the vote threshold is matched on the replayed seed's own honest
+    seconds, which fits the threshold on the data it is then scored on. Here
+    each seed's threshold is the smallest share of receivers at which the vote
+    raises no more false alarms than pooling on the OTHER seeds' honest
+    seconds. The seed's own false alarms are then counted, not matched, so both
+    detectors' false alarms are printed beside their catches.
+    """
+    m = label_with_pooled(votes, pl)
+    m = m[m.key_seed.isin(seeds)]
+    ben, att = m[m.attack == 0], m[m.attack.isin(POSITION)]
+    print("\nevery seed, vote threshold set on the other seeds' honest seconds")
+    print(f"  {'seed':>6s} {'threshold':>9s} {'lie s':>6s} {'vote':>5s} "
+          f"{'pooled':>6s} {'honest s':>8s} {'vote FA':>7s} {'pooled FA':>9s}")
+    rows = []
+    for sd in seeds:
+        rest = ben[ben.key_seed != sd]
+        target = int((rest.pooled == 1).sum())
+        c = np.unique(rest.vote.values)
+        thr = next(t for t in np.r_[c[c > 0], 1.01]
+                   if int((rest.vote >= t).sum()) <= target)
+        b, x = ben[ben.key_seed == sd], att[att.key_seed == sd]
+        r = dict(seed=sd, thr=thr, lies=len(x), vote=int((x.vote >= thr).sum()),
+                 pooled=int((x.pooled == 1).sum()), honest=len(b),
+                 vote_fa=int((b.vote >= thr).sum()),
+                 pooled_fa=int((b.pooled == 1).sum()))
+        rows.append(r)
+        print(f"  {sd:>6s} {thr:>9.4f} {r['lies']:>6,} {r['vote']:>5,} "
+              f"{r['pooled']:>6,} {r['honest']:>8,} {r['vote_fa']:>7,} "
+              f"{r['pooled_fa']:>9,}")
+    t = pd.DataFrame(rows)
+    for col in ("vote", "pooled"):
+        share = t[col] / t.lies
+        print(f"  {col} catches as a share of lying seconds: mean "
+              f"{share.mean():.3f}, range {share.min():.3f} to {share.max():.3f}")
+    for col in ("vote_fa", "pooled_fa"):
+        share = t[col] / t.honest
+        print(f"  {col.replace('_fa', '')} false alarms as a share of honest "
+              f"seconds: mean {share.mean():.4f}, range {share.min():.4f} to "
+              f"{share.max():.4f}")
+    print(f"  totals: vote {t.vote.sum():,} and pooled {t.pooled.sum():,} of "
+          f"{t.lies.sum():,} lying seconds; false alarms vote {t.vote_fa.sum():,} "
+          f"and pooled {t.pooled_fa.sum():,} of {t.honest.sum():,} honest seconds")
+    print(f"  pooled catches more than the vote on {int((t.pooled > t.vote).sum())} "
+          f"of {len(t)} seeds")
+
+
 def matrix(df, cols):
     return (df[cols].replace([np.inf, -np.inf], np.nan).fillna(0.0)
             .to_numpy(dtype=np.float32))
@@ -76,6 +134,12 @@ def main():
     ap.add_argument("--pooled", default="pooled_road.pkl")
     ap.add_argument("--trees", type=int, default=100)
     ap.add_argument("--jobs", type=int, default=4)
+    ap.add_argument("--tally-seeds", nargs="+", default=None,
+                    help="also tally every one of these seeds, each with the "
+                         "vote threshold set on the honest seconds of the "
+                         "others, so no seed's threshold is fitted on itself")
+    ap.add_argument("--no-write", action="store_true",
+                    help="print the tallies and leave the page alone")
     ap.add_argument("--sample", type=int, default=400000,
                     help="training rows per fold for the single receiver "
                          "detector; every row of the replayed seed is still "
@@ -89,6 +153,7 @@ def main():
     pl["flag"] = out_of_fold(matrix(pl, cols),
                              (pl.label_attackId != 0).astype(int).values,
                              pl.label_txNodeId.values, a.trees, a.jobs)
+    pl_all = pl
     pl = pl[pl.key_seed == a.seed]
 
     print("single receivers, then a majority vote")
@@ -98,15 +163,18 @@ def main():
     df = df.reset_index(drop=True)
     feats = ([c for c in df.columns if c.startswith("app_")]
              + [c for c in df.columns if c.startswith("phy_")])
-    mask = (df.key_seed == a.seed).values
+    seeds = set(a.tally_seeds or []) | {a.seed}
+    mask = df.key_seed.isin(seeds).values
     df["flag"] = out_of_fold(matrix(df, feats),
                              (df.label_attackId != 0).astype(int).values,
                              df.label_txNodeId.values, a.trees, a.jobs,
                              predict_mask=mask, sample=a.sample)
-    one = df[mask]
-    vote = (one.groupby(["key_claimedStationId", "key_window"])
-            .agg(vote=("flag", "mean"), n_rx=("flag", "size"),
-                 attack=("label_attackId", "first")).reset_index())
+    votes = (df[mask].groupby(["key_seed", "key_claimedStationId", "key_window"])
+             .agg(vote=("flag", "mean"), n_rx=("flag", "size"),
+                  attack=("label_attackId", "first")).reset_index())
+    if a.tally_seeds:
+        tally_all(votes, pl_all, a.tally_seeds)
+    vote = votes[votes.key_seed == a.seed].drop(columns="key_seed")
 
     print("positions from the transmit log")
     tx = pd.read_csv(run / f"tx_{a.seed}.csv",
@@ -205,6 +273,9 @@ def main():
             "position": sorted(POSITION),
             "rsu": [[round(x), round(y)] for x, y in zip(rsu.rxX, rsu.rxY)],
             "stations": stations, "summary": summary}
+    if a.no_write:
+        print("\npage left alone (--no-write)")
+        return
     blob = json.dumps(data, separators=(",", ":"))
     page = PAGE.read_text()
     i, j = page.index(BEGIN) + len(BEGIN), page.index(END)

@@ -82,8 +82,100 @@ def scenario_fingerprint(run_dir, tags):
     return out
 
 
+def oof_prob(df, feats, folds, trees, jobs, fold_seed=0):
+    """Out of fold attack probability for every row, folds grouped by physical
+    transmitter so no station is scored by a model that was trained on it.
+
+    A list of fold seeds is repeated cross-validation: every row gets one out
+    of fold probability per assignment and the mean is returned. Which
+    stations share a fold moves a floor read from a few dozen stations by
+    several metres, so one assignment is one draw, not the estimate."""
+    if isinstance(fold_seed, (list, tuple)):
+        return np.mean([oof_prob(df, feats, folds, trees, jobs, f)
+                        for f in fold_seed], axis=0)
+    X = (df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+         .to_numpy(dtype=np.float32))
+    y = (df.label_attackId != 0).astype(int).values
+    groups = df.label_txNodeId.values
+    prob = np.zeros(len(df))
+    sg = StratifiedGroupKFold(n_splits=folds, shuffle=True,
+                              random_state=fold_seed)
+    for tr, te in sg.split(X, y, groups):
+        clf = RandomForestClassifier(n_estimators=trees, n_jobs=jobs,
+                                     random_state=0)
+        clf.fit(X[tr], y[tr])
+        prob[te] = clf.predict_proba(X[te])[:, 1]
+    return prob
+
+
+def fed_oof_prob(df, feats, folds, method, fold_seed=0, seed=0, rounds=20,
+                 tau=8.0, min_rows=200):
+    """Out of fold attack probability from the FEDERATED region detector.
+
+    Same folds as oof_prob, grouped by physical transmitter, so the federated
+    and forest arms score identical stations. Inside each fold the training
+    rows are split into clients by roadside unit region and trained with the
+    panel's own settings (federated.py: the MLP, 20 rounds, half the clients
+    per round, two local epochs, FedLC tau 8.0 as tuned on validation clients
+    in campaign_gnss/logs/federated_regions.log). The detector is the
+    multiclass model the panel evaluates; a unit's attack probability is one
+    minus its benign probability, so the floor is read off the model as
+    deployed rather than a binary model trained for this purpose.
+    """
+    if isinstance(fold_seed, (list, tuple)):
+        return np.mean([fed_oof_prob(df, feats, folds, method, f, seed, rounds,
+                                     tau, min_rows) for f in fold_seed], axis=0)
+    import torch
+    from sklearn.preprocessing import StandardScaler
+    from federated import MLP, run_method, load_flat
+    X = (df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+         .to_numpy(dtype=np.float32))
+    y_bin = (df.label_attackId != 0).astype(int).values
+    cats = pd.Categorical(df.label_attackId.astype(int))
+    codes, classes = cats.codes.astype(np.int64), list(cats.categories)
+    benign = classes.index(0)
+    groups = df.label_txNodeId.values
+    region = df.key_region.values
+    prob = np.zeros(len(df))
+    sg = StratifiedGroupKFold(n_splits=folds, shuffle=True,
+                              random_state=fold_seed)
+    cfg = dict(d_in=len(feats), n_classes=len(classes), embed_dim=32, lr=0.05,
+               batch_size=128, local_epochs=2, rounds=rounds,
+               participation=0.5, mu=0.01, tau=tau, lam=0.1)
+    for k, (tr, te) in enumerate(sg.split(X, y_bin, groups)):
+        sc = StandardScaler().fit(X[tr])
+        Xtr, Xte = sc.transform(X[tr]).astype(np.float32), sc.transform(X[te]).astype(np.float32)
+        clients = []
+        if method == "central":
+            # The control: the same MLP, settings and rounds, trained on every
+            # training-fold row as one client, so the only difference from the
+            # federated arms is that the data is not split across regions.
+            yi = torch.tensor(codes[tr])
+            clients.append((torch.tensor(Xtr), yi,
+                            torch.bincount(yi, minlength=len(classes))))
+        for r in ([] if method == "central" else pd.unique(region[tr])):
+            m = region[tr] == r
+            if m.sum() < min_rows:
+                continue
+            yi = torch.tensor(codes[tr][m])
+            clients.append((torch.tensor(Xtr[m]), yi,
+                            torch.bincount(yi, minlength=len(classes))))
+        test = (torch.tensor(Xte), torch.tensor(codes[te]))
+        f1, mcc, info = run_method("fedavg" if method == "central" else method,
+                                   clients, test, cfg, seed=seed, detail=True)
+        g = MLP(cfg["d_in"], cfg["n_classes"])
+        load_flat(g, info["gvec"])
+        g.eval()
+        with torch.no_grad():
+            pb = torch.softmax(g(test[0]), 1)[:, benign].numpy()
+        prob[te] = 1.0 - pb
+        print(f"  fold {k + 1}: {method}, {len(clients)} region clients, "
+              f"multiclass macro F1 on held-out transmitters {f1:.4f}", flush=True)
+    return prob
+
+
 def per_station_detection(df, feats, folds, trees, jobs, score=None,
-                          match_benign=None):
+                          match_benign=None, fold_seed=0):
     """Fraction of each station's windows flagged as misbehaving.
 
     Binary, attack against benign, because the question is whether the station
@@ -91,21 +183,11 @@ def per_station_detection(df, feats, folds, trees, jobs, score=None,
     is a harder problem and would confound the floor with class confusion
     between three attacks that differ only in magnitude.
     """
-    X = (df[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0)
-         .to_numpy(dtype=np.float32))
-    y = (df.label_attackId != 0).astype(int).values
-    groups = df.label_txNodeId.values
-    pred = np.zeros(len(df), dtype=int)
-    prob = np.zeros(len(df))
-    sg = StratifiedGroupKFold(n_splits=folds, shuffle=True, random_state=0)
-    for tr, te in sg.split(X, y, groups):
-        clf = RandomForestClassifier(n_estimators=trees, n_jobs=jobs,
-                                     random_state=0)
-        clf.fit(X[tr], y[tr])
-        pred[te] = clf.predict(X[te])
-        prob[te] = clf.predict_proba(X[te])[:, 1]
+    prob = oof_prob(df, feats, folds, trees, jobs, fold_seed)
     out = df[["key_seed", "key_claimedStationId", "label_attackId"]].copy()
-    out["flagged"] = pred
+    # The forest's own prediction, which takes the larger class probability and
+    # gives a tie to benign.
+    out["flagged"] = (prob > 0.5).astype(int)
     if match_benign is not None:
         # Two detectors are only comparable at the same operating point. The
         # threshold is moved until the mean benign station's false flag rate
@@ -365,26 +447,134 @@ def onroad_arms(pl, cols, offsets, floor, edges, a):
 
     keep = ~(off & attack)
     det = per_station_detection(pl[keep].reset_index(drop=True), cols,
-                                a.folds, a.trees, a.jobs)
+                                a.folds, a.trees, a.jobs,
+                                fold_seed=a.fold_seed)
     curve(det, offsets, floor,
           "pooled across receivers, map check first (off-road attack units "
           "removed before training)", edges, a.min_stations)
 
     # The retrained detector settles at its own operating point, so it is also
     # read at the reported detector's benign false flag rate.
-    full = per_station_detection(pl, cols, a.folds, a.trees, a.jobs)
-    target = full[full.label_attackId == 0].flag_rate.mean()
+    if a.match_rate is not None:
+        target = a.match_rate
+    else:
+        full = per_station_detection(pl, cols, a.folds, a.trees, a.jobs,
+                                     fold_seed=a.fold_seed)
+        target = full[full.label_attackId == 0].flag_rate.mean()
     det = per_station_detection(pl[keep].reset_index(drop=True), cols,
-                                a.folds, a.trees, a.jobs, match_benign=target)
+                                a.folds, a.trees, a.jobs, match_benign=target,
+                                fold_seed=a.fold_seed)
     curve(det, offsets, floor,
           "pooled across receivers, map check first, at the reported "
           "detector's benign false flag rate", edges, a.min_stations)
 
     det = per_station_detection(pl, cols, a.folds, a.trees, a.jobs,
-                                score=keep.values)
+                                score=keep.values, match_benign=a.match_rate,
+                                fold_seed=a.fold_seed)
     curve(det, offsets, floor,
           "pooled across receivers, the reported detector scored on on-road "
           "units only", edges, a.min_stations)
+
+
+def pooled_features(table):
+    """The feature columns of a pooled table, whichever way it names them.
+
+    The road table names its pooled means pm_*, the region table keeps the
+    corpus names app_* and phy_*. Both carry the same 50 means and the same 11
+    consensus features, so the two arms are trained on the same quantities."""
+    if any(c.startswith("pm_") for c in table.columns):
+        cols = [c for c in table.columns if c.startswith(("pm_", "pool_"))]
+    else:
+        cols = [c for c in table.columns if c.startswith(("app_", "phy_", "pool_"))]
+    assert not any(c.startswith("label_") for c in cols), "a label is a feature"
+    return cols
+
+
+def matched_threshold(rate, target):
+    """The smallest threshold whose benign false flag rate is at most target."""
+    lo, hi = 0.0, 1.0
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if rate(mid) > target:
+            lo = mid
+        else:
+            hi = mid
+    return hi
+
+
+def region_arms(rg, target, onroad_off, offsets, floor, edges, a):
+    """The floor when pooling stops at one roadside unit region.
+
+    The pooled arm gathers every receiver that heard a station in a window, a
+    median of 39 spread up to a few kilometres along the road. A deployment
+    pools inside one roadside unit region, a median of 8. Here the same
+    detector is trained on the region table, where a station heard in several
+    regions in one window has one unit per region.
+
+    Two decision rules. Per region: a station's flag rate is taken over all its
+    region units, so each region decides on its own evidence. Any region: a
+    station is flagged in a window if any region that heard it flags it, which
+    is what an operator watching every region would see; it raises false alarms
+    as well as catches. Each rule is read at its own default and at the pooled
+    arm's benign false flag rate, and only the matched reading is comparable.
+    """
+    cols = pooled_features(rg)
+    if "label_clean" in rg.columns:
+        print(f"\nregion table: {int((rg.label_clean != 1).sum())} units not clean, "
+              f"dropped")
+        rg = rg[rg.label_clean == 1]
+    rg = rg.reset_index(drop=True)
+    st = rg[rg.label_attackId.isin(LADDER)].groupby(
+        ["key_seed", "key_claimedStationId"]).size()
+    print(f"region table: {len(rg):,} units, {rg.key_region.nunique()} regions, "
+          f"{rg.label_txNodeId.nunique()} transmitters, {len(cols)} features")
+    if "n_recv" in rg.columns:
+        print(f"  receivers per unit: median {rg.n_recv.median():.0f}, "
+              f"p10 {rg.n_recv.quantile(0.1):.0f}, p90 {rg.n_recv.quantile(0.9):.0f}")
+    per = rg.groupby(["key_seed", "key_claimedStationId", "key_window"]).size()
+    print(f"  regions per (station, window): median {per.median():.0f}, "
+          f"max {per.max()}")
+    print(f"  constant-offset stations present: {len(st)}")
+
+    if a.region_learner == "forest":
+        prob = oof_prob(rg, cols, a.folds, a.trees, a.jobs, a.fold_seed)
+    else:
+        print(f"\n  region detector: federated {a.region_learner}, region clients")
+        prob = fed_oof_prob(rg, cols, a.folds, a.region_learner, a.fold_seed)
+    unit = rg[["key_seed", "key_claimedStationId", "key_window",
+               "label_attackId"]].copy()
+    unit["p"] = prob
+    anyr = (unit.groupby(["key_seed", "key_claimedStationId", "key_window",
+                          "label_attackId"]).p.max().reset_index())
+    default = np.nextafter(0.5, 1.0)
+
+    def rates(tab, t):
+        f = tab.assign(flagged=(tab.p >= t).astype(int))
+        return (f.groupby(["key_seed", "key_claimedStationId", "label_attackId"])
+                .flagged.agg(["mean", "size"]).reset_index()
+                .rename(columns={"mean": "flag_rate", "size": "windows"}))
+
+    def benign_rate(tab, t):
+        r = rates(tab, t)
+        return r[r.label_attackId == 0].flag_rate.mean()
+
+    for rule, tab in (("per region", unit), ("any region", anyr)):
+        t = matched_threshold(lambda x: benign_rate(tab, x), target)
+        print(f"\n  rule '{rule}': benign false flag rate {benign_rate(tab, default):.4f} "
+              f"at 0.50; threshold {t:.4f} matches {target:.4f} "
+              f"(reached {benign_rate(tab, t):.4f})")
+        for name, thr in (("its own default threshold", default),
+                          ("the pooled arm's benign false flag rate", t)):
+            curve(rates(tab, thr), offsets, floor,
+                  f"one roadside unit region, {rule}, at {name}",
+                  edges, a.min_stations)
+            if onroad_off is not None and thr == t:
+                det = rates(tab, thr).merge(onroad_off, how="left",
+                                            on=["key_seed", "key_claimedStationId"])
+                det = det[~det.off.fillna(False).astype(bool)].drop(columns="off")
+                curve(det, offsets, floor,
+                      f"one roadside unit region, {rule}, matched, on-road "
+                      f"claims only", edges, a.min_stations)
 
 
 def main():
@@ -439,12 +629,34 @@ def main():
     ap.add_argument("--skip-single", action="store_true",
                     help="skip the three single observer arms, which do not "
                          "touch the pooled arm or its sample")
+    ap.add_argument("--fold-seed", type=int, default=0,
+                    help="random state of the grouped folds; 0 reproduces "
+                         "every logged run")
+    ap.add_argument("--regions", default=None,
+                    help="a region pooled table from pooled_regions.py, scored "
+                         "with the same protocol and matched to the pooled "
+                         "arm's benign false flag rate. Needs --pooled")
+    ap.add_argument("--repeat-folds", type=int, default=None, metavar="K",
+                    help="repeated cross-validation: average each row's out of "
+                         "fold probability over fold seeds 0 to K-1 (overrides "
+                         "--fold-seed)")
+    ap.add_argument("--match-rate", type=float, default=None,
+                    help="read every pooled and region arm at this benign "
+                         "false flag rate, so floors from different fold "
+                         "assignments or corpora sit at one operating point")
+    ap.add_argument("--region-learner", default="forest",
+                    choices=["forest", "central", "fedavg", "fedlc"],
+                    help="the detector the region arms score: the forest, or "
+                         "the federated panel's MLP trained across region "
+                         "clients inside each fold")
     ap.add_argument("--extra-prefix", default="x",
                     help="seed tags of the extra corpus are prefixed with this, "
                          "and its node identifiers are pushed clear of the "
                          "first corpus, so a grouped fold cannot put the same "
                          "physical station on both sides")
     a = ap.parse_args()
+    if a.repeat_folds:
+        a.fold_seed = list(range(a.repeat_folds))
     borrow = pd.read_csv(a.locate_with) if a.locate_with else None
 
     offsets, benign_err = station_offsets(a.run_dir, a.tags)
@@ -518,7 +730,8 @@ def main():
                         [("application layer only", app),
                          ("radio layer only", phy),
                          ("fused", app + phy)]):
-        det = per_station_detection(df, feats, a.folds, a.trees, a.jobs)
+        det = per_station_detection(df, feats, a.folds, a.trees, a.jobs,
+                                fold_seed=a.fold_seed)
         curve(det, offsets, floor,
               f"single observer, {name}", edges, a.min_stations,
               a.save_stations, borrow, a.corpus_tag)
@@ -536,14 +749,30 @@ def main():
                 "pooled identifiers still collide after the bump"
             print(f"\npooled arm over both corpora: {len(pl):,} + {len(xp):,} units")
             pl = pd.concat([pl[shared], xp[shared]], ignore_index=True)
-        cols = [c for c in pl.columns
-                if c.startswith("pm_") or c.startswith("pool_")]
-        det = per_station_detection(pl, cols, a.folds, a.trees, a.jobs)
+        cols = pooled_features(pl)
+        print(f"\npooled table: {len(pl):,} units, {len(cols)} features")
+        det = per_station_detection(pl, cols, a.folds, a.trees, a.jobs,
+                                match_benign=a.match_rate,
+                                fold_seed=a.fold_seed)
         curve(det, offsets, floor,
               "pooled across receivers, all features", edges, a.min_stations,
               a.save_stations, borrow, a.corpus_tag)
         if a.onroad is not None:
             onroad_arms(pl, cols, offsets, floor, edges, a)
+        if a.regions:
+            target = (a.match_rate if a.match_rate is not None
+                      else det[det.label_attackId == 0].flag_rate.mean())
+            off = None
+            if a.onroad is not None:
+                # Classified by station, from the pooled table's claims, since
+                # no constant-offset station is partly on and partly off.
+                off = (pl.assign(off=pl.claimedY.abs() > a.onroad)
+                       .groupby(["key_seed", "key_claimedStationId"]).off.any()
+                       .reset_index())
+            rg = pd.read_pickle(a.regions)
+            assert len(pooled_features(rg)) == len(cols), \
+                "the region and pooled tables carry different feature sets"
+            region_arms(rg, target, off, offsets, floor, edges, a)
         print("\nThe pooled rows are (station, window) units rather than "
               "(observer, station, window),\nso its window counts are smaller "
               "by the number of receivers per unit. The flag\nrates are "

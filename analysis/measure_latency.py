@@ -17,7 +17,7 @@ result. State both.
 This script measures window fill and inference for a given window length and
 reports their sum against the budget. Feature extraction is NOT timed, so the
 total is a lower bound on the latency a vehicle experiences, and the share of it
-that inference takes is an upper bound.
+that inference takes is an upper bound. measure_extraction.py times that term.
 
 Usage: measure_latency.py <features.pkl> [--window-ms 1000] [--long-factor 10]
 """
