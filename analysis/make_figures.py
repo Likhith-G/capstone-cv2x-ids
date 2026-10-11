@@ -141,10 +141,16 @@ def fig_floor():
     fitted crossing with its interval so the floor is a measurement rather than
     a bracket.
     """
-    log = "campaign_floor/logs/offset_floor_located.log"
-    text = (RUNS / log).read_text()
+    # The pooled arm, its crossing and the benign error come from the
+    # repeated-fold run read at a benign false flag rate of 0.01 (RESULTS 3b5),
+    # the headline. That run skips the single receiver, so its arm comes from
+    # the single-assignment run, where it is zero at every magnitude; a fold
+    # assignment cannot lift a detector that catches nothing.
+    log = "campaign_floor/logs/offset_floor_rcv_forest.log"
+    single_log = "campaign_floor/logs/offset_floor_located.log"
 
-    def arm(header):
+    def arm(header, src):
+        text = (RUNS / src).read_text()
         block = text.split(header, 1)[1].split("benign positioning", 1)[0]
         rows = re.findall(r"^\s+(\d+) to (\d+) m\s+\d+\s+[\d,]+\s+[\d.]+\s+([\d.]+)",
                           block, re.M)
@@ -154,11 +160,11 @@ def fig_floor():
         if over:
             pts.append((float(over[0][0]) * 1.6, float(over[0][1])))
         if not pts:
-            sys.exit(f"FAILED: no bands parsed under '{header}' in {log}")
+            sys.exit(f"FAILED: no bands parsed under '{header}' in {src}")
         return zip(*pts)
 
-    sx, sy = arm("single observer, fused")
-    px, py = arm("pooled across receivers, all features")
+    sx, sy = arm("single observer, fused", single_log)
+    px, py = arm("pooled across receivers, all features", log)
     cross = grab(log, r"50 percent detection at\s+([\d.]+) m", "the crossing")[0]
     lo, hi = grab(log, r"95 percent interval\s+([\d.]+) to ([\d.]+) m",
                   "the crossing interval")[0]

@@ -100,8 +100,8 @@
       <p class="message">A signed message proves which car sent it, but it cannot
         prove that the position inside is true. In our simulations one receiver
         cannot detect a consistent lie, and receivers that pool their radio
-        measurements catch most lies larger than about <b>39 m</b> (95 percent
-        interval 34.5 to 45.5 m).</p>
+        measurements catch most lies larger than about <b>47 m</b> (95 percent
+        interval 40.6 to 57.3 m).</p>
       <p class="authors"><b>Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong,
         Ken Navarro, Andrew Ng</b></p>
       <p class="affil">Supervisor A/Prof Ke (Desmond) Wang. Research mentor
@@ -128,6 +128,7 @@
         <li><b>Can many receivers tell</b> by pooling what they measured, and from what
           size of lie?</li>
         <li><b>Where would an informed attacker lie</b>, and what stops it?</li>
+        <li><b>Can roadside units learn the detector together</b> without sharing raw data?</li>
       </ul>
       <p style="margin-top:4mm">We simulated a highway in the ns-3 network simulator [2, 3]
         with five traffic scenarios, ten kinds of attack, and honest cars that carry
@@ -180,12 +181,13 @@
       <h2><span class="n">3</span>Result: a detection floor</h2>
       <img src="figures/floor.svg" style="width:460mm;height:250mm" alt="Share of lying
         cars caught against the size of the lie. One receiver catches none at any size.
-        Pooled receivers cross one half at 38.9 m.">
+        Pooled receivers cross one half at 47.3 m.">
       <figcaption><b>Figure 2.</b> Pooling turns an undetectable lie into a detectable
-        one above about twice the 18.3 m localisation error. Below the floor a lie is too
+        one above about two and a half times the 18.3 m localisation error. Below the floor a lie is too
         small to separate from honest position error; a lie that small does not move a
         car into another lane. Counting only lies that stay on the road, which a map
-        check would let through, the floor is still 38.9 m.</figcaption>
+        check would let through, the floor is 43.4 m, inside the same interval.
+        If each roadside unit pools only the cars near it, the floor is 55.3 m.</figcaption>
     </figure>
     <div>
       <div class="panel">
@@ -200,8 +202,8 @@
         <p><b>Pooling has to happen before the decision.</b> When receivers vote
           with their verdicts instead of sharing measurements, detection of the same
           lies stays at exactly 0.000.</p>
-        <div class="stat"><span class="big">38.9 m</span>detection floor, 95 percent
-          interval 34.5 to 45.5 m</div>
+        <div class="stat"><span class="big">47.3 m</span>detection floor, 95 percent
+          interval 40.6 to 57.3 m</div>
       </div>
       <div class="panel" style="margin-top:7mm">
         <p><b>The honest cars matter.</b> Here they carry realistic position error.
@@ -256,11 +258,15 @@
           at any size in this data (Figure 2, flat line). The same holds on the
           public VeReMi datasets [4].</li>
         <li><b>Aim 2.</b> Pooling received power across receivers detects lies above
-          a floor of 38.9 m, 95 percent interval 34.5 to 45.5 m (Figure 2). Sharing
+          a floor of 47.3 m, 95 percent interval 40.6 to 57.3 m (Figure 2), or 55.3 m
+          (45.0 to 69.2 m) when each roadside unit pools only its own area. Sharing
           verdicts instead of measurements detects none.</li>
         <li><b>Aim 3.</b> Receiver geometry predicts where an informed attacker lies,
           for the estimator this system runs (Figures 3 and 4). A map check covers
           that direction (Table 1).</li>
+        <li><b>Aim 4.</b> Trained across 96 roadside unit areas without sharing raw
+          data, federated learning comes within about 5 percent of central training
+          on cars no unit has heard, after 200 rounds.</li>
       </ol>
     </div>
     <div>
