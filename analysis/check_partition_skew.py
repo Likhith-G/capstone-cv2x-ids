@@ -46,9 +46,14 @@ def main():
     ap.add_argument("--training-clients", action="store_true",
                     help="measure only the seventy percent of observers "
                          "federated.py makes training clients")
+    ap.add_argument("--split-file", default=None,
+                    help="as federated.py --split-file: every observer is a "
+                         "client and holds the rows of training transmitters "
+                         "only, so measure those")
     a = ap.parse_args()
 
-    cols = [a.observer_col, "label_attackId", "label_clean", "key_observer_role"]
+    cols = [a.observer_col, "label_attackId", "label_clean", "key_observer_role",
+            "key_seed", "label_txNodeId"]
     if a.features.endswith(".pkl"):
         df = pd.read_pickle(a.features)
         df = df[[c for c in cols if c in df.columns]]
@@ -64,13 +69,20 @@ def main():
         if "key_observer_role" not in df.columns:
             sys.exit("--observer-role given but the table has no key_observer_role")
         df = df[df.key_observer_role == a.observer_role]
+    if a.split_file:
+        sp = pd.read_csv(a.split_file).drop_duplicates(["key_seed", "label_txNodeId"])
+        part = df[["key_seed", "label_txNodeId"]].merge(
+            sp[["key_seed", "label_txNodeId", "split"]], how="left",
+            on=["key_seed", "label_txNodeId"]).split.values
+        df = df[part == "train"]
     if a.training_clients:
         uniq = pd.unique(df[a.observer_col].values)
         np.random.RandomState(0).shuffle(uniq)
         df = df[df[a.observer_col].isin(set(uniq[:int(0.7 * len(uniq))]))]
     print(f"partition: role {a.observer_role or 'any'}, sample "
           f"{a.sample or 'none'}, "
-          f"{'training clients only' if a.training_clients else 'every observer'}")
+          f"{'training clients only' if a.training_clients else 'every observer'}"
+          + (", training transmitters only" if a.split_file else ""))
     sizes = df.groupby(a.observer_col).size()
     keep = sizes[sizes >= a.min_rows].index
     df = df[df[a.observer_col].isin(keep)]
