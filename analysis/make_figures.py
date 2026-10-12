@@ -258,13 +258,52 @@ def fig_geometry():
     save(fig, "geometry")
 
 
+def fig_federated():
+    """Federated training against central training on the same rows, as a
+    function of how many times each training row has been visited. With two
+    local epochs and half the clients sampled per round, a federated round
+    visits each row about once, so round r and central epoch r sit at the same
+    exposure. Validation rows only (fed_sweep.py); the test-set panel is in
+    RESULTS 5i."""
+    import json
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.4), sharey=True)
+    for ax, (stem, title) in zip(axes, (("fedB_regions", "Region clients"),
+                                        ("fedB_rsu", "Roadside unit clients"))):
+        d = json.loads((RUNS / f"campaign_gnss/logs/{stem}.json").read_text())
+        cps = d["checkpoints"]
+        cen = d["central"]
+        eps = sorted(int(e) for e in next(iter(cen.values())))
+        cy = np.mean([[cen[s][str(e)][0] for e in eps] for s in cen], axis=0)
+        ax.plot(eps, cy, color="#777777", lw=1.4, label="central training")
+        best = float(np.mean([max(v[0] for v in cen[s].values()) for s in cen]))
+        ax.axhline(best, color="#777777", lw=0.9, ls=":")
+        ax.axhline(0.95 * best, color="#a0522d", lw=0.9, ls="--")
+        ax.text(1.1, 0.95 * best + 0.002, "0.95 of central's best",
+                fontsize=7.5, color="#a0522d", va="bottom")
+        for key, lab, col, mk in (("fedavg|E=2", "FedAvg", "#1f4e79", "o"),
+                                  ("fedlc:tau=4|E=2", "FedLC, tau 4", "#3f8f6f", "s")):
+            if key not in d["fed"]:
+                sys.exit(f"FAILED: {key} not in {stem}.json")
+            ys = [np.mean([d["fed"][key][s][str(r)][0] for s in d["fed"][key]])
+                  for r in cps]
+            ax.plot(cps, ys, marker=mk, color=col, lw=1.9, ms=5, label=lab)
+        ax.set_xscale("log")
+        ax.set_title(title, fontsize=10)
+        ax.set_xlabel("passes over each training row (federated: rounds)")
+        ax.grid(alpha=0.25, which="both")
+    axes[0].set_ylabel("validation macro F1")
+    axes[0].legend(fontsize=8, loc="lower right", frameon=False)
+    fig.tight_layout()
+    save(fig, "federated")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None)
     a = ap.parse_args()
     figs = {"floor": fig_floor, "placement": fig_placement,
             "direction": fig_direction, "calibration": fig_calibration,
-            "geometry": fig_geometry}
+            "geometry": fig_geometry, "federated": fig_federated}
     for name, fn in figs.items():
         if a.only and name not in a.only:
             continue
