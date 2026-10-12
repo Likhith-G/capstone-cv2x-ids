@@ -126,6 +126,8 @@ CHECKS = [
     ('5i floor central gnss', '| MLP, central, 200 epochs | 52.3 m (44.8 to 63.2) | 48.4 m (41.4 to 59.3) | 53.5 m (44.8 to 63.0) |', 'campaign_gnss/logs/fedD_floor_central', '95 percent interval        44.8 to 63.0 m'),
     ('5i floor band fedavg', 'federated arms flag 0.211 (FedAvg) and 0.201 (FedLC)', 'campaign_floor/logs/fedD_floor_fedavg', '30 to 50 m        11       625      0.211     0.09'),
     ('5i floor band central', 'of windows against 0.280\nfor the central MLP', 'campaign_floor/logs/fedD_floor_central', '30 to 50 m        11       625      0.280     0.18'),
+    ('5j central vs mixed sparse', '0.1399 into congestion and 0.1770 into light traffic', 'drift/logs/fedE_drift_sparse_holdout_r200', 'centralised against mixed, the same rows pooled into one client: +0.1770'),
+    ('5j central vs mixed dense', '0.1399 into congestion and 0.1770 into light traffic', 'drift/logs/fedE_drift_dense_holdout_r200', 'centralised against mixed, the same rows pooled into one client: +0.1399'),
     ('5j shift cost dense', 'The shift costs 0.2062 macro F1 into congestion', 'drift/logs/fedE_drift_holdout_compare', 'shift cost (in-dist minus transfer) +0.2062'),
     ('5j shift cost sparse', 'and 0.1806 into light traffic', 'drift/logs/fedE_drift_holdout_compare', 'shift cost (in-dist minus transfer) +0.1806'),
     ('5j drift transfer', '| trained on the other density (transfer) | 0.1757 +/- 0.0271 | 0.2414 +/- 0.0112 |', 'drift/logs/fedE_drift_dense_holdout_r200', 'transfer      720 clients   65,321 rows   macro F1 0.1757 +/- 0.0271'),
