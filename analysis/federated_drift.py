@@ -105,6 +105,14 @@ def main():
                     help="print each seed's score and what the model did, "
                          "which is what separates a collapsed run from a weak one")
     ap.add_argument("--observer-role", default=VEHICLE)
+    ap.add_argument("--holdout-tx", type=float, default=None,
+                    help="hold this share of the target corpus's transmitters "
+                         "of every class out of every target training client, "
+                         "and score every arm on test rows from those "
+                         "transmitters only. Observer-split clients otherwise "
+                         "hear the test vehicles, so the target-trained arms "
+                         "are scored on vehicles they trained on and the "
+                         "transfer arm is not")
     a = ap.parse_args()
 
     rng = np.random.RandomState(0)
@@ -141,12 +149,39 @@ def main():
 
     obs = both["client"].values
     X = both[feats].replace([np.inf, -np.inf], np.nan).fillna(0.0).values.astype(np.float32)
+    held_rows = None
+    if a.holdout_tx:
+        # As federated_adapt.py --holdout-tx: per class, a share of the target
+        # corpus's physical transmitters, drawn by their own generator so every
+        # other draw is untouched. Their rows leave every target training
+        # client, which also shrinks the shared row budget below, and the test
+        # rows are restricted to them. Source rows are never touched: the two
+        # corpora are separate simulations, so a source vehicle is never a
+        # target one even where the seed and node id strings coincide.
+        tx = (both["key_seed"].astype(str) + ":" + both["label_txNodeId"].astype(str)).values
+        is_tgt = (both.corpus == a.target_tag).values
+        cls_of = pd.Series(codes[is_tgt]).groupby(tx[is_tgt]).agg(
+            lambda c: c.mode().iloc[0])
+        hrng = np.random.RandomState(2)
+        held = set()
+        for c in sorted(cls_of.unique()):
+            ids = sorted(cls_of.index[cls_of == c])
+            held |= set(hrng.choice(ids, int(round(a.holdout_tx * len(ids))),
+                                    replace=False))
+        held_rows = is_tgt & np.isin(tx, list(held))
+        drop = held_rows & np.isin(obs, tgt_train)
+        obs = obs.copy()
+        obs[drop] = "held-out"
+        print(f"held out {len(held)} target transmitters ({a.holdout_tx:.0%} of "
+              f"each class); {int(drop.sum()):,} target training rows removed")
     # Each arm fits its scaler on the rows it trains on, and the test rows are
     # scaled by that arm's scaler. One scaler fitted on both corpora gave the
     # transfer arm the target density's statistics, an unlabelled adaptation
     # step a model trained on the other density would not have, and shrank the
     # transfer penalty for this model while the forest in 3c is unaffected.
     test_mask = np.isin(obs, tgt_test)
+    if held_rows is not None:
+        test_mask &= held_rows
     test_y = torch.tensor(codes[test_mask], dtype=torch.long)
     print(f"{len(src_obs)} source clients, {len(tgt_train)} target training "
           f"clients, {len(tgt_test)} target test clients, "
@@ -155,7 +190,16 @@ def main():
     # Every arm gets the same training row budget, so a difference between
     # arms is where the rows came from and not how many there were.
     def rows_of(keep):
-        return int(np.isin(obs, list(keep)).sum())
+        # Rows of the clients pack_clients will keep, those with at least
+        # min_rows. Counting every client's rows matched nothing once the
+        # transmitter holdout leaves many target clients below the minimum:
+        # in-dist then trained on about two thirds of the budget the other arms
+        # got. Without the holdout every client passes and this is unchanged.
+        o = obs[np.isin(obs, list(keep))]
+        if not len(o):
+            return 0
+        _, n = np.unique(o, return_counts=True)
+        return int(n[n >= a.min_rows].sum())
     budget = min(rows_of(src_obs), rows_of(tgt_train))
     print(f"row budget per arm: {budget:,} "
           f"(source has {rows_of(src_obs):,}, target training has "
