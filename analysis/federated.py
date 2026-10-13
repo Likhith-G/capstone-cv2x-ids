@@ -553,7 +553,8 @@ def build_clients(df, feats, observer_col="key_rxNodeId", min_rows=200):
     return clients, pack(va_obs), pack(te_obs), len(classes)
 
 
-def build_clients_tx(df, feats, splits, observer_col="key_rxNodeId", min_rows=200):
+def build_clients_tx(df, feats, splits, observer_col="key_rxNodeId", min_rows=200,
+                     return_ids=False):
     """Held-out TRANSMITTERS, the protocol every other number in the report
     uses. build_clients above holds out observers, but a transmitter is heard
     by a median of eight regions, so all of its test rows came from vehicles
@@ -586,7 +587,7 @@ def build_clients_tx(df, feats, splits, observer_col="key_rxNodeId", min_rows=20
     X = scaler.transform(X).astype(np.float32)
 
     obs = df[observer_col].values
-    clients = []
+    clients, ids = [], []
     for o in pd.unique(obs):
         m = tr & (obs == o)
         if m.sum() < min_rows:
@@ -594,12 +595,123 @@ def build_clients_tx(df, feats, splits, observer_col="key_rxNodeId", min_rows=20
         xi = torch.tensor(X[m])
         yi = torch.tensor(codes[m], dtype=torch.long)
         clients.append((xi, yi, torch.bincount(yi, minlength=len(classes))))
+        ids.append(o)
 
     def pack(name):
         m = part == name
         return (torch.tensor(X[m]), torch.tensor(codes[m], dtype=torch.long))
 
+    if return_ids:
+        return clients, pack("validation"), pack("test"), len(classes), ids
     return clients, pack("validation"), pack("test"), len(classes)
+
+
+def road_ring(ids, extra_links=2, graph_seed=0x9a):
+    """Neighbour sets for decentralised averaging. Region clients are named
+    seed<k>_r<i>; sorted by seed then region they are consecutive roadside
+    units along each simulated road, and the ring joins each road's last unit
+    to the next road's first, as one long road would. A line or plain ring of
+    96 nodes mixes too slowly for 200 rounds to say anything about
+    decentralisation, so each node also gets extra_links random links, as a
+    backhaul mesh would give. The graph is infrastructure, so it is drawn once
+    and is the same for every seed."""
+    def key(o):
+        s, r = str(o).split("_r")
+        return int(s.replace("seed", "")), int(r)
+    order = sorted(range(len(ids)), key=lambda k: key(ids[k]))
+    n = len(ids)
+    adj = [set() for _ in range(n)]
+    for p in range(n):
+        i, j = order[p], order[(p + 1) % n]
+        adj[i].add(j)
+        adj[j].add(i)
+    rng = np.random.default_rng(graph_seed)
+    for i in range(n):
+        for _ in range(extra_links):
+            j = int(rng.integers(n))
+            if j != i:
+                adj[i].add(j)
+                adj[j].add(i)
+    return adj
+
+
+def metropolis(adj, alive):
+    """Metropolis-Hastings mixing weights over the live nodes: symmetric and
+    doubly stochastic, so repeated averaging converges to the plain mean of
+    the live nodes' models. A dead node keeps an identity row and is ignored."""
+    n = len(adj)
+    deg = [len([j for j in adj[i] if alive[j]]) if alive[i] else 0 for i in range(n)]
+    W = np.eye(n)
+    for i in range(n):
+        if not alive[i]:
+            continue
+        W[i, i] = 1.0
+        for j in adj[i]:
+            if alive[j]:
+                W[i, j] = 1.0 / (1 + max(deg[i], deg[j]))
+                W[i, i] -= W[i, j]
+    return torch.tensor(W, dtype=torch.float32)
+
+
+def run_decentralised(clients, test, cfg, seed, adj, fail_frac=0.0, fail_round=None):
+    """Federated averaging with no server. Every node keeps its own model. Each
+    round the same share of nodes as FedAvg samples (participation, drawn from
+    the same stream, so exposure matches) trains locally from its own model,
+    then every live node replaces its model with a Metropolis-weighted average
+    of its own and its neighbours' (one gossip step). Weights are uniform per
+    neighbour, not by row count as FedAvg's are.
+
+    fail_frac of the nodes stop permanently at fail_round: they neither train
+    nor send again, and the survivors re-weight over the links that remain.
+
+    Returns per-node macro F1 on test (mean and worst over live nodes), the
+    macro F1 of the live nodes' average, and the consensus distance, the mean
+    of |x_i - xbar| / |xbar|, which is zero when every node holds one model."""
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    g = MLP(cfg["d_in"], cfg["n_classes"])
+    x0 = flat(g).clone()
+    n = len(clients)
+    models = [x0.clone() for _ in range(n)]
+    alive = np.ones(n, dtype=bool)
+    W = metropolis(adj, alive)
+    for rnd in range(cfg["rounds"]):
+        if fail_round is not None and fail_frac > 0 and rnd == fail_round:
+            frng = np.random.default_rng([seed, 0xfa])
+            alive[frng.choice(n, int(round(fail_frac * n)), replace=False)] = False
+            W = metropolis(adj, alive)
+        sel = np.random.choice(n, size=max(1, int(cfg["participation"] * n)),
+                               replace=False)
+        for ci in sel:
+            if not alive[ci]:
+                continue
+            X, y, counts = clients[ci]
+            m = MLP(cfg["d_in"], cfg["n_classes"])
+            load_flat(m, models[ci])
+            w, _, _ = local_train(m, models[ci], X, y, "fedavg", cfg, counts, None)
+            models[ci] = w
+        models = list(W @ torch.stack(models))
+
+    live = [i for i in range(n) if alive[i]]
+    node = [evaluate(cfg, models[i], test)[0] for i in live]
+    xbar = torch.stack([models[i] for i in live]).mean(0)
+    cons = float(np.mean([float((models[i] - xbar).norm() / xbar.norm()) for i in live]))
+    # Components of the surviving graph: a split network trains separately.
+    seen, comps = set(), 0
+    for s in live:
+        if s in seen:
+            continue
+        comps += 1
+        stack = [s]
+        while stack:
+            u = stack.pop()
+            if u in seen:
+                continue
+            seen.add(u)
+            stack.extend(j for j in adj[u] if alive[j] and j not in seen)
+    return dict(mean=float(np.mean(node)), worst=float(np.min(node)),
+                avg_model=evaluate(cfg, xbar, test)[0], consensus=cons,
+                alive=len(live), components=comps)
 
 
 def load_panel_data(path, sample=200000, observer_role=None, restrict_first=False):
@@ -690,6 +802,15 @@ def main():
     ap.add_argument("--server-beta1", type=float, default=0.9)
     ap.add_argument("--server-beta2", type=float, default=0.99)
     ap.add_argument("--server-tau", type=float, default=1e-3)
+    ap.add_argument("--decentral", action="store_true",
+                    help="no server: decentralised averaging between neighbouring "
+                         "clients (needs --split-file and region clients), "
+                         "compared with FedAvg on the same seeds")
+    ap.add_argument("--extra-links", type=int, default=2,
+                    help="random links per node added to the road ring")
+    ap.add_argument("--fail-frac", type=float, default=0.1,
+                    help="share of nodes that fail permanently in the failure arm")
+    ap.add_argument("--fail-round", type=int, default=100)
     a = ap.parse_args()
 
     df = load_panel_data(a.features, a.sample, a.observer_role, a.restrict_first)
@@ -700,9 +821,11 @@ def main():
     prefixes = ("app_", "phy_") if a.drop_consensus else ("app_", "phy_", "pool_")
     feats = [c for c in df.columns if c.startswith(prefixes)]
 
+    ids = None
     if a.split_file:
-        clients, val, test, n_classes = build_clients_tx(
-            df, feats, pd.read_csv(a.split_file), observer_col=a.observer_col)
+        clients, val, test, n_classes, ids = build_clients_tx(
+            df, feats, pd.read_csv(a.split_file), observer_col=a.observer_col,
+            return_ids=True)
         print(f"held-out transmitters ({a.split_file}); every observer with "
               f"at least 200 training rows is a client, "
               f"{sum(len(c[0]) for c in clients)} training rows")
@@ -757,6 +880,12 @@ def main():
                   + ("  AT THE GRID EDGE, so the optimum may lie beyond it"
                      if edge else ""))
         print()
+
+    if a.decentral:
+        if ids is None:
+            raise SystemExit("--decentral needs --split-file (held-out transmitters)")
+        decentral(a, clients, test, cfg, ids)
+        return
 
     if a.secure_agg or a.dropout is not None:
         robustness(a, clients, test, cfg)
@@ -934,6 +1063,52 @@ def robustness(a, clients, test, cfg):
     print("Key agreement is not simulated: in a deployment each sampled client\n"
           "also exchanges one 32-byte public key per peer per round. FedProto's\n"
           "prototypes are not masked. Threat model: honest-but-curious server.")
+
+
+def decentral(a, clients, test, cfg, ids):
+    """FedAvg against decentralised averaging on the same clients and seeds,
+    with and without permanent node failures. The brief names single points of
+    failure as a reason central detectors fail; FedAvg still has one, its
+    server. This asks what removing it costs."""
+    adj = road_ring(ids, a.extra_links)
+    deg = np.array([len(s) for s in adj])
+    d = sum(p.numel() for p in MLP(cfg["d_in"], cfg["n_classes"]).parameters())
+    print(f"decentralised averaging: {len(clients)} nodes on a road ring plus "
+          f"{a.extra_links} random links each; degree median {int(np.median(deg))}, "
+          f"min {deg.min()}, max {deg.max()}; Metropolis weights; participation "
+          f"{cfg['participation']} as FedAvg; {cfg['rounds']} rounds")
+    print(f"per round a node sends its {d} weights to each neighbour: "
+          f"{int(np.median(deg)) * 4 * d:,} bytes at the median degree, against "
+          f"{2 * 4 * d:,} down and up for a sampled FedAvg client\n")
+    rows = {"fedavg": [], "dec_mean": [], "dec_worst": [], "dec_avg": [],
+            "fail_mean": [], "fail_worst": [], "fail_avg": []}
+    for s in range(a.seeds):
+        fa, _ = run_method("fedavg", clients, test, cfg, s)
+        r0 = run_decentralised(clients, test, cfg, s, adj)
+        r1 = run_decentralised(clients, test, cfg, s, adj, a.fail_frac, a.fail_round)
+        rows["fedavg"].append(fa)
+        for k, r in (("dec", r0), ("fail", r1)):
+            rows[f"{k}_mean"].append(r["mean"])
+            rows[f"{k}_worst"].append(r["worst"])
+            rows[f"{k}_avg"].append(r["avg_model"])
+        print(f"seed {s}: fedavg {fa:.4f} | decentralised node mean {r0['mean']:.4f} "
+              f"worst {r0['worst']:.4f} average model {r0['avg_model']:.4f} "
+              f"consensus {r0['consensus']:.4f} | {a.fail_frac:.0%} failed at round "
+              f"{a.fail_round}: node mean {r1['mean']:.4f} worst {r1['worst']:.4f} "
+              f"average model {r1['avg_model']:.4f} consensus {r1['consensus']:.4f} "
+              f"live {r1['alive']} components {r1['components']}", flush=True)
+    print()
+    for k, v in rows.items():
+        print(f"{k:11s} macro F1 {np.mean(v):.4f} +/- {np.std(v):.4f}")
+    if a.seeds >= 5:
+        print(f"\npaired Wilcoxon against FedAvg (n={a.seeds} seeds):")
+        for k, v in rows.items():
+            if k == "fedavg":
+                continue
+            delta = np.mean(v) - np.mean(rows["fedavg"])
+            ahead = int(sum(x > y for x, y in zip(v, rows["fedavg"])))
+            print(f"  {k:11s} delta {delta:+.4f}  ahead on {ahead} of {a.seeds}  "
+                  f"p = {wilcoxon(v, rows['fedavg']):.4f}")
 
 
 if __name__ == "__main__":
