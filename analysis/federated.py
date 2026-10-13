@@ -653,7 +653,8 @@ def metropolis(adj, alive):
     return torch.tensor(W, dtype=torch.float32)
 
 
-def run_decentralised(clients, test, cfg, seed, adj, fail_frac=0.0, fail_round=None):
+def run_decentralised(clients, test, cfg, seed, adj, fail_frac=0.0, fail_round=None,
+                      gossip_steps=1):
     """Federated averaging with no server. Every node keeps its own model. Each
     round the same share of nodes as FedAvg samples (participation, drawn from
     the same stream, so exposure matches) trains locally from its own model,
@@ -690,7 +691,10 @@ def run_decentralised(clients, test, cfg, seed, adj, fail_frac=0.0, fail_round=N
             load_flat(m, models[ci])
             w, _, _ = local_train(m, models[ci], X, y, "fedavg", cfg, counts, None)
             models[ci] = w
-        models = list(W @ torch.stack(models))
+        S = torch.stack(models)
+        for _ in range(gossip_steps):
+            S = W @ S
+        models = list(S)
 
     live = [i for i in range(n) if alive[i]]
     node = [evaluate(cfg, models[i], test)[0] for i in live]
@@ -811,6 +815,10 @@ def main():
     ap.add_argument("--fail-frac", type=float, default=0.1,
                     help="share of nodes that fail permanently in the failure arm")
     ap.add_argument("--fail-round", type=int, default=100)
+    ap.add_argument("--gossip-steps", type=int, default=1,
+                    help="averaging steps with the neighbours per round; more "
+                         "steps bring the units closer to one model at that many "
+                         "times the messages")
     a = ap.parse_args()
 
     df = load_panel_data(a.features, a.sample, a.observer_role, a.restrict_first)
@@ -1076,7 +1084,8 @@ def decentral(a, clients, test, cfg, ids):
     print(f"decentralised averaging: {len(clients)} nodes on a road ring plus "
           f"{a.extra_links} random links each; degree median {int(np.median(deg))}, "
           f"min {deg.min()}, max {deg.max()}; Metropolis weights; participation "
-          f"{cfg['participation']} as FedAvg; {cfg['rounds']} rounds")
+          f"{cfg['participation']} as FedAvg; {cfg['rounds']} rounds; "
+          f"{a.gossip_steps} gossip step(s) per round")
     print(f"per round a node sends its {d} weights to each neighbour: "
           f"{int(np.median(deg)) * 4 * d:,} bytes at the median degree, against "
           f"{2 * 4 * d:,} down and up for a sampled FedAvg client\n")
@@ -1084,8 +1093,9 @@ def decentral(a, clients, test, cfg, ids):
             "fail_mean": [], "fail_worst": [], "fail_avg": []}
     for s in range(a.seeds):
         fa, _ = run_method("fedavg", clients, test, cfg, s)
-        r0 = run_decentralised(clients, test, cfg, s, adj)
-        r1 = run_decentralised(clients, test, cfg, s, adj, a.fail_frac, a.fail_round)
+        r0 = run_decentralised(clients, test, cfg, s, adj, gossip_steps=a.gossip_steps)
+        r1 = run_decentralised(clients, test, cfg, s, adj, a.fail_frac, a.fail_round,
+                               gossip_steps=a.gossip_steps)
         rows["fedavg"].append(fa)
         for k, r in (("dec", r0), ("fail", r1)):
             rows[f"{k}_mean"].append(r["mean"])

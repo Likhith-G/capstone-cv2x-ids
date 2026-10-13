@@ -87,6 +87,9 @@ def main():
     ap.add_argument("--min-rows", type=int, default=200)
     ap.add_argument("--budgets", type=int, nargs="+", default=[10])
     ap.add_argument("--ft-rounds", type=int, default=5)
+    ap.add_argument("--drop-prefix", nargs="+", default=[],
+                    help="leave out every feature starting with one of these, to "
+                         "test which features carry a shift")
     a = ap.parse_args()
 
     src = load(a.source, a.source_tag, a.observer_col)
@@ -96,6 +99,10 @@ def main():
     tgt = tgt[tgt.label_attackId.isin(shared)]
     feats = [c for c in src.columns
              if c.startswith(("app_", "phy_", "pool_")) and c in set(tgt.columns)]
+    if a.drop_prefix:
+        gone = [c for c in feats if c.startswith(tuple(a.drop_prefix))]
+        feats = [c for c in feats if c not in gone]
+        print(f"left out {len(gone)} features: {gone}")
     both = pd.concat([src, tgt], ignore_index=True)
     del src, tgt
 
