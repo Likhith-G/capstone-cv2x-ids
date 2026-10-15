@@ -42,16 +42,19 @@ This project builds the data to answer that, and then answers it.
 |---|---|
 | **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md). You do not need to reproduce anything |
 | **pick up one of the open pieces of work** | [`HANDOFF.md`](HANDOFF.md) |
-| see the idea in ninety seconds | the [interactive demo](https://catch-me-lying.vercel.app/booth/), or clone and open `docs/booth/index.html` locally |
+| see the idea in a few minutes | the [booth website](https://catch-me-lying.vercel.app/): a walkthrough and a [live highway monitor](https://catch-me-lying.vercel.app/live/), or clone and open `web/index.html` locally |
 | know what every class and column means | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) |
 | rebuild the dataset from the simulator, which almost nobody needs | [`REPRODUCING.md`](REPRODUCING.md) |
 | understand the detection pipeline | [`analysis/README.md`](analysis/README.md) |
 
-*Catch Me Lying* puts you in the attacker's seat: choose where to claim you are,
-and watch whether the receivers catch you. It is one file with no server and no
-build step, so cloning the repository and opening `docs/booth/index.html` works
-offline. `docs/booth/poster.html` is the A0 poster that goes beside it, laid out
-in millimetres so it prints at the size it was designed at.
+*Catch Me Lying* is the booth website in `web/`: a walkthrough of the project
+for one screen and a live highway monitor for another, which replays recorded
+traffic with every car judged by a detector that never saw it. There is no
+server and no build step, so cloning the repository and opening `web/index.html`
+works offline. Every number on it is generated from the run logs by
+`analysis/make_site_data.py` and `analysis/make_live_export.py`.
+`docs/booth/poster.html` is the A0 poster that goes beside it, laid out in
+millimetres so it prints at the size it was designed at.
 
 ---
 
@@ -366,9 +369,11 @@ capstone-cv2x-ids/
 │   ├── verify_results.py        # every reported figure against its log
 │   └── regenerate.sh            # whole chain, one stage per log
 │
+├── web/                         # the booth website: walkthrough and live monitor
+│
 ├── docs/
 │   ├── DATASET_CARD.md          # every class, every column, the limitations
-│   ├── booth/                   # the interactive demo and the A0 poster
+│   ├── booth/                   # the A0 poster
 │   ├── figures/                 # the published figures
 │   └── patches/                 # additive patch to 5G-LENA, required to build
 │

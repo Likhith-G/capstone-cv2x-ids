@@ -24,7 +24,10 @@ held-out data, and its timing is the classifier's, not the radio's. Because the
 model and the test rows are the release's own, the final scores must equal the
 published frozen-split baseline, which the last line checks.
 
-    live_demo.py BUNDLE [--pace 1.0] [--every 5] [--seeds seed1,seed2]
+    live_demo.py BUNDLE [--pace 1.0] [--every 5] [--seeds seed1,seed2] [--json OUT]
+
+--json OUT also writes every printed row and the closing summary to OUT, which
+is what the booth website animates.
 
 --pace 1.0 plays in real time, one window per second; 0 plays as fast as the
 classifier allows; 0.1 is ten times real time.
@@ -63,6 +66,8 @@ def main():
     ap.add_argument("--trees", type=int, default=60)
     ap.add_argument("--sample", type=int, default=400000)
     ap.add_argument("--jobs", type=int, default=3)
+    ap.add_argument("--json", default=None,
+                    help="also write the printed rows and the summary here")
     a = ap.parse_args()
 
     b = pathlib.Path(a.bundle)
@@ -95,7 +100,7 @@ def main():
           f"{'macro F1':>8s} {'MCC':>6s} {'spoof':>6s} {'flood':>6s} "
           f"{'replay':>6s} {'false alarm':>11s}")
 
-    truth, pred, lat_batch, lat_each = [], [], [], []
+    truth, pred, lat_batch, lat_each, rows = [], [], [], [], []
     for i, ((seed, win), g) in enumerate(groups):
         start = time.perf_counter()
         p = clf.predict(g[feats].astype("float32").fillna(-999))
@@ -112,6 +117,15 @@ def main():
                 caught[fam] = (yp[m] != 0).mean() if m.any() else float("nan")
             ben = yt == 0
             fa = (yp[ben] != 0).mean() if ben.any() else float("nan")
+            rows.append({"drive": str(seed), "t": int(win), "decisions": len(g),
+                         "alerts": int((p != 0).sum()),
+                         "true_attacks": int((g.label_attackId != 0).sum()),
+                         "us_per_decision": round(dt / len(g) * 1e6, 1),
+                         "macro_f1": round(f1_score(yt, yp, average="macro"), 4),
+                         "mcc": round(matthews_corrcoef(yt, yp), 4),
+                         **{k: (None if v != v else round(float(v), 4))
+                            for k, v in caught.items()},
+                         "false_alarm": None if fa != fa else round(float(fa), 4)})
             print(f"{str(seed):>6s} {int(win):4d} {len(g):9d} {int((p != 0).sum()):7d} "
                   f"{int((g.label_attackId != 0).sum()):8d} {dt * 1e3:8.1f} "
                   f"{dt / len(g) * 1e6:11.1f} "
@@ -136,10 +150,28 @@ def main():
               f"named as the right class {(yp[m] == yt[m]).mean():.3f}")
     print(f"honest windows falsely flagged {(yp[yt == 0] != 0).mean():.4f}")
     print(f"final macro F1 {f1:.4f}, MCC {mcc:.4f}")
+    ok = None
     if not a.seeds:
-        ok = round(f1, 4) == PUBLISHED[0] and round(mcc, 4) == PUBLISHED[1]
+        ok = bool(round(f1, 4) == PUBLISHED[0] and round(mcc, 4) == PUBLISHED[1])
         print(f"published frozen-split baseline: macro F1 {PUBLISHED[0]}, MCC "
               f"{PUBLISHED[1]}: {'REPRODUCED' if ok else 'NOT REPRODUCED'}")
+    if a.json:
+        fam = {k: {"flagged": round(float((yp[np.isin(yt, c)] != 0).mean()), 4),
+                   "named": round(float((yp[np.isin(yt, c)] == yt[np.isin(yt, c)]).mean()), 4)}
+               for k, c in FAMILIES.items()}
+        out = {"source": "analysis/live_demo.py on the 1.1.0 highway_sparse frozen split",
+               "decisions": int(len(yt)), "seconds": len(groups),
+               "drives": int(te.key_seed.nunique()),
+               "median_batch_ms": round(float(np.median(lb) * 1e3), 1),
+               "p95_batch_ms": round(float(np.percentile(lb, 95) * 1e3), 1),
+               "median_us_per_decision": round(float(np.median(le) * 1e6), 1),
+               "families": fam,
+               "false_alarm": round(float((yp[yt == 0] != 0).mean()), 4),
+               "macro_f1": round(float(f1), 4), "mcc": round(float(mcc), 4),
+               "published": list(PUBLISHED), "reproduced": ok, "rows": rows}
+        pathlib.Path(a.json).write_text(json.dumps(out, allow_nan=False))
+        print(f"wrote {a.json}")
+    if ok is not None:
         sys.exit(0 if ok else 1)
 
 

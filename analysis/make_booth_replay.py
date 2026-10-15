@@ -17,7 +17,7 @@ from the transmit log, verdicts from the two detectors.
 
     make_booth_replay.py RUN_DIR --seed seed1
 
-Writes the data block of docs/booth/replay.html in place, between its markers,
+Writes the data block of docs/archive/booth_15Oct/replay.html in place, between its markers,
 so the page stays one self-contained file that opens with no network.
 """
 import argparse
@@ -30,7 +30,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedGroupKFold
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-PAGE = REPO / "docs" / "booth" / "replay.html"
+PAGE = REPO / "docs" / "archive" / "booth_15Oct" / "replay.html"
 BEGIN, END = "/*REPLAY_DATA_BEGIN*/", "/*REPLAY_DATA_END*/"
 
 # Plain names for the page, which has to avoid jargon.
