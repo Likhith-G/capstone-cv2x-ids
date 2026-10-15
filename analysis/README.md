@@ -131,7 +131,8 @@ that breadth and volume can be read apart.
 
     federated_drift.py --source A/corpus.pkl --target B/corpus.pkl
 
-`model_independence.py` runs the fused block under four learner families over
+`model_independence.py` runs the fused block under four learner families, five with
+`--transformer`, over
 the same rows and folds, and reports the best score any of them reached per
 class. The random forest runs first with the settings `benchmark.py` uses, so
 its row is a reproduction check before any other row is believed.
@@ -202,7 +203,7 @@ nothing, rather than carrying on over the seeds that survived.
 | `federated_drift.py` | does federating across two densities recover what the density change costs |
 | `federated_adapt.py` | can a deployed federated detector catch up after a change of traffic density: refitting input scaling on unlabelled local rows, a few rounds of FedAvg on a handful of labelled clients from the new conditions, and both, against section 5d's own transfer and in-distribution arms, which it must reproduce. `--holdout-tx` keeps a share of each class's transmitters out of the fine-tuning rows and scores every arm on them, because observer-split clients otherwise hear the same attackers as the test clients |
 | `live_demo.py` | **the working demo the project brief asks for.** Trains the release baseline from the bundle alone and replays the held-out test partition one second of traffic at a time, printing each second's decisions, alerts, batch latency and running scores per attack family. `--pace 1.0` plays in real time. Must reproduce the published frozen-split figure, and exits non-zero if it does not |
-| `make_figures.py` | the paper's figures, parsed out of the logs so they cannot drift from the tables |
+| `make_figures.py` | the report's figures, parsed out of the logs so they cannot drift from the tables |
 | `estimator_study.py` | why the position fit misses, and which of weighting, robustness or a calibrated mean closes it |
 | `correction_transfer.py` | whether the calibrated propagation correction is a property of range or shrinkage onto one corpus: calibrate on A, apply to B, and check each bin's mean is flat in along-road position |
 | `make_release_splits.py` | the frozen train, validation and test partition shipped with the dataset, so another group can compare against these numbers. Grouped on the PHYSICAL TRANSMITTER, because sybil emits four claimed identities per vehicle and grouping on the claimed one splits a vehicle across partitions. Stratified, because five of eight seeds are missing an attack class and a seed level split would ship an unscoreable partition. `--audit` prints that coverage table |
@@ -217,6 +218,7 @@ nothing, rather than carrying on over the seeds that survived.
 | `receiver_counts.py` | the distribution of receivers per pooled unit in a table from `pooled_consensus.py`, the share of thin units, and how many colluders a half, a third or a quarter of a unit's receivers takes at the median and 10th percentile unit. The collusion argument rests on these counts |
 | `sybil_residual.py` | why a Sybil's pooled free-fit residual is high: per class channels per receiver behind each identity's power, the residual in matched channel bins, and the share of the Sybil excess a benign fit on channel count predicts. Power is attributed per claimed identity, so a Sybil's identities each average fewer channels |
 | `make_package.sh` | wraps the release bundle into the two zips that actually get sent: 1.7 GB for all five scenarios and 377 MB for the reference one. Store mode, because every shard is already gzipped and deflating them again spends minutes to save nothing. The single scenario package carries all eight top level files beside the shards, because those are what `check_release.py` reads to know what it is looking at, and in subset mode an absent one is tolerated rather than flagged. So it counts them and fails loudly instead. That count is not decoration: the first hand built package silently dropped `.zenodo.json`, because a `*.*` glob does not match a leading dot |
+| `stage_site.sh` | copies the public pages (the landing page, the booth demo, the replay and the poster PDF) into a gitignored `site/` folder, from which `vercel deploy --prod` publishes https://catch-me-lying.vercel.app. Nothing from the local working documents is copied |
 | `drift_exposure.py` | turns the drift campaign's arm lines into a cost and ratio table. The pooled ceiling arm trains for two local epochs and so sees every row twice per round, while a federation sampling half its clients visits each row about half as often, so half the pooled advantage was extra passes rather than pooling. The matched arms remove that; sequential depth is deliberately left unequal because it is what partitioning IS. Exposure matched, never step matched |
 | `make_dataset_card.py` | the dataset card, generated from the corpus so its counts cannot drift. Exits non-zero if any column has no curated description, so adding a feature forces documenting it |
 | `fed_sweep.py` | learning curves for the federated panel against a central model trained on the same rows, on validation only, so the round budget, local epochs and any server optimiser are chosen on validation alone. Round r of a long run is round r of a short one, so one 200 round run gives every shorter budget |

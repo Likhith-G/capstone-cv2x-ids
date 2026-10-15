@@ -132,7 +132,7 @@
       </ul>
       <p style="margin-top:4mm">We simulated a highway in the ns-3 network simulator [2, 3]
         with five traffic scenarios, ten kinds of attack, and honest cars that carry
-        realistic position error. The result is a public dataset of
+        realistic position error. The result is a dataset of
         <b>7,916,708 labelled one-second windows</b> [1]. Part A of this project reported a
         perfect score on a different dataset; an audit found 96.39 percent of its test
         rows were also in training, so the data was rebuilt and checked for leakage
@@ -183,9 +183,7 @@
         cars caught against the size of the lie. One receiver catches none at any size.
         Pooled receivers cross one half at 47.3 m.">
       <figcaption><b>Figure 2.</b> Pooling turns an undetectable lie into a detectable
-        one above about two and a half times the 18.3 m localisation error. Below the floor a lie is too
-        small to separate from honest position error; a lie that small does not move a
-        car into another lane. Counting only lies that stay on the road, which a map
+        one above about two and a half times the 18.3 m error in locating a car from its signal; a smaller lie is lost in that error. Counting only lies that stay on the road, which a map
         check would let through, the floor is 43.4 m, inside the same interval.
         If each roadside unit pools only the cars near it, the floor is 55.3 m.</figcaption>
     </figure>
@@ -194,7 +192,7 @@
         <p><b>One receiver sees nothing.</b> A car that shifts every claim by the same
           amount keeps its speed and heading consistent. On a detection score from
           0 (none caught) to 1 (all caught), content checks score 0.000 on it and
-          four different learning methods reach at most 0.158.</p>
+          five different learning methods reach at most 0.158.</p>
         <div class="stat"><span class="big">0.000</span>detection score of content
           checks on a consistent lie</div>
       </div>
@@ -265,8 +263,7 @@
           for the estimator this system runs (Figures 3 and 4). A map check covers
           that direction (Table 1).</li>
         <li><b>Aim 4.</b> Trained across roadside units (12 per road, eight simulated
-          runs) without sharing raw data, federated learning comes within about
-          5 percent of central training on cars no unit has heard, after 200 rounds.
+          runs) without sharing raw data, federated learning is level with central training on cars no unit has heard, and within about 5 percent of it on validation.
           Moved into congested traffic, a detector recovers 88 percent of its loss
           by refitting input scaling on unlabelled local data and fine-tuning briefly.</li>
       </ol>
@@ -281,7 +278,7 @@
       <div class="qrbox">
         <img src="figures/qr.svg" alt="QR code to the interactive demo">
         <p><b>Try it yourself: you are the attacker.</b> Move a claimed position and
-          watch the receivers decide.</p>
+          watch the receivers decide. <b>catch-me-lying.vercel.app</b></p>
       </div>
     </div>
   </section>

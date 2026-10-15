@@ -42,7 +42,7 @@ This project builds the data to answer that, and then answers it.
 |---|---|
 | **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md). You do not need to reproduce anything |
 | **pick up one of the open pieces of work** | [`HANDOFF.md`](HANDOFF.md) |
-| see the idea in ninety seconds | the [interactive demo](https://likhith-g.github.io/capstone-cv2x-ids/booth/), or clone and open `docs/booth/index.html` locally |
+| see the idea in ninety seconds | the [interactive demo](https://catch-me-lying.vercel.app/booth/), or clone and open `docs/booth/index.html` locally |
 | know what every class and column means | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) |
 | rebuild the dataset from the simulator, which almost nobody needs | [`REPRODUCING.md`](REPRODUCING.md) |
 | understand the detection pipeline | [`analysis/README.md`](analysis/README.md) |
@@ -68,12 +68,12 @@ failures.
 
 ### 1. A single receiver cannot see a position lie
 
-Not at any magnitude in this dataset. Four learner families were run over
-identical rows and folds: a random forest, gradient boosting, a neural network
-and logistic regression. On the three constant-offset position classes the best
+Not at any magnitude in this dataset. Five learner families were run over
+identical rows and folds: a random forest, gradient boosting, a neural network,
+logistic regression and a tabular transformer. On the three constant-offset position classes the best
 score any of them reached is **0.008, 0.056 and 0.158**.
 
-That is not four models failing. The measurement itself is the reason. A receiver
+That is not five models failing. The measurement itself is the reason. A receiver
 estimating where a transmitter really is has four unknowns to solve for, two of
 position and two describing how the signal fades with distance, and a single
 receiver sitting at the same geometry every window supplies one equation. The
@@ -167,6 +167,19 @@ grouped by physical transmitter, so no vehicle appears on both sides.
 The check that the task is not trivial is that a 1-nearest-neighbour classifier
 reaches only **0.3533** here. A dataset a nearest-neighbour lookup can solve is a
 dataset that has been memorised rather than learned.
+
+## Learning the detector across roadside units
+
+Each roadside unit pools the measurements of the vehicles near it, and the
+units learn one detector by federated averaging, so only model updates leave a
+unit. Scored on vehicles no unit has heard, after 200 rounds it reaches 0.947
+of a centrally trained model's macro F1 on validation and 1.002 on test, and
+none of FedProx, FedNova, FedLC or FedProto improves on it. Secure aggregation
+costs no detection. Without any server, each unit averaging only with its
+neighbours scores 0.0379 below federated averaging with one averaging step a
+round and 0.0196 below with three. When traffic gets denser or transmit power
+drops, refitting the detector's input scaling on unlabelled local data recovers
+77 and 87 percent of the loss.
 
 ---
 

@@ -221,8 +221,9 @@ macro F1 is 0.5575. The eleventh class, sensing manipulation, scores zero in
 every block on every corpus, because resource grants in this simulator are data
 driven and an attacker cannot hoard the channel, so it has no signature to find.
 
-Four learner families have been run over identical rows and folds: a random
-forest, gradient boosting, an MLP and logistic regression. The spread between the
+Five learner families have been run over identical rows and folds: a random
+forest, gradient boosting, an MLP, logistic regression and a tabular
+transformer. The spread between the
 top three is about 0.012 macro F1, so nothing here rests on a lucky model choice.
 
 **You will see a slightly different number and that is expected.** The acceptance
@@ -260,11 +261,12 @@ separable in principle, which makes position falsification far easier to detect
 than it could ever be on a road.
 
 **Position attacks are nearly undetectable from one receiver.** On the three
-constant-offset classes the best score any of the four learner families reached
+constant-offset classes the best score any of the five learner families reached
 is 0.008, 0.056 and 0.158. This is not a bug and it is not a weak model. One
 receiver at a fixed geometry supplies one equation per window for four unknowns,
 two of position and two of propagation, so the information is not there. Pooling
-across receivers is what recovers it, down to a floor at 38.9 m of displacement.
+across receivers is what recovers it, down to a floor at 47.3 m of displacement, with a 95 percent interval of
+40.6 to 57.3 m.
 
 **Some classes are easy and some are impossible.** Denial of service and random
 position offset sit between 0.91 and 0.99. Replay sits near 0.11. The aggregate is an average

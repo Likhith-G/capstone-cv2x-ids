@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CV2X-IDS</title>
+<title>Catch Me Lying</title>
 <meta name="description" content="A labelled dataset of vehicles lying to each other over C-V2X, and a study of what a receiver can and cannot catch.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
@@ -64,16 +64,17 @@
 
   <header>
     <p class="eyebrow">RMIT Engineering Capstone &middot; P003859Eng</p>
-    <h1>What received power can and cannot tell you about a lying vehicle</h1>
+    <h1>Catching connected cars that lie about where they are</h1>
     <p class="thesis">Cars broadcast their position several times a second, and every
-    message is cryptographically signed. The signature proves who sent it. It proves
-    nothing about whether it is true. This is a labelled dataset of vehicles lying to
-    each other over C-V2X, and a study of what a receiver can actually catch.</p>
+    message is cryptographically signed. The signature proves who sent a message. It
+    cannot prove that the position inside is true. This project measures what
+    receivers can catch, using only what a message claimed and what their radios
+    measured, over the 5G sidelink cars use to talk directly.</p>
     <div class="facts">
       <span><b>7,916,708</b> labelled windows</span>
       <span><b>11</b> classes</span>
       <span><b>50</b> features across two layers</span>
-      <span>detection floor <b>38.9 m</b></span>
+      <span>detection floor <b>47.3 m</b> (40.6 to 57.3 m)</span>
     </div>
   </header>
 
@@ -85,45 +86,55 @@
       whether the roadside receivers catch you. Runs in the browser, nothing to
       install.</span>
     </a>
+    <a class="card" href="booth/replay.html">
+      <span class="t">Two ways to listen</span>
+      <span class="d">One minute of simulated highway traffic, judged twice: receivers
+      voting on their own verdicts, and receivers sharing their measurements.</span>
+    </a>
+    <a class="card" href="booth/poster.pdf">
+      <span class="t">The poster</span>
+      <span class="d">The A0 poster shown at EnGenius, as a PDF.</span>
+    </a>
     <a class="card" href="https://github.com/Likhith-G/capstone-cv2x-ids">
       <span class="t">The repository</span>
-      <span class="d">Simulator, detection pipeline, and every reported figure pinned
-      to the log that produced it.</span>
+      <span class="d">Simulator module, detection pipeline, and the script that checks
+      every reported figure against the log that produced it.</span>
     </a>
     <a class="card" href="https://github.com/Likhith-G/capstone-cv2x-ids/blob/main/USING_THE_DATA.md">
       <span class="t">Using the dataset</span>
-      <span class="d">How to load it, the frozen partition and why to keep it, what
-      to report, and what to beat.</span>
-    </a>
-    <a class="card" href="https://github.com/Likhith-G/capstone-cv2x-ids/blob/main/docs/DATASET_CARD.md">
-      <span class="t">Dataset card</span>
-      <span class="d">Every scenario, every class, all 60 columns, and the limitations
-      stated rather than left to be found.</span>
-    </a>
-    <a class="card" href="booth/poster.html">
-      <span class="t">The poster</span>
-      <span class="d">A0, laid out in millimetres so it prints at its designed size.</span>
+      <span class="d">How to load it, the frozen partition and why to keep it, and what
+      to report. The data itself is available from the authors on request.</span>
     </a>
   </div>
 
   <h2>The short version</h2>
   <div class="links">
     <a class="card" href="booth/" style="grid-column:1/-1">
-      <span class="t">A single receiver is blind to a position lie, and many receivers are not</span>
-      <span class="d">Four learner families reach 0.008, 0.056 and 0.158 on the three
-      constant-offset classes, because one receiver at a fixed geometry supplies one
-      equation for four unknowns. Pooling received power across receivers recovers
-      detection down to a floor at 38.9 m. The array's geometry then predicts the
-      direction an adaptive attacker will lie in, 79.7 degrees off the road axis
-      against 75 to 85 measured by independent search, for the estimator that
-      bound describes.</span>
+      <span class="t">One receiver is blind to a consistent position lie, and many receivers are not</span>
+      <span class="d">A car that shifts every claim by the same amount passes every
+      content check. Five learner families at one receiver reach at most 0.158 on it.
+      Receivers that pool their measured power before deciding detect it above a
+      floor of 47.3 m, with a 95 percent interval of 40.6 to 57.3 m; receivers that
+      share only their verdicts detect nothing. The receivers' geometry predicts the
+      direction an informed attacker will lie, 79.7 degrees off the road against 75
+      to 85 found by search, and a map check covers that direction.</span>
+    </a>
+    <a class="card" href="booth/replay.html" style="grid-column:1/-1">
+      <span class="t">The detector can be learned across roadside units without sharing raw data</span>
+      <span class="d">Trained by federated learning across roadside unit regions and
+      scored on cars no region had heard, it comes within about 5 percent of central
+      training on validation and is level with it on test. Secure aggregation costs
+      no detection. When traffic gets denser or transmit power drops, refitting the
+      detector's input scaling on unlabelled local data recovers 77 and 87 percent of
+      the loss.</span>
     </a>
   </div>
 
   <footer>
-    Supervisor A/Prof Ke (Desmond) Wang, research mentor Mr Kanwardeep Singh Gahlot.
-    Code is GPL-2.0-only. Figures and numbers on this page are pinned to their
-    generating logs by
+    Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong, Ken Navarro and Andrew Ng.
+    Supervisor A/Prof Ke (Desmond) Wang, research mentor Mr Kanwardeep Singh Gahlot,
+    School of Engineering, RMIT University. Everything here is simulated. Code is
+    GPL-2.0-only. Numbers on this page are pinned to their generating logs by
     <a href="https://github.com/Likhith-G/capstone-cv2x-ids/blob/main/analysis/verify_results.py">verify_results.py</a>.
   </footer>
 
