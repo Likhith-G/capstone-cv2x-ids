@@ -138,7 +138,7 @@ table{border-collapse:collapse;width:100%}
 .tile{border-radius:14px;border:1px solid var(--line);background:var(--surface);padding:34px 34px 36px;display:flex;flex-direction:column;gap:18px;min-height:430px}
 .tile h3{font-size:34px;line-height:1.12}
 .tile p{margin:0;font-size:25px;line-height:1.42;color:var(--ink-2)}
-.tile .stat{font-weight:300;font-size:56px;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;margin-top:auto;white-space:nowrap}
+.tile .stat{font-weight:300;font-size:50px;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums;margin-top:auto}
 .tile .stat small{font-size:.42em;color:var(--ink-3);letter-spacing:0}
 
 /* slide 14 */
