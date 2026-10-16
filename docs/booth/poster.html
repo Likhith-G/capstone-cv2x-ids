@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Detection Floor Poster</title>
+<title>Connected Cars Poster</title>
 <style>
   /* A0 portrait, 841 x 1189 mm. Print at 100 percent, no scaling.
      Sizes are in mm so the printed size is the designed size. The course guide
@@ -12,81 +12,65 @@
      page and fails on any visible text below that. */
   @page{ size: 841mm 1189mm; margin: 0 }
   :root{
-    --ink:#1d2329; --dim:#46525c; --line:#d5dbe0; --panel:#f2f5f7;
+    --ink:#1d2329; --dim:#4a5560; --line:#d3d9de; --panel:#f3f5f7;
     --navy:#1b3a5c; --rust:#b4532a; --teal:#2e7d7d;
     --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
-    --body:7.8mm; --small:6.9mm; --h2:11.6mm;
+    --body:8.1mm; --small:6.9mm; --h2:11.8mm;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans)}
   @media screen{ html:not(.audit) body{background:#c9cfd4;padding:20px}
-                 html:not(.audit) .sheet{zoom:.3;margin:0 auto;
-                   box-shadow:0 0 0 1px #aab}}
-  .sheet{width:841mm;height:1189mm;background:#fff;padding:24mm 28mm 18mm;
-         display:flex;flex-direction:column;gap:9mm;overflow:hidden}
+                 html:not(.audit) .sheet{zoom:.3;margin:0 auto;box-shadow:0 0 0 1px #aab}}
+  .sheet{width:841mm;height:1189mm;background:#fff;padding:22mm 28mm 16mm;
+         display:flex;flex-direction:column;gap:8mm;overflow:hidden}
   p{margin:0;font-size:var(--body);line-height:1.36}
-  p + p{margin-top:3.2mm}
+  p + p{margin-top:3mm}
   b{font-weight:700}
-  .lie{color:var(--rust)}
 
-  /* Header */
   header{display:grid;grid-template-columns:1fr 66mm;gap:12mm;align-items:start;
-         border-bottom:2.2mm solid var(--navy);padding-bottom:7mm}
-  h1{font-size:31mm;line-height:1.02;margin:0 0 5mm;color:var(--navy);
-     letter-spacing:-.015em;font-weight:700}
-  .message{font-size:11mm;line-height:1.25;margin:0 0 6mm;font-weight:400}
-  .message b{color:var(--rust)}
-  .authors{font-size:8mm;line-height:1.35;margin:0}
-  .affil{font-size:var(--small);line-height:1.4;color:var(--dim);margin-top:2mm}
+         border-bottom:1.6mm solid var(--navy);padding-bottom:6mm}
+  h1{font-size:30mm;line-height:1.03;margin:0 0 4mm;color:var(--navy);letter-spacing:-.01em;font-weight:700}
+  .subtitle{font-size:9.4mm;line-height:1.25;margin:0 0 5mm;color:var(--ink)}
+  .authors{font-size:8mm;line-height:1.35}
+  .affil{font-size:var(--small);line-height:1.4;color:var(--dim);margin-top:1.5mm}
   .logo{border:0.6mm solid var(--navy);color:var(--navy);text-align:center;
         padding:6mm 3mm;font-size:9mm;font-weight:700;line-height:1.1}
   .logo img{width:100%;display:block}
 
-  /* Sections */
-  h2{font-size:var(--h2);line-height:1.1;margin:0 0 4mm;color:var(--navy);
-     font-weight:700;display:flex;gap:4mm;align-items:baseline}
-  h2 .n{color:#fff;background:var(--navy);border-radius:50%;width:13mm;height:13mm;
-        flex:0 0 13mm;display:inline-flex;align-items:center;justify-content:center;
-        font-size:8mm;position:relative;top:-1mm}
+  h2{font-size:var(--h2);line-height:1.12;margin:0 0 3.5mm;color:var(--navy);font-weight:700}
   ul,ol{margin:0;padding-left:8mm}
   li{font-size:var(--body);line-height:1.36}
-  li + li{margin-top:2.4mm}
+  li + li{margin-top:2mm}
   figure{margin:0}
   figure img{display:block}
-  figcaption{font-size:var(--small);line-height:1.38;color:var(--dim);margin-top:3mm}
+  figcaption{font-size:var(--small);line-height:1.36;color:var(--dim);margin-top:2.5mm}
   figcaption b{color:var(--ink)}
 
-  .row{display:grid;gap:12mm}
-  .intro{grid-template-columns:262mm 1fr}
-  .r1{grid-template-columns:460mm 1fr}
-  .r2bottom{display:grid;grid-template-columns:420mm 1fr;gap:12mm;margin-top:5mm}
-  .ends{grid-template-columns:1.25fr 1fr}
+  .cols{display:grid;grid-template-columns:385mm 385mm;column-gap:15mm}
+  .rule{border-top:0.5mm solid var(--line);padding-top:6mm}
 
-  .panel{background:var(--panel);border-radius:3mm;padding:7mm 8mm}
-  .stat{font-size:var(--body);line-height:1.3;margin-top:4mm;padding-left:5mm;
-        border-left:1.6mm solid var(--rust)}
-  .stat .big{display:block;font-size:13mm;font-weight:700;color:var(--rust);
-             line-height:1.1}
-
-  table{border-collapse:collapse;width:100%;font-size:var(--body)}
-  caption{caption-side:top;text-align:left;font-size:var(--small);color:var(--dim);
-          line-height:1.38;margin-bottom:3mm}
+  table{border-collapse:collapse;width:100%;font-size:var(--small)}
+  caption{caption-side:top;text-align:left;font-size:var(--small);color:var(--dim);line-height:1.36;margin-bottom:2.5mm}
   caption b{color:var(--ink)}
-  th,td{padding:2.2mm 3mm;text-align:right;border-bottom:0.4mm solid var(--line)}
-  th:first-child,td:first-child{text-align:left}
-  th{font-weight:700;font-size:var(--small);line-height:1.25;vertical-align:bottom;
-     border-bottom:0.8mm solid var(--navy)}
-  td.hi{color:var(--navy);font-weight:700}
+  th,td{padding:1.8mm 2.5mm 1.8mm 0;text-align:left;vertical-align:top;border-bottom:0.35mm solid var(--line);line-height:1.3}
+  th{font-weight:700;border-bottom:0.7mm solid var(--navy)}
+  td.num,th.num{text-align:right}
+  td:first-child{font-weight:700}
+  .aims li b{color:var(--navy)}
+  .concl li{margin-top:2.2mm}
 
-  .qrbox{display:grid;grid-template-columns:62mm 1fr;gap:7mm;align-items:center;
-         margin-top:6mm}
-  .qrbox img{width:62mm;height:62mm}
+  .numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin-top:4mm}
+  .numbers div{border-top:1mm solid var(--navy);padding-top:2mm;font-size:var(--small);line-height:1.3;color:var(--dim)}
+  .numbers b{display:block;font-size:12mm;line-height:1.1;color:var(--navy)}
 
-  footer{margin-top:auto;border-top:0.6mm solid var(--line);padding-top:4mm}
+  .qrbox{display:grid;grid-template-columns:58mm 1fr;gap:7mm;align-items:center;margin-top:5mm}
+  .qrbox img{width:58mm;height:58mm}
+
+  footer{margin-top:auto;border-top:0.5mm solid var(--line);padding-top:3.5mm}
   footer h3{font-size:var(--small);margin:0 0 1.5mm;color:var(--navy)}
   footer ol{padding-left:9mm;columns:2;column-gap:12mm}
-  footer li{font-size:6.4mm;line-height:1.3;color:var(--dim)}
-  footer li + li{margin-top:1mm}
+  footer li{font-size:6.4mm;line-height:1.28;color:var(--dim)}
+  footer li + li{margin-top:0.8mm}
 
   #audit{display:none}
 </style>
@@ -96,189 +80,151 @@
 
   <header>
     <div>
-      <h1>Catching connected cars that lie about where they are</h1>
-      <p class="message">A signed message proves which car sent it, but it cannot
-        prove that the position inside is true. In our simulations one receiver
-        cannot detect a consistent lie, and receivers that pool their radio
-        measurements catch most lies larger than about <b>47 m</b> (95 percent
-        interval 40.6 to 57.3 m).</p>
-      <p class="authors"><b>Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong,
-        Ken Navarro, Andrew Ng</b></p>
-      <p class="affil">Supervisor A/Prof Ke (Desmond) Wang. Research mentor
-        Mr Kanwardeep Singh Gahlot. Engineering Capstone Project, School of
-        Engineering, RMIT University, Melbourne.</p>
+      <h1>Detecting connected cars that send false messages</h1>
+      <p class="subtitle">Cybersecurity for Connected Cars: Edge-Based Federated Intrusion Detection</p>
+      <p class="authors"><b>Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong, Ken Navarro, Andrew Ng</b></p>
+      <p class="affil">Supervisor A/Prof Ke (Desmond) Wang. Research mentor Mr Kanwardeep Singh Gahlot.
+        Engineering Capstone Project, School of Engineering, RMIT University, Melbourne.</p>
     </div>
     <div class="logo" id="logo">RMIT<br>University</div>
   </header>
 
-  <section class="row intro">
+  <section class="cols">
     <div>
-      <h2><span class="n">1</span>The problem</h2>
-      <p>Connected cars broadcast their position several times a second over a direct
-        radio link, and the cars around them act on it. Every message
-        is signed, so a car with valid credentials can still sign a false
-        position, and no cryptographic check will reject it.</p>
-      <p>A receiver does have one independent clue: <b>how strongly the signal
-        arrived</b>, which falls with distance from where the sender really is.</p>
-    </div>
-    <div>
-      <h2><span class="n">2</span>Aims and approach</h2>
-      <ul>
-        <li><b>Can one receiver tell</b> that a correctly signed position is false?</li>
-        <li><b>Can many receivers tell</b> by pooling what they measured, and from what
-          size of lie?</li>
-        <li><b>Where would an informed attacker lie</b>, and what stops it?</li>
-        <li><b>Can roadside units learn the detector together</b> without sharing raw data?</li>
-      </ul>
-      <p style="margin-top:4mm">We simulated a highway in the ns-3 network simulator [2, 3]
-        with five traffic scenarios, ten kinds of attack, and honest cars that carry
-        realistic position error. The result is a dataset of
-        <b>7,916,708 labelled one-second windows</b> [1]. Part A of this project reported a
-        perfect score on a different dataset; an audit found 96.39 percent of its test
-        rows were also in training, so the data was rebuilt and checked for leakage
-        before any model was trained.</p>
-    </div>
-  </section>
-
-  <figure>
-    <svg id="schematic" width="785mm" height="74mm" viewBox="0 0 785 74"
-         font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
-      <rect x="0" y="22" width="785" height="30" fill="#e3e7ea"/>
-      <line x1="0" y1="37" x2="785" y2="37" stroke="#9aa4ac" stroke-width="0.8"
-            stroke-dasharray="6 6"/>
-      <!-- receivers along the road -->
-      <g fill="#2e7d7d">
-        <circle cx="40" cy="27" r="4"/><circle cx="120" cy="47" r="4"/>
-        <circle cx="250" cy="28" r="4"/><circle cx="560" cy="46" r="4"/>
-        <circle cx="660" cy="28" r="4"/><circle cx="750" cy="47" r="4"/>
-      </g>
-      <!-- signal lines from the true car -->
-      <g stroke="#2e7d7d" stroke-width="0.9" stroke-dasharray="2 2.5">
-        <line x1="330" y1="37" x2="40" y2="27"/><line x1="330" y1="37" x2="120" y2="47"/>
-        <line x1="330" y1="37" x2="250" y2="28"/><line x1="330" y1="37" x2="560" y2="46"/>
-        <line x1="330" y1="37" x2="660" y2="28"/><line x1="330" y1="37" x2="750" y2="47"/>
-      </g>
-      <!-- true car -->
-      <rect x="318" y="31" width="24" height="12" rx="3" fill="#1b3a5c"/>
-      <!-- claimed position -->
-      <rect x="440" y="31" width="24" height="12" rx="3" fill="none" stroke="#b4532a"
-            stroke-width="1.4" stroke-dasharray="3 2"/>
-      <line x1="346" y1="37" x2="434" y2="37" stroke="#b4532a" stroke-width="1.4"/>
-      <path d="M434 33.5 L440 37 L434 40.5 Z" fill="#b4532a"/>
-      <text x="330" y="16" text-anchor="middle" font-size="7" fill="#1b3a5c"
-            font-weight="700">where the car really is</text>
-      <text x="452" y="16" text-anchor="middle" font-size="7" fill="#b4532a"
-            font-weight="700">where its signed message says it is</text>
-      <text x="20" y="66" font-size="6.6" fill="#2e7d7d">receivers along the road
-        measure how strongly each message arrived, which points back to the real car</text>
-    </svg>
-    <figcaption><b>Figure 1.</b> The attack studied here. The message is correctly
-      signed, so only the physics of the radio signal can contradict the claim.</figcaption>
-  </figure>
-
-  <section class="row r1">
-    <figure>
-      <h2><span class="n">3</span>Result: a detection floor</h2>
-      <img src="figures/floor.svg" style="width:460mm;height:250mm" alt="Share of lying
-        cars caught against the size of the lie. One receiver catches none at any size.
-        Pooled receivers cross one half at 47.3 m.">
-      <figcaption><b>Figure 2.</b> Pooling turns an undetectable lie into a detectable
-        one above about two and a half times the 18.3 m error in locating a car from its signal; a smaller lie is lost in that error. Counting only lies that stay on the road, which a map
-        check would let through, the floor is 43.4 m, inside the same interval.
-        If each roadside unit pools only the cars near it, the floor is 55.3 m.</figcaption>
-    </figure>
-    <div>
-      <div class="panel">
-        <p><b>One receiver sees nothing.</b> A car that shifts every claim by the same
-          amount keeps its speed and heading consistent. On a detection score from
-          0 (none caught) to 1 (all caught), content checks score 0.000 on it and
-          five different learning methods reach at most 0.158.</p>
-        <div class="stat"><span class="big">0.000</span>detection score of content
-          checks on a consistent lie</div>
-      </div>
-      <div class="panel" style="margin-top:7mm">
-        <p><b>Pooling has to happen before the decision.</b> When receivers vote
-          with their verdicts instead of sharing measurements, detection of the same
-          lies stays at exactly 0.000.</p>
-        <div class="stat"><span class="big">47.3 m</span>detection floor, 95 percent
-          interval 40.6 to 57.3 m</div>
-      </div>
-      <div class="panel" style="margin-top:7mm">
-        <p><b>The honest cars matter.</b> Here they carry realistic position error.
-          Without it every lie is separable in principle and the detection task
-          becomes far easier than on a real road.</p>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2><span class="n">4</span>Result: the geometry has a weak side, and a map closes it</h2>
-    <figure>
-      <img src="figures/geometry.svg" style="width:785mm;height:95mm" alt="Receivers
-        spread along a straight road, almost on one line.">
-      <figcaption><b>Figure 3.</b> The receivers that heard one car span 2,414 m along
-        the road and 24 m across it. They measure distance along the road well and
-        across it poorly, so an attacker who knows this lies sideways.</figcaption>
-    </figure>
-    <div class="r2bottom">
-      <figure>
-        <img src="figures/direction.svg" style="width:420mm;height:120mm" alt="Predicted
-          weak direction near 80 degrees off the road matches where a search placed the
-          best lie, 75 to 85 degrees.">
-        <figcaption><b>Figure 4.</b> Receiver positions alone predict the attacker's
-          best direction: 79.7° off the road against 75 to 85° found by search, for the
-          estimator this system runs.</figcaption>
+      <h2>The problem</h2>
+      <p>Connected cars broadcast their position several times a second over a direct radio link,
+        and the cars around them brake and merge on it. Every message is signed, which proves which
+        car sent it. The signature says nothing about whether the position is true, so a car with
+        valid credentials can sign a false position and every cryptographic check still passes.</p>
+      <p>A receiver has one independent piece of evidence: how strongly the signal arrived, which
+        depends on where the sender really is.</p>
+      <figure style="margin-top:4mm">
+        <svg id="schematic" width="385mm" height="62mm" viewBox="0 0 385 62"
+             font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+          <rect x="0" y="22" width="385" height="26" fill="#e3e7ea"/>
+          <line x1="0" y1="35" x2="385" y2="35" stroke="#9aa4ac" stroke-width="0.6" stroke-dasharray="5 5"/>
+          <g fill="#2e7d7d"><circle cx="22" cy="26" r="3.2"/><circle cx="70" cy="44" r="3.2"/>
+            <circle cx="300" cy="44" r="3.2"/><circle cx="365" cy="26" r="3.2"/></g>
+          <g stroke="#2e7d7d" stroke-width="0.7" stroke-dasharray="2 2">
+            <line x1="140" y1="35" x2="22" y2="26"/><line x1="140" y1="35" x2="70" y2="44"/>
+            <line x1="140" y1="35" x2="300" y2="44"/><line x1="140" y1="35" x2="365" y2="26"/></g>
+          <rect x="129" y="29.5" width="22" height="11" rx="2.5" fill="#1b3a5c"/>
+          <rect x="230" y="29.5" width="22" height="11" rx="2.5" fill="none" stroke="#b4532a"
+                stroke-width="1.2" stroke-dasharray="3 2"/>
+          <line x1="155" y1="35" x2="224" y2="35" stroke="#b4532a" stroke-width="1.2"/>
+          <path d="M224 31.8 L230 35 L224 38.2 Z" fill="#b4532a"/>
+          <text x="140" y="15" text-anchor="middle" font-size="6.6" fill="#1b3a5c" font-weight="700">where the car is</text>
+          <text x="241" y="15" text-anchor="middle" font-size="6.6" fill="#b4532a" font-weight="700">where its signed message says it is</text>
+        </svg>
+        <figcaption><b>Figure 1.</b> The attack. Receivers along the road (teal) measure how strongly
+          each message arrives, which points back to the real car.</figcaption>
       </figure>
-      <div>
-        <table>
-          <caption><b>Table 1.</b> Share of lies caught when the attacker chooses its
-            claim to evade the radio check, at 5 percent false alarms. The map check
-            rejects claims more than 18 m from the road centre, which no honest car
-            exceeds here.</caption>
-          <tr><th>Size of lie</th><th>Free to leave the road</th><th>Map check at 18 m</th></tr>
-          <tr><td>25 m</td><td>0.002</td><td class="hi">0.006</td></tr>
-          <tr><td>50 m</td><td>0.013</td><td class="hi">0.230</td></tr>
-          <tr><td>100 m</td><td>0.056</td><td class="hi">0.854</td></tr>
-          <tr><td>200 m</td><td>0.241</td><td class="hi">0.943</td></tr>
-        </table>
-        <p style="margin-top:4mm">The two checks cover each other. A sideways lie
-          leaves the road and the map rejects it; a lie along the road is the one the
-          radio sees best.</p>
-      </div>
+    </div>
+    <div>
+      <h2>Our four aims</h2>
+      <ol class="aims">
+        <li><b>One receiver.</b> Can a single receiver tell that a correctly signed position is false?</li>
+        <li><b>Many receivers.</b> Can receivers that pool their measurements tell, and from what size of lie?</li>
+        <li><b>A smart attacker.</b> Where would an informed attacker lie, and what stops it?</li>
+        <li><b>Deployment.</b> Can roadside units learn the detector together without sharing raw data,
+          and does it keep working when conditions change?</li>
+      </ol>
+      <table style="margin-top:5mm">
+        <caption><b>Table 1.</b> What existing approaches check, and what they leave open.</caption>
+        <tr><th>Approach</th><th>Checks</th><th>Leaves open</th></tr>
+        <tr><td>Message signatures [5]</td><td>Which credential sent it</td><td>Whether the content is true</td></tr>
+        <tr><td>Plausibility checks [6]</td><td>Contradictions in one car's claims</td><td>A steady offset, which has none</td></tr>
+        <tr><td>Signal strength at one receiver [7]</td><td>Whether power fits the claimed distance</td><td>Fading, which looks the same</td></tr>
+        <tr><td>Cooperative checks [8]</td><td>One position, several receivers</td><td>The size of lie they can detect</td></tr>
+        <tr><td>Existing datasets [4]</td><td>Message content</td><td>Radio measurements</td></tr>
+        <tr><td>Federated detectors [9]</td><td>Training without sharing data</td><td>Published; we compare methods</td></tr>
+      </table>
     </div>
   </section>
 
-  <section class="row ends">
+  <section class="rule">
+    <h2>What we built</h2>
+    <p>We simulated a highway in the ns-3 network simulator with the 5G sidelink module, on which cars
+      talk to each other directly [2, 3]. Honest cars carry realistic positioning error; attackers carry
+      out ten kinds of misbehaviour, from false positions to flooding the channel. Every receiver records
+      what each message claimed and what its radio measured. We found no public misbehaviour dataset over a 5G sidelink that records this.</p>
+    <div class="numbers">
+      <div><b>6 km</b>of highway with realistic car following</div>
+      <div><b>7,916,708</b>labelled one-second windows [1]</div>
+      <div><b>10</b>kinds of attack, plus honest traffic</div>
+      <div><b>5</b>scenarios: traffic density, lie size, attacker timing, receiver placement</div>
+    </div>
+  </section>
+
+  <section class="cols rule">
+    <figure>
+      <h2>How often each attack is caught</h2>
+      <img src="figures/attacks.svg" style="width:385mm;height:170mm" alt="Share of each attack's
+        windows flagged. Flooding, random positions and fake identities are flagged most of the time;
+        steady position lies and replays rarely.">
+      <figcaption><b>Figure 2.</b> The baseline detector over all eleven classes scores 0.5319 on
+        held-out cars (averaged detection score, 0 to 1). Flooding is caught almost always. Steady position
+        lies and replays (rust) are mostly taken for honest traffic, which is the problem the rest of
+        this work addresses.</figcaption>
+    </figure>
+    <figure>
+      <h2>One receiver against pooled receivers</h2>
+      <img src="figures/floor.svg" style="width:385mm;height:185mm" alt="Share of lying cars caught
+        against the size of the lie. One receiver catches none at any size. Pooled receivers cross one
+        half at 47.3 m.">
+      <figcaption><b>Figure 3.</b> A single receiver catches no steady position lie at any size. Pooling
+        received power across receivers catches half of all lies at <b>47.3 m</b> (95 percent interval
+        40.6 to 57.3 m), about two and a half times the 18.3 m error in locating a car from its signal.
+        Pooling the receivers' verdicts instead catches none.</figcaption>
+    </figure>
+  </section>
+
+  <section class="cols rule">
+    <figure>
+      <h2>The weak direction and the map check</h2>
+      <img src="figures/direction.svg" style="width:385mm;height:105mm" alt="Predicted weak direction
+        near 80 degrees off the road matches where a search placed the best lie, 75 to 85 degrees.">
+      <figcaption><b>Figure 4.</b> The receivers sit almost in a line along the road, so they measure
+        position across it poorly. Their positions alone predict the attacker's best direction,
+        79.7° off the road, against 75 to 85° found by search. A lie in that direction leaves the road,
+        where a map check rejects it.</figcaption>
+    </figure>
+    <figure>
+      <h2>Training across roadside units</h2>
+      <img src="figures/federated.svg" style="width:385mm;height:150mm" alt="Validation score of
+        federated training approaching central training over 200 rounds.">
+      <figcaption><b>Figure 5.</b> Trained across 96 roadside units without sharing raw data and scored on
+        cars no unit had heard, the detector reaches 0.947 of central training on validation and 1.002
+        on test. Hiding each unit's update from the server costs no detection.</figcaption>
+    </figure>
+  </section>
+
+  <section class="cols rule">
     <div>
-      <h2><span class="n">5</span>Conclusions</h2>
-      <ol>
-        <li><b>Aim 1.</b> A single receiver cannot detect a consistent position lie
-          at any size in this data (Figure 2, flat line). The same holds on the
-          public VeReMi datasets [4].</li>
-        <li><b>Aim 2.</b> Pooling received power across receivers detects lies above
-          a floor of 47.3 m, 95 percent interval 40.6 to 57.3 m (Figure 2), or 55.3 m
-          (45.0 to 69.2 m) when each roadside unit pools only its own area. Sharing
-          verdicts instead of measurements detects none.</li>
-        <li><b>Aim 3.</b> Receiver geometry predicts where an informed attacker lies,
-          for the estimator this system runs (Figures 3 and 4). A map check covers
-          that direction (Table 1).</li>
-        <li><b>Aim 4.</b> Trained across roadside units (12 per road, eight simulated
-          runs) without sharing raw data, federated learning is level with central training on cars no unit has heard, and within about 5 percent of it on validation.
-          Moved into congested traffic, a detector recovers 88 percent of its loss
-          by refitting input scaling on unlabelled local data and fine-tuning briefly.</li>
+      <h2>Conclusions against the aims</h2>
+      <ol class="concl">
+        <li><b>One receiver</b> cannot detect a steady position lie at any size: content checks score
+          0.000 and the best of five learning methods 0.158 (Figure 3). The public VeReMi datasets show
+          the same [4].</li>
+        <li><b>Pooled receivers</b> detect it above 47.3 m, or 55.3 m when each roadside unit pools only
+          its own area (Figure 3).</li>
+        <li><b>The receivers' geometry</b> predicts where an informed attacker lies, and a map check
+          covers that direction (Figure 4).</li>
+        <li><b>Roadside units</b> can learn the detector together (Figure 5). After denser traffic or a
+          weaker radio, refitting its input scaling on unlabelled local data recovers 77 and 87 percent
+          of the loss; attackers lying in bursts cost only 0.0230 and refitting does not help.</li>
       </ol>
     </div>
     <div>
-      <h2><span class="n">6</span>Limits and next step</h2>
-      <p>All measurements are simulated, on one straight highway, and the radio model
-        has not yet been checked against real sidelink measurements.
-        <b>Next: fit the same propagation law to a public set of real measurements</b>,
-        then test the floor on a junction and a curve, where the receivers no longer
-        sit in a line.</p>
+      <h2>Limitations and next steps</h2>
+      <p>Every result comes from simulating one straight highway, and the radio model has not been
+        checked against real measurements. The next step is to fit the same propagation model to real
+        sidelink measurements, then test a junction and a curve, where the receivers no longer sit in
+        a line.</p>
       <div class="qrbox">
         <img src="figures/qr.svg" alt="QR code to the project website">
-        <p><b>Scan for the walkthrough and a live highway monitor:</b> every car
-          judged by a detector that never saw it. <b>catch-me-lying.vercel.app</b></p>
+        <p><b>Scan for the walkthrough and a live highway monitor</b>, where every car is judged by a
+          detector that never saw it. <b>catch-me-lying.vercel.app</b></p>
       </div>
     </div>
   </section>
@@ -286,14 +232,15 @@
   <footer>
     <h3>References</h3>
     <ol>
-      <li>L. L. Gowda, CV2X-IDS dataset, version 1.1.0, RMIT University, 2026,
-        CC BY 4.0.</li>
-      <li>G. F. Riley and T. R. Henderson, "The ns-3 network simulator," Springer,
-        2010.</li>
-      <li>N. Patriciello et al., "An E2E simulator for 5G NR networks," Simul. Model.
-        Pract. Theory, 2019.</li>
-      <li>R. W. van der Heijden, T. Lukaseder and F. Kargl, "VeReMi: A dataset for
-        comparable evaluation of misbehavior detection," SecureComm, 2018.</li>
+      <li>L. L. Gowda, CV2X-IDS dataset, version 1.1.0, RMIT University, 2026, CC BY 4.0, available from the authors on request.</li>
+      <li>G. F. Riley and T. R. Henderson, "The ns-3 network simulator," Springer, 2010.</li>
+      <li>N. Patriciello et al., "An E2E simulator for 5G NR networks," Simul. Model. Pract. Theory, 2019.</li>
+      <li>R. W. van der Heijden, T. Lukaseder and F. Kargl, "VeReMi: A dataset for comparable evaluation of misbehavior detection," SecureComm, 2018.</li>
+      <li>IEEE Std 1609.2-2022 and ETSI TS 103 097 V2.1.1, security services and certificate formats for vehicle messages.</li>
+      <li>R. W. van der Heijden et al., "Survey on misbehavior detection in cooperative intelligent transportation systems," IEEE Commun. Surveys Tuts., 2019.</li>
+      <li>ETSI TR 103 460 V2.1.1, pre-standardization study on misbehaviour detection, 2020.</li>
+      <li>T. Leinmüller, E. Schoch and F. Kargl, "Position verification approaches for vehicular ad hoc networks," IEEE Wireless Commun., 2006.</li>
+      <li>D. Gurjar et al., "Federated learning-based misbehavior classification system for VANET intrusion detection," J. Intell. Inf. Syst., 2025.</li>
     </ol>
   </footer>
 </div>

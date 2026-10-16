@@ -185,6 +185,63 @@ def fig_direction(w_mm, h_mm):
     save(fig, "direction")
 
 
+def fig_attacks(w_mm, h_mm):
+    """How often the release baseline flags each attack: one minus the honest
+    column of the row-normalised confusion matrix over the 333,990 frozen test
+    windows (campaign_gnss/logs/confusion_matrix.log), the model behind 0.5319."""
+    text = (RUNS / "campaign_gnss/logs/confusion_matrix.log").read_text()
+    rows = re.findall(r"^\| (\d+) (\w+) \| ([\d.]+) \|", text, re.M)
+    if len(rows) != 11:
+        sys.exit("FAILED: confusion matrix rows not found")
+    plain = {"1": "Steady position lie, 22 to 233 m", "3": "Random position in every message",
+             "4": "Replaying old positions", "5": "False speed", "6": "Fake identities",
+             "7": "Flooding the channel", "8": "Hoarding radio slots (no effect here)",
+             "11": "Steady position lie, 1 to 25 m", "12": "Flooding at a low rate",
+             "13": "Steady position lie, 47 to 83 m"}
+    data = sorted(((plain[c], 1 - float(b), c in ("1", "11", "13", "4"))
+                   for c, _, b in rows if c != "0"), key=lambda r: r[1])
+    fig = plt.figure(figsize=(w_mm * MM, h_mm * MM))
+    ax = fig.add_axes([0.42, 0.16, 0.55, 0.82])
+    y = np.arange(len(data))
+    ax.barh(y, [d[1] for d in data], color=[RUST if d[2] else NAVY for d in data], height=0.68)
+    ax.set_yticks(y)
+    ax.set_yticklabels([d[0] for d in data])
+    ax.set_xlim(0, 1)
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
+    ax.set_xticklabels(["0", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("share of the attack's held-out windows flagged as an attack")
+    ax.tick_params(axis="y", length=0)
+    ax.grid(axis="x", alpha=0.3)
+    save(fig, "attacks")
+
+
+def fig_fed(w_mm, h_mm):
+    """Validation score of federated averaging over the 96 roadside unit
+    regions against central training on the same rows (fedB_regions.json, the
+    series behind the report's federated figure)."""
+    d = json.loads((RUNS / "campaign_gnss/logs/fedB_regions.json").read_text())
+    cen, key = d["central"], "fedavg|E=2"
+    if key not in d["fed"]:
+        sys.exit(f"FAILED: {key} not in fedB_regions.json")
+    eps = sorted(int(e) for e in next(iter(cen.values())))
+    cy = np.mean([[cen[s][str(e)][0] for e in eps] for s in cen], axis=0)
+    cps = d["checkpoints"]
+    fy = [np.mean([d["fed"][key][s][str(r)][0] for s in d["fed"][key]]) for r in cps]
+    fig = plt.figure(figsize=(w_mm * MM, h_mm * MM))
+    ax = fig.add_axes([0.13, 0.2, 0.84, 0.76])
+    ax.plot(eps, cy, color=GREY, lw=2.2, label="central training on all the data")
+    ax.plot(cps, fy, "o-", color=TEAL, lw=4, ms=13, label="trained across roadside units")
+    ax.set_xscale("log")
+    ax.set_xticks([1, 10, 100, 200])
+    ax.set_xticklabels(["1", "10", "100", "200"])
+    ax.minorticks_off()
+    ax.set_xlabel("training rounds (passes over the data for central training)")
+    ax.set_ylabel("validation score")
+    ax.legend(loc="lower right", frameon=False)
+    ax.grid(alpha=0.3)
+    save(fig, "federated")
+
+
 def make_qr():
     import segno
     segno.make(DEMO, error="h").save(str(FIGS / "qr.svg"), scale=10, border=4,
@@ -285,9 +342,10 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     if not args.check:
-        fig_floor(460, 250)
-        fig_geometry(785, 95)
-        fig_direction(420, 120)
+        fig_attacks(385, 170)
+        fig_floor(385, 185)
+        fig_direction(385, 105)
+        fig_fed(385, 150)
         make_qr()
         render_pdf()
     bad = check(audit())
