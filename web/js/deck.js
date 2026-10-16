@@ -105,7 +105,7 @@
   Deck.prev = () => show(cur - 1);
 
   /* footer chrome: the five parts and the slide number */
-  const PARTS = ["The problem", "What we built", "The result", "Deployment", "What's new"];
+  const PARTS = ["The problem", "What we built", "The result", "Deployment", "What is new"];
   const bar = D.querySelector(".bar");
   const parts = D.querySelector(".chrome .parts");
   const num = D.querySelector(".chrome .num");

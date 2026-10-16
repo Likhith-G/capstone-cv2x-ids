@@ -13,7 +13,7 @@
 <div class="viewport"><div class="stage">
   <header class="top">
     <div class="title">
-      <span class="live"><i></i>REPLAY</span>
+      <span class="live"><i></i>Replay</span>
       <div><h1>Highway monitor</h1>
         <div class="sub">Recorded 5G sidelink simulation, replayed in real time. Every car is judged by a detector that never saw it.</div></div>
     </div>
@@ -21,10 +21,10 @@
   </header>
 
   <section class="panel road" aria-label="The 6 km highway with every car and the detector's alerts">
-    <h2>The highway, <span id="km"></span> km in three rows</h2>
+    <h2>The <span id="km"></span> km highway, shown in three rows</h2>
     <div class="legend">
       <span><i style="background:#d8e2ec"></i>car</span>
-      <span><i class="ring"></i>alert, coloured by attack</span>
+      <span><i class="ring"></i>alert, coloured by attack type</span>
       <span><i class="ghost"></i>where a liar claims to be</span>
       <span><i style="background:#45bdb4"></i>roadside unit</span>
     </div>
@@ -34,7 +34,7 @@
 
   <div class="bottom">
     <section class="panel" aria-label="Live performance">
-      <h2>Live performance, these drives</h2>
+      <h2>Detection so far, on these drives</h2>
       <div class="kpi-main">
         <div><div class="v" id="f1"></div><div class="k">macro F1</div></div>
         <div><div class="v" id="mcc"></div><div class="k">MCC</div></div>
@@ -43,20 +43,20 @@
       <div class="kpis">
         <div><div class="v" id="dps">0</div><div class="k">decisions this second</div></div>
         <div><div class="v" id="aps">0</div><div class="k">alerts this second</div></div>
-        <div><div class="v" id="us">0</div><div class="k">microseconds per decision, batched by the second</div></div>
+        <div><div class="v" id="us">0</div><div class="k">microseconds per decision, batched</div></div>
         <div><div class="v" id="fa">0</div><div class="k">honest cars alerted</div></div>
       </div>
-      <div class="ref">Published baseline on the frozen test split: <b>macro F1 <span id="pub-f1"></span></b>, <b>MCC <span id="pub-mcc"></span></b>. The live numbers cover every car in these drives, so they differ.</div>
+      <div class="ref">Scores cover every car in these drives. The published baseline, on the frozen test split, is macro F1 <b><span id="pub-f1"></span></b> and MCC <b><span id="pub-mcc"></span></b>.</div>
     </section>
 
     <section class="panel" aria-label="Alert feed">
-      <h2>Alert feed, checked against the truth</h2>
+      <h2>Alerts, each checked against what the car was doing</h2>
       <ul class="feed" id="feed"></ul>
       <div class="foot">An alert is raised when most receivers that heard a car call it an attack. Each is then checked against what the car was really doing.</div>
     </section>
 
     <section class="panel" aria-label="Share of each attack caught">
-      <h2>Caught so far, by attack</h2>
+      <h2>Share of each attack caught</h2>
       <div class="score" id="score"></div>
       <div class="foot">Share of each kind of car's seconds that raised an alert.</div>
     </section>

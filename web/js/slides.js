@@ -4,9 +4,9 @@
 (function () {
   "use strict";
   const K = window.Deck, D = K.data;
-  const TEAL = "#45bdb4", RUST = "#ee6d3d", INK = "#eef3f8", INK2 = "#a8bccd", INK3 = "#6a8199", INK4 = "#34495f",
+  const TEAL = "#4cb5ac", RUST = "#e0703f", INK = "#eef3f8", INK2 = "#a8bccd", INK3 = "#6a8199", INK4 = "#34495f",
     AMBER = "#f5c66a", LINE = "rgba(150,185,215,.16)";
-  const MONO = 'ui-monospace,"SF Mono",Menlo,monospace', SANS = '"Helvetica Neue",Helvetica,Arial,sans-serif';
+  const SANS = '"Helvetica Neue",Helvetica,Arial,sans-serif';
   const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   const font = (px, w = 400, f = SANS) => `${w} ${px}px ${f}`;
   function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); }
@@ -96,8 +96,8 @@
           ctx.fillStyle = INK2; ctx.fillText(label, lx + 26, ly + row * 40);
           lx += w;
         });
-        ctx.fillStyle = INK3; ctx.font = font(18, 400, MONO);
-        ctx.fillText("EACH DOT: 10,000 WINDOWS", 0, top - 4);
+        ctx.fillStyle = INK3; ctx.font = font(22, 400);
+        ctx.fillText("Each dot is 10,000 windows", 0, top - 4);
       },
     };
   });
@@ -194,10 +194,10 @@
     function lane(y, label, liar) {
       const W = C.w, rx = 110, claimX = W * 0.47, cx = liar ? W * 0.84 : claimX;
       ctx.fillStyle = "rgba(13,27,41,.9)"; rr(ctx, 0, y - 100, W, 200, 26); ctx.fill();
-      ctx.font = font(21, 500, MONO); ctx.fillStyle = INK3; ctx.textBaseline = "alphabetic";
+      ctx.font = font(25, 500); ctx.fillStyle = INK3; ctx.textBaseline = "alphabetic";
       ctx.fillText(label, 28, y - 62);
       ctx.fillStyle = TEAL; ctx.beginPath(); ctx.moveTo(rx, y - 30); ctx.lineTo(rx + 19, y + 24); ctx.lineTo(rx - 19, y + 24); ctx.fill();
-      ctx.font = font(17, 400, MONO); ctx.fillStyle = INK3; ctx.textAlign = "center"; ctx.fillText("receiver", rx, y + 56); ctx.textAlign = "left";
+      ctx.font = font(21, 400); ctx.fillStyle = INK3; ctx.textAlign = "center"; ctx.fillText("receiver", rx, y + 56); ctx.textAlign = "left";
       for (let k = 0; k < 6; k++) {
         const u = ((t * 0.6 + k / 6) % 1), x = cx - (cx - rx) * u;
         const a = 0.8 * (1 - u * 0.75) * (liar ? 1 : (x < (rx + claimX) / 2 + 60 ? 0.45 : 1));
@@ -209,10 +209,10 @@
         const g = ctx.createRadialGradient(fx, y, 0, fx, y, 90);
         g.addColorStop(0, "rgba(106,129,153,.42)"); g.addColorStop(1, "rgba(106,129,153,0)");
         ctx.fillStyle = g; ctx.fillRect(fx - 90, y - 90, 180, 180);
-        ctx.font = font(18, 400, MONO); ctx.fillStyle = INK2; ctx.textAlign = "center"; ctx.fillText("a fade", fx, y + 62); ctx.textAlign = "left";
+        ctx.font = font(22, 400); ctx.fillStyle = INK2; ctx.textAlign = "center"; ctx.fillText("a fade", fx, y + 62); ctx.textAlign = "left";
       } else {
         tether(ctx, cx, y, claimX, y, 0.9); ghost(ctx, claimX, y, 64, 32);
-        ctx.font = font(18, 400, MONO); ctx.fillStyle = RUST; ctx.textAlign = "center"; ctx.fillText("claims to be here", claimX, y + 62);
+        ctx.font = font(22, 400); ctx.fillStyle = RUST; ctx.textAlign = "center"; ctx.fillText("claims to be here", claimX, y + 62);
         ctx.fillStyle = INK2; ctx.fillText("really here", cx, y + 62); ctx.textAlign = "left";
       }
       car(ctx, cx, y, 64, 32, "#d8e2ec", "rgba(216,226,236,.4)");
@@ -231,13 +231,13 @@
         const y1 = H * 0.24, y2 = H * 0.68, mw = 26;
         const L = W - 150;
         ctx.save(); ctx.beginPath(); ctx.rect(0, 0, L, H); ctx.clip();
-        C.w = L; lane(y1, "HONEST CAR, IN A FADE", false); lane(y2, "LIAR, REALLY FARTHER, CLAIMING TO BE HERE", true); C.w = W;
+        C.w = L; lane(y1, "An honest car, its signal weakened by fading", false); lane(y2, "A lying car, really farther away, claiming to be here", true); C.w = W;
         ctx.restore();
         meter(W - 100, y1, 150); meter(W - 100, y2, 150);
-        ctx.font = font(18, 500, MONO); ctx.fillStyle = INK3; ctx.textAlign = "center";
-        ctx.fillText("POWER", W - 87, y1 - 98); ctx.fillText("POWER", W - 87, y2 - 98);
+        ctx.font = font(22, 500); ctx.fillStyle = INK3; ctx.textAlign = "center";
+        ctx.fillText("Power", W - 87, y1 - 98); ctx.fillText("Power", W - 87, y2 - 98);
         ctx.font = font(64, 300); ctx.fillStyle = INK; ctx.fillText("=", W - 87, (y1 + y2) / 2 + 22);
-        ctx.font = font(26, 600); ctx.fillStyle = INK; ctx.fillText("Same reading at the receiver", (W - 150) / 2, H * 0.95); ctx.textAlign = "left";
+        ctx.font = font(26, 600); ctx.fillStyle = INK; ctx.fillText("The receiver measures the same power from both", (W - 150) / 2, H * 0.95); ctx.textAlign = "left";
         void mw;
       },
     };
@@ -256,7 +256,7 @@
         const X = (m) => L + (Math.min(m, XMAX) / XMAX) * pw, Y = (v) => T + (1 - v) * ph;
         ctx.clearRect(0, 0, W, H);
         // grid and axes
-        ctx.font = font(19, 400, MONO); ctx.fillStyle = INK3; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+        ctx.font = font(23, 400); ctx.fillStyle = INK3; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
         for (const v of [0, 0.25, 0.5, 0.75, 1]) {
           ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(W - R, Y(v)); ctx.stroke();
           ctx.textAlign = "right"; ctx.fillText(Math.round(v * 100) + "%", L - 14, Y(v) + 6);
@@ -315,7 +315,7 @@
           const a = K.ease((cyc - 8) / 0.8);
           ctx.fillStyle = rgba(RUST, 0.10 * a);
           ctx.fillRect(0, 0, W, P(0, -12)[1]); ctx.fillRect(0, P(0, 12)[1], W, H);
-          ctx.font = font(19, 500, MONO); ctx.fillStyle = rgba(RUST, a); ctx.fillText("MAP CHECK: OFF THE ROAD", 24, 40);
+          ctx.font = font(23, 500); ctx.fillStyle = rgba(RUST, a); ctx.fillText("Rejected by the map check: off the road", 24, 40);
         }
         // road
         const [, ry0] = P(0, -12), [, ry1] = P(0, 12);
@@ -333,8 +333,8 @@
         const lo = (F.search_lo_deg * Math.PI) / 180, hi = (F.search_hi_deg * Math.PI) / 180, R = 210 * s;
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R, -hi, -lo); ctx.closePath();
         ctx.fillStyle = rgba(AMBER, 0.08); ctx.fill();
-        ctx.font = font(18, 400, MONO); ctx.fillStyle = rgba(AMBER, 0.8);
-        ctx.fillText("WHERE A SEARCH PUT THE BEST LIE", cx + 30 * s, cy - R - 12);
+        ctx.font = font(22, 400); ctx.fillStyle = rgba(AMBER, 0.8);
+        ctx.fillText("Where a search found the best lie", cx + 30 * s, cy - R - 12);
         // the attacker's ghost: along the road (caught), then sideways
         const u = K.ease(((cyc % 4) - 0.3) / 1.6);
         const dir = phase === 0 ? 0 : ang, dist = 150 * u;
@@ -346,10 +346,10 @@
           const caught = phase !== 1;
           ringAt(ctx, gx, gy, 34, 0.9, caught ? RUST : TEAL, 3);
           ctx.font = font(26, 700); ctx.fillStyle = caught ? RUST : TEAL; ctx.textAlign = "center";
-          ctx.fillText(phase === 0 ? "Caught by the radio" : phase === 1 ? "Slips past the radio" : "Caught by the map", gx, gy + (phase === 0 ? 66 : -50));
+          ctx.fillText(phase === 0 ? "Caught by the radio check" : phase === 1 ? "Missed by the radio check" : "Caught by the map check", gx, gy + (phase === 0 ? 66 : -50));
           ctx.textAlign = "left";
         }
-        ctx.font = font(18, 400, MONO); ctx.fillStyle = INK3; ctx.fillText("RECEIVERS ALONG THE ROAD", 24, ry1 + 34);
+        ctx.font = font(22, 400); ctx.fillStyle = INK3; ctx.fillText("Receivers along the road", 24, ry1 + 34);
       },
     };
   });
@@ -388,18 +388,18 @@
         ctx.save(); ctx.translate(sx, sy); ctx.beginPath();
         for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; k ? ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 30) : ctx.moveTo(Math.cos(a) * 30, Math.sin(a) * 30); }
         ctx.closePath(); ctx.fillStyle = "#10233a"; ctx.fill(); ctx.strokeStyle = TEAL; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
-        ctx.font = font(18, 500, MONO); ctx.fillStyle = INK3; ctx.textAlign = "center";
-        ctx.fillText("SERVER: SEES ONLY UPDATES", sx, sy + 58);
-        ctx.fillText(`${N} ROADSIDE UNITS`, W / 2, ay + 156);
+        ctx.font = font(22, 500); ctx.fillStyle = INK3; ctx.textAlign = "center";
+        ctx.fillText("The server sees only model updates", sx, sy + 58);
+        ctx.fillText(`${N} roadside units`, W / 2, ay + 156);
         // the curve: central every epoch, federated at its four checkpoints
         const L = 80, R = 20, T = H * 0.58, B = 60, pw = W - L - R, phh = H - T - B;
         const lo = 0.38, hi = 0.6;
         const X = (e) => L + (Math.log(e) / Math.log(F.rounds)) * pw, Y = (v) => T + (1 - (v - lo) / (hi - lo)) * phh;
-        ctx.strokeStyle = LINE; ctx.lineWidth = 1; ctx.font = font(17, 400, MONO); ctx.fillStyle = INK3; ctx.textAlign = "right";
+        ctx.strokeStyle = LINE; ctx.lineWidth = 1; ctx.font = font(21, 400); ctx.fillStyle = INK3; ctx.textAlign = "right";
         for (const v of [0.4, 0.5, 0.6]) { ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(W - R, Y(v)); ctx.stroke(); ctx.fillText(v.toFixed(1), L - 10, Y(v) + 6); }
         ctx.textAlign = "center";
         for (const e of [1, 10, 100, F.rounds]) ctx.fillText(String(e), X(e), H - B + 28);
-        ctx.fillText("ROUNDS (FEDERATED) · EPOCHS (CENTRAL)", L + pw / 2, H - 8);
+        ctx.fillText("Training rounds (federated) or epochs (central)", L + pw / 2, H - 8);
         ctx.strokeStyle = INK3; ctx.lineWidth = 2.4; ctx.beginPath();
         F.epochs.forEach((e, i) => { if (e > roundShown) return; const x = X(e), y = Y(F.central[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
         ctx.stroke();
@@ -410,9 +410,9 @@
         ctx.textAlign = "left"; ctx.font = font(20); ctx.fillStyle = INK2;
         ctx.fillText("central training", L + 12, Y(lo) - 10);
         ctx.fillStyle = TEAL; ctx.fillText("federated", L + 210, Y(lo) - 10);
-        ctx.textAlign = "right"; ctx.font = font(22, 600, MONO); ctx.fillStyle = INK;
-        ctx.fillText(`ROUND ${roundShown}`, W - R, T - 18);
-        ctx.font = font(16, 400, MONO); ctx.fillStyle = INK3; ctx.fillText("VALIDATION MACRO F1", W - R, T - 44);
+        ctx.textAlign = "right"; ctx.font = font(26, 600); ctx.fillStyle = INK;
+        ctx.fillText(`Round ${roundShown}`, W - R, T - 18);
+        ctx.font = font(20, 400); ctx.fillStyle = INK3; ctx.fillText("Validation macro F1", W - R, T - 44);
         ctx.textAlign = "left";
       },
     };

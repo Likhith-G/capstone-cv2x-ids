@@ -11,7 +11,7 @@
 
   const CLASSES = META.classes, FPS = 1000 / META.frame_ms, ROAD = META.road_m;
   const ALERT_SHARE = 0.5; // most receivers that heard the car say attack
-  const COL = { 1: "#ee6d3d", 3: "#ee6d3d", 11: "#ee6d3d", 13: "#ee6d3d", 4: "#a68bf0", 5: "#f08fb8", 6: "#6aa8f0", 7: "#f5c66a", 12: "#f5c66a", 8: "#6a8199", 0: "#a8bccd" };
+  const COL = { 1: "#e0703f", 3: "#e0703f", 11: "#e0703f", 13: "#e0703f", 4: "#a68bf0", 5: "#f08fb8", 6: "#6aa8f0", 7: "#f5c66a", 12: "#f5c66a", 8: "#6a8199", 0: "#a8bccd" };
   const NAME = { 0: "Honest", 1: "Position lie, large", 3: "Random position", 4: "Replay", 5: "Speed lie", 6: "Fake identities",
     7: "Flooding", 8: "Slot hoarding", 11: "Position lie, small", 12: "Low-rate flooding", 13: "Position lie, medium" };
   const ORDER = [7, 3, 12, 6, 5, 1, 4, 13, 11, 8];
@@ -54,7 +54,7 @@
 
   /* state */
   const nDrives = Object.keys(DRIVES).length;
-  let d = 1, drive = null, t = 0, lastSec = -1, seconds = null, alertNow = new Map(), prevAlert = new Set();
+  let d = 1, drive = null, t = 0, lastSec = -1, seconds = null, alertNow = new Map(), prevAlert = new Set(), alertSince = new Map();
   let conf, seen, alerted, spark;
   function resetLoop() {
     conf = CLASSES.map(() => CLASSES.map(() => 0));
@@ -67,7 +67,59 @@
     seconds = new Map();
     for (const s of drive.seconds) { if (!seconds.has(s[0])) seconds.set(s[0], []); seconds.get(s[0]).push(s); }
     drive.byId = new Map(drive.stations.map((s) => [s.id, s]));
+    tracks(drive);
     $("drive").textContent = `Drive ${n} of ${nDrives}`;
+  }
+
+  /* Smooth tracks. A message is not sent every 200 ms frame, and a car with
+     fake identities sends each message under one of them, so drawing each
+     claimed station only when it transmitted makes cars blink. Instead each
+     physical car (one transmitter) gets one track from all its messages, with
+     gaps filled by straight-line interpolation, and each identity keeps the
+     offset it last claimed from the car for up to two seconds. */
+  function tracks(dr) {
+    if (dr.veh) return;
+    const N = dr.f1 - dr.f0 + 1, NA = -99999, HOLD = 10;
+    const veh = new Map();
+    for (const s of dr.stations) {
+      let v = veh.get(s.tx);
+      if (!v) { v = { x: new Float64Array(N).fill(NaN), y: new Float64Array(N).fill(NaN) }; veh.set(s.tx, v); }
+      s.veh = v;
+      for (let f = 0; f < N; f++) {
+        const tx = s.pos[f * 4];
+        if (tx !== NA && isNaN(v.x[f])) { v.x[f] = tx / 10; v.y[f] = s.pos[f * 4 + 1] / 10; }
+      }
+    }
+    for (const v of veh.values()) {
+      let prev = NaN; // unwrap the ring road so a car crossing 6 km does not jump back to 0
+      for (let f = 0; f < N; f++) {
+        if (isNaN(v.x[f])) continue;
+        if (!isNaN(prev)) { while (v.x[f] - prev > ROAD / 2) v.x[f] -= ROAD; while (prev - v.x[f] > ROAD / 2) v.x[f] += ROAD; }
+        prev = v.x[f];
+      }
+      const known = []; for (let f = 0; f < N; f++) if (!isNaN(v.x[f])) known.push(f);
+      if (!known.length) continue;
+      for (let f = 0; f < known[0]; f++) { v.x[f] = v.x[known[0]]; v.y[f] = v.y[known[0]]; }
+      for (let k = 0; k + 1 < known.length; k++) {
+        const a = known[k], b = known[k + 1];
+        for (let f = a + 1; f < b; f++) { const u = (f - a) / (b - a); v.x[f] = v.x[a] + (v.x[b] - v.x[a]) * u; v.y[f] = v.y[a] + (v.y[b] - v.y[a]) * u; }
+      }
+      for (let f = known[known.length - 1] + 1; f < N; f++) { v.x[f] = v.x[known[known.length - 1]]; v.y[f] = v.y[known[known.length - 1]]; }
+    }
+    for (const s of dr.stations) {
+      s.ox = new Float32Array(N).fill(NaN); s.oy = new Float32Array(N).fill(NaN);
+      let last = -1, lx = 0, ly = 0;
+      for (let f = 0; f < N; f++) {
+        const tx = s.pos[f * 4];
+        if (tx !== NA) {
+          let dx = s.pos[f * 4 + 2] / 10 - tx / 10;
+          dx = ((dx % ROAD) + ROAD * 1.5) % ROAD - ROAD / 2;
+          lx = dx; ly = s.pos[f * 4 + 3] / 10 - s.pos[f * 4 + 1] / 10; last = f;
+        }
+        if (last >= 0 && f - last <= HOLD) { s.ox[f] = lx; s.oy[f] = ly; }
+      }
+    }
+    dr.veh = [...veh.values()];
   }
 
   /* running scores from the cumulative confusion matrix, as sklearn computes them */
@@ -102,6 +154,7 @@
         if (!prevAlert.has(sid)) feed(win, sid, top, truth, k, n);
       }
     }
+    for (const sid of now.keys()) if (!prevAlert.has(sid)) alertSince.set(sid, performance.now() / 1000);
     prevAlert = new Set(now.keys()); alertNow = now;
     for (const [i, j, n] of drive.conf[w] || []) conf[i][j] += n;
     const sc = scores();
@@ -121,7 +174,7 @@
   function feed(win, sid, top, truth, k, n) {
     const st = drive.byId.get(sid), f = Math.max(0, Math.min(drive.f1, win * FPS) - drive.f0);
     const x = st ? st.pos[f * 4 + 2] / 10 : NaN;
-    const tag = truth === 0 ? ["fa", "false alarm"] : truth === top ? ["ok", "correct"] : ["type", "other attack"];
+    const tag = truth === 0 ? ["fa", "false alarm"] : truth === top ? ["ok", "correct"] : ["type", "different attack"];
     const li = D.createElement("li");
     li.innerHTML = `<span class="tm">${Math.floor(win / 60)}:${String(win % 60).padStart(2, "0")}</span>` +
       `<span class="km">${isNaN(x) ? "" : fmt((((x % ROAD) + ROAD) % ROAD) / 1000, 2) + " km"}</span>` +
@@ -147,7 +200,7 @@
     if (ref) {
       ctx.setLineDash([5, 5]); ctx.strokeStyle = "rgba(238,243,248,.45)"; ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(0, Y(ref)); ctx.lineTo(W, Y(ref)); ctx.stroke(); ctx.setLineDash([]);
-      ctx.font = '13px ui-monospace,"SF Mono",Menlo,monospace'; ctx.fillStyle = "rgba(238,243,248,.6)";
+      ctx.font = '16px "Helvetica Neue",Helvetica,Arial,sans-serif'; ctx.fillStyle = "rgba(238,243,248,.6)";
       ctx.fillText("published baseline", 4, Y(ref) - 6);
     }
   }
@@ -168,7 +221,7 @@
       ctx.strokeStyle = "rgba(220,230,240,.28)"; ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(L, cy - 12 * ACROSS); ctx.lineTo(W - Rr, cy - 12 * ACROSS); ctx.moveTo(L, cy + 12 * ACROSS); ctx.lineTo(W - Rr, cy + 12 * ACROSS); ctx.stroke();
       ctx.strokeStyle = "rgba(245,198,106,.30)"; ctx.beginPath(); ctx.moveTo(L, cy); ctx.lineTo(W - Rr, cy); ctx.stroke();
-      ctx.font = '14px ui-monospace,"SF Mono",Menlo,monospace'; ctx.fillStyle = "#6a8199"; ctx.textAlign = "center";
+      ctx.font = '17px "Helvetica Neue",Helvetica,Arial,sans-serif'; ctx.fillStyle = "#7f93a7"; ctx.textAlign = "center";
       for (let m = 0; m <= SEG; m += 500) {
         const x = L + (m / SEG) * (W - L - Rr);
         ctx.fillText(fmt((r * SEG + m) / 1000, 1) + " km", Math.min(W - 34, Math.max(30, x)), cy + 13 * ACROSS + 22);
@@ -181,33 +234,37 @@
       const u = (time * 0.6 + x / 1000) % 1;
       ctx.strokeStyle = `rgba(69,189,180,${0.45 * (1 - u)})`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(px, py, 6 + u * 26, 0, 7); ctx.stroke();
     }
-    const fi = Math.floor(t - drive.f0), u = t - drive.f0 - fi;
-    const at = (s, k) => {
-      const a = s.pos[fi * 4 + k], b = s.pos[(fi + 1) * 4 + k];
-      if (a === undefined || a === -99999) return null;
-      return (b === undefined || b === -99999 || Math.abs(b - a) > 2000 ? a : a + (b - a) * u) / 10;
-    };
-    const pulse = 0.5 + 0.5 * Math.sin(time * 9);
+    const N = drive.f1 - drive.f0 + 1;
+    const fi = Math.max(0, Math.min(N - 2, Math.floor(t - drive.f0))), u = Math.max(0, Math.min(1, t - drive.f0 - fi));
+    for (const v of drive.veh) {
+      const x = v.x[fi] + (v.x[fi + 1] - v.x[fi]) * u, y = v.y[fi] + (v.y[fi + 1] - v.y[fi]) * u;
+      if (isNaN(x)) continue;
+      v.px = x; v.py = y;
+      const [ax, ay] = map(x, y);
+      ctx.fillStyle = "#d8e2ec"; ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(ax - 6, ay - 3, 12, 6, 2) : ctx.rect(ax - 6, ay - 3, 12, 6); ctx.fill();
+    }
     for (const s of drive.stations) {
-      const tx = at(s, 0), ty = at(s, 1), cx = at(s, 2), cy = at(s, 3);
-      if (tx === null) continue;
-      const [ax, ay, ar] = map(tx, ty);
-      if (s.attack !== 0 && cx !== null && Math.hypot(cx - tx, cy - ty) > 8) {
-        const [gx, gy, gr] = map(cx, cy);
+      const v = s.veh; if (v.px === undefined) continue;
+      const [ax, ay, ar] = map(v.px, v.py);
+      const ox = s.ox[fi], oy = s.oy[fi];
+      let rx = ax, ry = ay;
+      if (s.attack !== 0 && !isNaN(ox) && Math.hypot(ox, oy) > 8) {
+        // a claim far off the road is drawn at the edge of its own row, not in the next one
+        const [gx, gy, gr] = map(v.px + ox, v.py + Math.max(-26, Math.min(26, oy)));
+        rx = gx; ry = gy;
         if (gr === ar) {
-          ctx.setLineDash([4, 4]); ctx.strokeStyle = "rgba(238,109,61,.55)"; ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]); ctx.strokeStyle = "rgba(238,109,61,.5)"; ctx.lineWidth = 1.2;
           ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(gx, gy); ctx.stroke(); ctx.setLineDash([]);
         }
         ctx.strokeStyle = "rgba(238,109,61,.85)"; ctx.lineWidth = 1.4; ctx.setLineDash([3, 2]);
         ctx.strokeRect(gx - 6, gy - 3, 12, 6); ctx.setLineDash([]);
       }
-      ctx.fillStyle = "#d8e2ec"; ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(ax - 6, ay - 3, 12, 6, 2) : ctx.rect(ax - 6, ay - 3, 12, 6); ctx.fill();
       const cls = alertNow.get(s.id);
-      if (cls) {
-        const [rx, ry] = cx !== null ? map(cx, cy) : [ax, ay];
-        ctx.strokeStyle = COL[cls]; ctx.globalAlpha = 0.55 + 0.45 * pulse; ctx.lineWidth = 2.4;
-        ctx.beginPath(); ctx.arc(rx, ry, 11 + 3 * pulse, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+      if (cls) { // a steady ring that fades in, held for the second the alert covers
+        const a = Math.min(1, (time - (alertSince.get(s.id) || time)) / 0.35);
+        ctx.strokeStyle = COL[cls]; ctx.globalAlpha = 0.9 * a; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(rx, ry, 12, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
       }
     }
   }

@@ -225,7 +225,7 @@
       }
       function label(x, y, text, tone, a, check) {
         ctx.globalAlpha = a;
-        ctx.font = '500 12px ui-monospace,"SF Mono",Menlo,monospace';
+        ctx.font = '500 15px "Helvetica Neue",Helvetica,Arial,sans-serif';
         const tw = ctx.measureText(text).width, pw = tw + (check ? 34 : 20), ph = 26;
         const bx = x - pw / 2, by = y - ph;
         ctx.fillStyle = "rgba(6,14,24,.86)"; ctx.strokeStyle = tone === "teal" ? "rgba(69,189,180,.9)" : "rgba(150,185,215,.35)";

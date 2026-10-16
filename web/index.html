@@ -4,259 +4,221 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Catch Me Lying</title>
-<meta name="description" content="Detecting connected cars that sign false messages: a 5G sidelink dataset, a detector for ten attacks, the size of lie receivers can see, and a federated deployment. RMIT engineering capstone.">
-<meta name="theme-color" content="#050c15">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%23ee6d3d'/%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23ee6d3d' stroke-opacity='.4' stroke-width='3'/%3E%3C/svg%3E">
+<meta name="description" content="Detecting connected cars that send signed but false messages: a 5G sidelink dataset, a detector for ten attacks, the size of position lie that receivers can detect, and a federated deployment. RMIT engineering capstone.">
+<meta name="theme-color" content="#08131f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23e0703f'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/deck.css">
 </head>
 <body>
 <div class="viewport"><div class="deck">
 <div class="bar"></div>
 
-<!-- ============ PART 1: THE PROBLEM ============ -->
-<section class="slide hero" data-part="1" aria-label="Signed, and still lying">
+<!-- Part 1: the problem -->
+<section class="slide hero" data-part="1" aria-label="Detecting connected cars that send false messages">
   <div class="vis" data-visual="hero"></div><div class="scrim"></div>
   <div class="copy">
-    <p class="kicker" data-in>Connected cars · RMIT engineering capstone</p>
-    <h1 data-in="1">Signed, and <em>still lying.</em></h1>
-    <p class="lede" data-in="2">Every connected car broadcasts where it is, signed so you know who sent it. The signature can't tell you if it's true.</p>
-    <p class="who" data-in="3">Cybersecurity for connected cars: edge-based federated intrusion detection</p>
+    <h1 data-in>Detecting connected cars that send false messages</h1>
+    <p class="lede" data-in="1">Connected cars broadcast their position several times a second, and the cars around them act on it. Each message is signed, which proves which car sent it but says nothing about whether the position is true.</p>
+    <p class="who" data-in="2">Cybersecurity for Connected Cars: Edge-Based Federated Intrusion Detection. RMIT University engineering capstone, 2026.</p>
   </div>
 </section>
 
 <section class="slide" data-part="1">
   <div>
-    <p class="kicker" data-in>The problem</p>
-    <h2 data-in="1">A signature proves <span class="teal">who</span>, not <span class="rust">what</span>.</h2>
-    <p class="lede" data-in="2">A car with valid credentials can sign a false position. Every cryptographic check still passes.</p>
-    <p class="cap" data-in="3">A real message from our simulation: station <span data-n="example.station"></span>, claiming <b><span data-n="example.offset_m" data-d="0"></span> m</b> from where it is</p>
+    <h2 data-in>A valid signature on a false position</h2>
+    <p class="lede" data-in="1">This message comes from our simulation. The car signed it with valid credentials, so every cryptographic check passes, yet the position it reports is <span data-n="example.offset_m" data-d="0"></span> m from where the car actually is.</p>
   </div>
-  <div class="msg" data-in="2" data-visual="message">
-    <div class="top"><span>Position broadcast · CAM</span><span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Signature valid</span></div>
+  <div class="msg" data-in="1" data-visual="message">
+    <div class="top"><span>Position broadcast from station <span data-n="example.station"></span></span><span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Signature valid</span></div>
     <dl>
-      <dt>Station</dt><dd><span data-n="example.station"></span></dd>
       <dt>Position</dt><dd class="pos"><span class="px"></span> m along the road</dd>
       <dt>Speed</dt><dd><span data-n="example.claimed.kmh"></span> km/h</dd>
       <dt>Heading</dt><dd><span data-n="example.claimed.heading"></span> degrees</dd>
     </dl>
-    <div class="road"><div class="carbox real"></div><div class="carbox ghost"></div><span class="tag t-real">really here</span><span class="tag t-ghost rust">claims to be here</span></div>
+    <div class="road"><div class="carbox real"></div><div class="carbox ghost"></div><span class="tag t-real">where the car is</span><span class="tag t-ghost rust">where it says it is</span></div>
   </div>
 </section>
 
 <section class="slide wide" data-part="1">
   <div class="head">
-    <div>
-      <p class="kicker" data-in>What exists today</p>
-      <h2 data-in="1">Good tools, each with a gap.</h2>
-      <p class="lede" data-in="2">What each approach checks, and what it leaves open.</p>
-    </div>
+    <h2 data-in>What existing approaches check</h2>
+    <p class="lede" data-in="1">Each approach handles part of the problem. The last column is what it does not cover.</p>
   </div>
-  <div class="tiles">
-    <div class="tile" data-in="3"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
-      <h3>Message signatures</h3><span class="src">IEEE 1609.2 · ETSI TS 103 097</span>
-      <p class="does">Prove which credential sent a message</p><p class="miss">Not whether what it says is true</p></div>
-    <div class="tile" data-in="4"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><path d="M4 18l5-6 4 3 7-9"/><circle cx="20" cy="6" r="1.5"/></svg></div>
-      <h3>Plausibility checks</h3><span class="src">van der Heijden et al., survey, 2019</span>
-      <p class="does">Catch contradictions in a car's own claims</p><p class="miss">A steady offset contradicts nothing</p></div>
-    <div class="tile" data-in="5"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg></div>
-      <h3>Existing datasets</h3><span class="src">VeReMi · VeReMi Extension · NextGen</span>
-      <p class="does">Message content for comparable tests</p><p class="miss">No 5G sidelink radio measurements</p></div>
-    <div class="tile" data-in="6"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><path d="M12 20V11"/><path d="M8.5 8.5a5 5 0 017 0M6 6a8.5 8.5 0 0112 0"/><circle cx="12" cy="11" r="1.4"/></svg></div>
-      <h3>One receiver's signal strength</h3><span class="src">ETSI TR 103 460</span>
-      <p class="does">Proposed as a check on a reported position</p><p class="miss">A fade looks just like distance</p></div>
-    <div class="tile" data-in="7"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><circle cx="12" cy="12" r="2.2"/><circle cx="4.5" cy="18" r="1.6"/><circle cx="19.5" cy="18" r="1.6"/><circle cx="12" cy="4" r="1.6"/><path d="M6 17l4.5-3.5M18 17l-4.5-3.5M12 5.6v4.2"/></svg></div>
-      <h3>Cooperative position checks</h3><span class="src">Leinmüller et al., 2006, and later</span>
-      <p class="does">Several receivers verify one position</p><p class="miss">No measured detection boundary over a 5G sidelink</p></div>
-    <div class="tile done" data-in="8"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="5" height="5" rx="1.2"/><rect x="16" y="16" width="5" height="5" rx="1.2"/><path d="M12 8v4M5.5 16v-2h13v2"/></svg></div>
-      <h3>Federated detectors</h3><span class="src">Gurjar et al. · Demir et al., 2025</span>
-      <p class="does">Learn across vehicles without sharing data</p><p class="miss">Already published, including without a server</p></div>
-  </div>
+  <table class="lit" data-in="2">
+    <thead><tr><th>Approach</th><th>What it checks</th><th>What it does not cover</th></tr></thead>
+    <tbody>
+      <tr><td>Message signatures<span>IEEE 1609.2 and ETSI TS 103 097</span></td><td>Which credential sent the message</td><td>Whether the content is true</td></tr>
+      <tr><td>Plausibility checks<span>survey by van der Heijden et al., 2019</span></td><td>Contradictions within one car's own claims</td><td>A steady offset, which creates no contradiction</td></tr>
+      <tr><td>Existing datasets<span>VeReMi, VeReMi Extension and NextGen</span></td><td>Message content, for comparable tests</td><td>Radio measurements over a 5G sidelink</td></tr>
+      <tr><td>Signal strength at one receiver<span>ETSI TR 103 460</span></td><td>Whether received power fits the claimed distance</td><td>Fading, which changes received power in the same way</td></tr>
+      <tr><td>Cooperative position checks<span>Leinmüller et al., 2006, and later work</span></td><td>One position, checked by several receivers</td><td>The size of lie at which detection starts on a 5G sidelink</td></tr>
+      <tr><td>Federated detectors<span>Gurjar et al. and Demir et al., 2025</span></td><td>Training across vehicles without sharing data</td><td class="dim">Already published, so our federated work compares methods</td></tr>
+    </tbody>
+  </table>
 </section>
 
-<!-- ============ PART 2: WHAT WE BUILT ============ -->
+<!-- Part 2: what we built -->
 <section class="slide" data-part="2">
   <div>
-    <p class="kicker" data-in>What we built</p>
-    <h2 data-in="1">A 5G highway, simulated message by message.</h2>
-    <p class="lede" data-in="2">Every car sends, every car listens, and every receiver records what its radio measured.</p>
-    <div class="big" data-in="3"><span data-n="facts.road_km" data-d="0"></span><small>km of highway</small></div>
-    <p class="cap" data-in="4"><b>ten attacks</b> · honest cars carry realistic GPS error</p>
+    <h2 data-in>We simulated a <span data-n="facts.road_km" data-d="0"></span> km highway over the 5G sidelink</h2>
+    <p class="lede" data-in="1">Every car broadcasts standard messages and listens to the others. Every receiver logs what it heard and what its radio measured.</p>
   </div>
-  <div class="stack">
-    <div class="layer" data-in="2"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><path d="M7 21L10 3M17 21L14 3M12 5v2M12 11v2M12 17v2"/></svg></div><div><b>The road</b><span>A <span data-n="facts.road_km" data-d="0"></span> km highway with realistic car following</span></div></div>
-    <div class="layer" data-in="3"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><path d="M5 12a7 7 0 0114 0M8 12a4 4 0 018 0"/><circle cx="12" cy="12" r="1.3"/><path d="M12 13v7"/></svg></div><div><b>The radio</b><span>5G NR sidelink, Mode 2, in ns-3 with 5G-LENA</span></div></div>
-    <div class="layer" data-in="4"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/></svg></div><div><b>Honest cars</b><span>Standard messages, with realistic positioning error</span></div></div>
-    <div class="layer atk" data-in="5"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#ee6d3d" stroke-width="1.8"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg></div><div><b>Attackers</b><span>Ten kinds of misbehaviour, from fake positions to flooding</span></div></div>
-    <div class="layer" data-in="6"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#45bdb4" stroke-width="1.8"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg></div><div><b>Receivers</b><span>Log what they heard and what the radio measured</span></div></div>
-  </div>
+  <table class="spec" data-in="1">
+    <tbody>
+      <tr><th>Road</th><td>A <span data-n="facts.road_km" data-d="0"></span> km highway with realistic car following</td></tr>
+      <tr><th>Radio</th><td>The 5G NR sidelink in Mode 2, where cars talk directly, simulated in ns-3 with the 5G-LENA module</td></tr>
+      <tr><th>Honest cars</th><td>Standard messages carrying realistic GPS error</td></tr>
+      <tr><th>Attackers</th><td>Ten kinds of misbehaviour, from false positions to flooding the channel</td></tr>
+      <tr><th>Receivers</th><td>Every car and the roadside units, each logging the message and its radio measurements</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section class="slide" data-part="2">
   <div>
-    <p class="kicker" data-in>The dataset</p>
-    <h2 data-in="1">Labelled, second by second.</h2>
-    <p class="lede" data-in="2">Each window is one receiver's view of one car for one second: what was claimed, and what the radio measured.</p>
-    <div class="big" data-in="3"><span data-n="facts.windows" data-count data-d="0"></span></div>
-    <p class="cap" data-in="4">labelled windows · <b><span data-n="facts.features"></span> features</b>, <span data-n="facts.radio_features"></span> from the radio · five scenarios</p>
+    <h2 data-in>The labelled dataset</h2>
+    <p class="lede" data-in="1">Each row is one receiver's view of one car over one second: what the car claimed and what the radio measured. The five scenarios vary traffic density, lie size, attacker timing and receiver placement.</p>
+    <div class="big" data-in="2"><span data-n="facts.windows" data-count data-d="0"></span></div>
+    <p class="cap" data-in="2">labelled one-second windows, each with <span data-n="facts.features"></span> features, <span data-n="facts.radio_features"></span> of them from the radio</p>
   </div>
-  <div class="vis" data-in="2" data-visual="dataset"></div>
+  <div class="vis" data-in="1" data-visual="dataset"></div>
 </section>
 
 <section class="slide wide" data-part="2">
-  <div class="head">
+  <div class="head split">
     <div>
-      <p class="kicker" data-in>Ten attacks, one detector</p>
-      <h2 data-in="1">Some lies are loud. Some are quiet.</h2>
-      <p class="lede" data-in="2">Flooding and fake identities are caught. Steady position lies and replays are mostly called honest.</p>
+      <h2 data-in>How often each attack is flagged</h2>
+      <p class="lede" data-in="1">The baseline detector flags flooding, fake identities and random positions most of the time. Steady position offsets and replays are mostly classified as honest, which is the problem the rest of this work takes on.</p>
     </div>
-    <div data-in="3"><div class="big"><span data-n="facts.baseline_f1" data-d="4" data-count></span></div><p class="cap">macro F1 across <b>eleven classes</b> · <span data-n="facts.test_windows"></span> held-out windows</p></div>
+    <div data-in="2"><div class="big"><span data-n="facts.baseline_f1" data-d="4" data-count></span></div><p class="cap">macro F1 over all eleven classes, on <span data-n="facts.test_windows"></span> held-out windows</p></div>
   </div>
   <div class="attacks" data-visual="attacks"></div>
 </section>
 
 <section class="slide" data-part="2">
   <div>
-    <p class="kicker" data-in>Real time</p>
-    <h2 data-in="1">Decided every second.</h2>
-    <p class="lede" data-in="2">The wait is the one-second window filling up. The model itself takes a sliver of that.</p>
-    <div class="big" data-in="3"><span data-n="facts.inference_pct" data-d="2" data-count></span><small>%</small></div>
-    <p class="cap" data-in="4">of the decision time is the model · <b><span data-n="facts.inference_ms"></span> ms</b> to decide one window on its own</p>
+    <h2 data-in>One decision per car every second</h2>
+    <p class="lede" data-in="1">A receiver decides once its one-second window has filled. Running the model on that window takes <span data-n="facts.inference_ms"></span> ms, so almost all of the delay is the window itself.</p>
+    <div class="big" data-in="2"><span data-n="facts.inference_pct" data-d="2" data-count></span><small>%</small></div>
+    <p class="cap" data-in="2">of the decision time is spent running the model</p>
   </div>
   <div class="second" data-visual="second">
-    <div class="sec-bar" data-in="2"><div class="fill"></div><div class="inf"></div></div>
-    <div class="sec-lab" data-in="3"><span><b>1,000 ms</b> listening to the window fill</span><span class="r"><b class="rust"><span data-n="facts.inference_ms"></span> ms</b><br>model, one window</span></div>
-    <div class="zoom" data-in="4"><span class="chip">Live on the other screen</span>every car, every second, every attack</div>
+    <div class="sec-bar" data-in="1"><div class="fill"></div><div class="inf"></div></div>
+    <div class="sec-lab" data-in="1"><span>1,000 ms waiting for the window to fill</span><span class="r"><span data-n="facts.inference_ms"></span> ms running the model</span></div>
+    <p class="aside" data-in="2">The screen next to this one shows these decisions being made on recorded traffic.</p>
   </div>
 </section>
 
-<!-- ============ PART 3: THE RESULT ============ -->
+<!-- Part 3: the result -->
 <section class="slide" data-part="3">
   <div>
-    <p class="kicker" data-in>The careful liar</p>
-    <h2 data-in="1">One receiver can't tell a lie from a fade.</h2>
-    <p class="lede" data-in="2">A car that shifts every claim by the same amount stays self-consistent. Content checks score zero on it.</p>
-    <div class="big" data-in="3"><span data-n="facts.best_single" data-d="3" data-count></span></div>
-    <p class="cap" data-in="4">the best F1 any of <b>five learning methods</b> reaches at one receiver</p>
+    <h2 data-in>One receiver cannot detect a steady position offset</h2>
+    <p class="lede" data-in="1">A car that shifts every claim by the same amount keeps a consistent track, so content checks score zero on it. At a single receiver, the weaker signal from a car that is really farther away looks the same as ordinary fading.</p>
+    <div class="big" data-in="2"><span data-n="facts.best_single" data-d="3" data-count></span></div>
+    <p class="cap" data-in="2">the best F1 any of five learning methods reached with one receiver</p>
   </div>
-  <div class="vis" data-in="2" data-visual="onerx"></div>
-</section>
-
-<section class="slide" data-part="3">
-  <div>
-    <p class="kicker" data-in>The main result</p>
-    <h2 data-in="1">Many receivers, pooled, can see it.</h2>
-    <p class="lede" data-in="2">A false position is shared by every receiver. Fading is not. Pool the measurements, and the lie shows above a floor.</p>
-    <div class="big" data-in="3"><span data-n="floor.cross" data-d="1" data-count></span><small>m</small></div>
-    <p class="cap" data-in="4">detection crosses one half · 95% interval <b><span data-n="floor.lo"></span> to <span data-n="floor.hi"></span> m</b> · pooling verdicts instead recovers nothing</p>
-  </div>
-  <div class="vis" data-in="2" data-visual="floor"></div>
+  <div class="vis" data-in="1" data-visual="onerx"></div>
 </section>
 
 <section class="slide" data-part="3">
   <div>
-    <p class="kicker" data-in>The smart attacker</p>
-    <h2 data-in="1">Lie sideways, and the map catches you.</h2>
-    <p class="lede" data-in="2">Receivers sit along the road, so position across it is measured worst. A map check closes exactly that gap.</p>
-    <div class="big" data-in="3"><span data-n="facts.weak_axis_deg" data-d="1" data-count></span><small>degrees</small></div>
-    <p class="cap" data-in="4">off the road: the weak direction the receivers' geometry predicts</p>
+    <h2 data-in>Pooling measurements across receivers detects larger lies</h2>
+    <p class="lede" data-in="1">Fading differs from one receiver to the next, while a false position affects all of them. Pooled received power detects position lies above a size threshold. Pooling the receivers' individual verdicts detected none.</p>
+    <div class="big" data-in="2"><span data-n="floor.cross" data-d="1" data-count></span><small>m</small></div>
+    <p class="cap" data-in="2">the lie size at which half of lying cars are caught, with a 95% interval of <span data-n="floor.lo"></span> to <span data-n="floor.hi"></span> m</p>
   </div>
-  <div class="vis" data-in="2" data-visual="geometry"></div>
+  <div class="vis" data-in="1" data-visual="floor"></div>
 </section>
 
-<!-- ============ PART 4: DEPLOYMENT ============ -->
+<section class="slide" data-part="3">
+  <div>
+    <h2 data-in>A map check covers the receivers' weak direction</h2>
+    <p class="lede" data-in="1">The receivers sit roughly in a line along the road, so they measure position across the road poorly. An informed attacker would lie in that direction, which moves the claimed position off the road, where a map check rejects it.</p>
+    <div class="big" data-in="2"><span data-n="facts.weak_axis_deg" data-d="1" data-count></span><small>degrees</small></div>
+    <p class="cap" data-in="2">from the road axis, the median weak direction; a separate search for the best lie found <span data-n="facts.search_lo_deg" data-d="0"></span> to <span data-n="facts.search_hi_deg" data-d="0"></span> degrees</p>
+  </div>
+  <div class="vis" data-in="1" data-visual="geometry"></div>
+</section>
+
+<!-- Part 4: deployment -->
 <section class="slide" data-part="4">
   <div>
-    <p class="kicker" data-in>Learning without sharing</p>
-    <h2 data-in="1">Roadside units learn it together.</h2>
-    <p class="lede" data-in="2"><span data-n="fed.clients"></span> units train on their own traffic and share only model updates, scored on cars none of them heard.</p>
-    <div class="big" data-in="3"><span data-n="fed.share_test" data-d="3" data-count></span></div>
-    <p class="cap" data-in="4">of central training's score on test · <b><span data-n="fed.share_val"></span></b> on validation</p>
-    <div class="chips" data-in="5">
-      <div><span><b>Secure aggregation</b> hides each update: no detection cost</span></div>
-      <div><span><b>No server:</b> <span data-n="fed.noserver.delta1" data-x="-1" data-d="4"></span> lower per unit at <span data-n="fed.noserver.x1"></span>x a FedAvg client's traffic, <span data-n="fed.noserver.delta3" data-x="-1" data-d="4"></span> at <span data-n="fed.noserver.x3"></span>x</span></div>
-    </div>
+    <h2 data-in>Roadside units can train the detector without sharing data</h2>
+    <p class="lede" data-in="1">Each of the <span data-n="fed.clients"></span> units trains on its own traffic and sends only model updates. The result was scored on cars that no unit had heard.</p>
+    <div class="big" data-in="2"><span data-n="fed.share_test" data-d="3" data-count></span></div>
+    <p class="cap" data-in="2">of central training's score on test, and <span data-n="fed.share_val"></span> on validation</p>
+    <p class="note" data-in="2">Secure aggregation, which hides each unit's update from the server, made no measurable difference. With no server at all, each unit scored <span data-n="fed.noserver.delta1" data-x="-1" data-d="4"></span> lower at <span data-n="fed.noserver.x1"></span> times a FedAvg client's traffic, or <span data-n="fed.noserver.delta3" data-x="-1" data-d="4"></span> lower at <span data-n="fed.noserver.x3"></span> times.</p>
   </div>
-  <div class="vis" data-in="2" data-visual="fed"></div>
+  <div class="vis" data-in="1" data-visual="fed"></div>
 </section>
 
 <section class="slide wide" data-part="4">
   <div class="head">
-    <div>
-      <p class="kicker" data-in>When the road changes</p>
-      <h2 data-in="1">New conditions, no new labels.</h2>
-      <p class="lede" data-in="2">Left unchanged, the detector fails mostly by false alarms. Refitting its input scaling on unlabelled local traffic recovered most of the loss in two of three changes. Each card is a separate test.</p>
-    </div>
+    <h2 data-in>When traffic or radio conditions change</h2>
+    <p class="lede" data-in="1">Moved into new conditions unchanged, the detector fails mostly through false alarms. Refitting its input scaling on unlabelled local traffic recovered most of the loss for denser traffic and for weaker radio. Each card is a separate test.</p>
   </div>
   <div class="cards3" data-visual="shifts">
-    <div class="card" data-in="3"><canvas data-k="density"></canvas><div class="body">
+    <div class="card" data-in="2"><canvas data-k="density"></canvas><div class="body">
       <h3>Denser traffic</h3>
-      <div class="stat"><span data-n="shifts.density.label-free.recovered"></span><small>% recovered</small></div>
+      <div class="stat"><span data-n="shifts.density.label-free.recovered"></span><small>% of the loss recovered</small></div>
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
-      <div class="gcap"><span>unchanged <span data-n="shifts.density.transfer.f1"></span></span><span>refit <span data-n="shifts.density.label-free.f1"></span></span><span>retrained <span data-n="shifts.density.in-dist.f1"></span></span></div>
-      <p class="note">On attackers the adaptation never saw.</p></div></div>
-    <div class="card" data-in="4"><canvas data-k="radio"></canvas><div class="body">
+      <div class="gcap"><span>unchanged <span data-n="shifts.density.transfer.f1"></span></span><span>refitted <span data-n="shifts.density.label-free.f1"></span></span><span>retrained <span data-n="shifts.density.in-dist.f1"></span></span></div>
+      <p class="note">Measured on attackers the refit never saw.</p></div></div>
+    <div class="card" data-in="2"><canvas data-k="radio"></canvas><div class="body">
       <h3>Weaker radio</h3>
-      <div class="stat"><span data-n="shifts.radio.label-free.recovered"></span><small>% recovered</small></div>
+      <div class="stat"><span data-n="shifts.radio.label-free.recovered"></span><small>% of the loss recovered</small></div>
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
-      <div class="gcap"><span>unchanged <span data-n="shifts.radio.transfer.f1"></span></span><span>refit <span data-n="shifts.radio.label-free.f1"></span></span><span>retrained <span data-n="shifts.radio.in-dist.f1"></span></span></div>
-      <p class="note">Transmit power cut from 23 to 14 dBm: honest tracks flagged fall from <span data-n="shifts.radio.transfer.flagged" data-x="100" data-d="0"></span>% to <span data-n="shifts.radio.label-free.flagged" data-x="100" data-d="0"></span>%.</p></div></div>
-    <div class="card" data-in="5"><canvas data-k="bursts"></canvas><div class="body">
+      <div class="gcap"><span>unchanged <span data-n="shifts.radio.transfer.f1"></span></span><span>refitted <span data-n="shifts.radio.label-free.f1"></span></span><span>retrained <span data-n="shifts.radio.in-dist.f1"></span></span></div>
+      <p class="note">With transmit power cut from 23 to 14 dBm, honest tracks flagged fell from <span data-n="shifts.radio.transfer.flagged" data-x="100" data-d="0"></span>% to <span data-n="shifts.radio.label-free.flagged" data-x="100" data-d="0"></span>%.</p></div></div>
+    <div class="card" data-in="2"><canvas data-k="bursts"></canvas><div class="body">
       <h3>Attackers lying in bursts</h3>
       <div class="stat"><span data-n="facts.bursty_cost"></span><small>macro F1 lost</small></div>
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
-      <div class="gcap"><span>unchanged <span data-n="shifts.bursts.transfer.f1"></span></span><span>refit <span data-n="shifts.bursts.label-free.f1"></span></span><span>retrained <span data-n="shifts.bursts.in-dist.f1"></span></span></div>
-      <p class="note">A small cost, and the refit recovers none of it.</p></div></div>
+      <div class="gcap"><span>unchanged <span data-n="shifts.bursts.transfer.f1"></span></span><span>refitted <span data-n="shifts.bursts.label-free.f1"></span></span><span>retrained <span data-n="shifts.bursts.in-dist.f1"></span></span></div>
+      <p class="note">The loss is small, and refitting recovered none of it.</p></div></div>
   </div>
 </section>
 
-<!-- ============ PART 5: WHAT'S NEW ============ -->
+<!-- Part 5: what is new -->
 <section class="slide wide" data-part="5">
   <div class="head">
-    <div>
-      <p class="kicker" data-in>What's new</p>
-      <h2 data-in="1">What this project adds.</h2>
-      <p class="lede" data-in="2">Built on the work before it, and measured where it had not been.</p>
-    </div>
+    <h2 data-in>What is new in this project</h2>
+    <p class="lede" data-in="1">Signatures, plausibility checks, cooperative position checks and federated detectors all exist already. These are the parts this project adds.</p>
   </div>
   <div class="tiles four">
-    <div class="tile new" data-in="3"><h3>A sidelink dataset with radio evidence</h3>
-      <p class="does">The first misbehaviour dataset we found over a 5G sidelink with per-message radio measurements</p>
-      <div class="stat"><span data-n="facts.windows"></span><span class="dim" style="font-size:.4em"> windows</span></div></div>
-    <div class="tile new" data-in="4"><h3>A lie's detectable size, in metres</h3>
-      <p class="does">Where one receiver stops working and pooled receivers start, with an interval</p>
-      <div class="stat"><span data-n="floor.cross"></span><span class="dim" style="font-size:.4em"> m</span></div></div>
-    <div class="tile new" data-in="5"><h3>Geometry predicts the attacker</h3>
-      <p class="does">The receivers' layout says which way a smart attacker lies, and a map check closes it</p>
-      <div class="stat"><span data-n="facts.weak_axis_deg"></span><span class="dim" style="font-size:.4em"> degrees</span></div></div>
-    <div class="tile new" data-in="6"><h3>Federated, tested hard</h3>
-      <p class="does">On cars no unit heard, without a server, and under three changes of road</p>
-      <div class="stat"><span data-n="fed.share_val"></span> to <span data-n="fed.share_test"></span><span class="dim" style="font-size:.4em"> of central</span></div></div>
+    <div class="tile" data-in="2"><h3>A sidelink dataset with radio measurements</h3>
+      <p>We found no earlier misbehaviour dataset recorded over a 5G sidelink with per-message radio measurements.</p>
+      <div class="stat"><span data-n="facts.windows"></span> <small>windows</small></div></div>
+    <div class="tile" data-in="2"><h3>The detectable size of a lie, in metres</h3>
+      <p>Where one receiver stops working and pooled receivers start, measured with a confidence interval.</p>
+      <div class="stat"><span data-n="floor.cross"></span> <small>m</small></div></div>
+    <div class="tile" data-in="2"><h3>Geometry predicts the attacker</h3>
+      <p>The layout of the receivers shows which way an informed attacker would lie, and a map check covers that direction.</p>
+      <div class="stat"><span data-n="facts.weak_axis_deg"></span> <small>degrees</small></div></div>
+    <div class="tile" data-in="2"><h3>A federated detector, tested on unseen cars</h3>
+      <p>Trained across roadside units, run without a server, and tested under three changes of road conditions.</p>
+      <div class="stat"><span data-n="fed.share_val"></span> to <span data-n="fed.share_test"></span> <small>of central</small></div></div>
   </div>
 </section>
 
 <section class="slide" data-part="5">
   <div>
-    <p class="kicker" data-in>Limits and next steps</p>
-    <h2 data-in="1">Simulated, on one straight road.</h2>
-    <p class="lede" data-in="2">Every measurement here comes from simulation. The next steps test it against the real world.</p>
-    <p class="team" data-in="3"><b>Likhith Lokesh Gowda · Verna Nakhla · Joshua Wong · Ken Navarro · Andrew Ng</b><br>Supervisor: A/Prof Ke (Desmond) Wang · RMIT University · OENG1168</p>
+    <h2 data-in>Limitations and next steps</h2>
+    <p class="lede" data-in="1">Every result here comes from a simulation of one straight highway. The next steps test it against real measurements and other road layouts.</p>
+    <p class="team" data-in="2">Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong, Ken Navarro and Andrew Ng.<br>Supervised by A/Prof Ke (Desmond) Wang, RMIT University.</p>
   </div>
   <div>
-    <div class="next">
-      <div data-in="2"><span class="n">1</span><span><b>Real radio.</b> Fit our propagation model to real sidelink measurements.</span></div>
-      <div data-in="3"><span class="n">2</span><span><b>Real roads.</b> Test the floor at a junction and on a curve, where receivers no longer sit in a line.</span></div>
-      <div data-in="4"><span class="n">3</span><span><b>Hostile units.</b> Test poisoned roadside units under secure aggregation.</span></div>
-    </div>
-    <div class="links" data-in="5">
-      <a href="live/">Live dashboard</a>
-      <a href="https://github.com/Likhith-G/capstone-cv2x-ids">Code on GitHub</a>
-      <a href="booth/poster.pdf">Poster (PDF)</a>
-      <span class="cap" style="align-self:center">Dataset available from the authors on request</span>
-    </div>
+    <ol class="next" data-in="1">
+      <li>Fit our radio propagation model to real sidelink measurements.</li>
+      <li>Test the detection threshold at a junction and on a curve, where the receivers no longer sit in a line.</li>
+      <li>Test roadside units that send poisoned updates while secure aggregation is in use.</li>
+    </ol>
+    <p class="links" data-in="2"><a href="live/">Live highway monitor</a><a href="https://github.com/Likhith-G/capstone-cv2x-ids">Code on GitHub</a><a href="booth/poster.pdf">Poster (PDF)</a></p>
+    <p class="cap" data-in="2">The dataset is available from the authors on request.</p>
   </div>
 </section>
 
-<div class="chrome"><span class="mark"><i></i>Catch Me Lying</span><span class="parts"></span><span class="num"></span></div>
+<div class="chrome"><span class="mark">Catch Me Lying</span><span class="parts"></span><span class="num"></span></div>
 </div></div>
 <div class="blank"></div>
 

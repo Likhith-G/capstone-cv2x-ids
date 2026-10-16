@@ -38,7 +38,7 @@ for p in text_files():
 
 # 2. typed numbers in page text
 ALLOW = {"1", "2", "3", "4", "5", "1,000", "23", "14", "2006", "2019", "2025", "1609.2", "103", "097", "460",
-         "5G", "0", "00", "02", "95"}
+         "5G", "0", "00", "02", "95", "2026"}
 pages = [WEB / "index.html", WEB / "live" / "index.html"]
 data = {}
 for js in (WEB / "data").glob("*.js"):
