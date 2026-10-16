@@ -40,7 +40,7 @@ FIGS = BOOTH / "figures"
 POSTER = BOOTH / "poster.html"
 PDF = BOOTH / "poster.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-DEMO = "https://catch-me-lying.vercel.app/booth/"
+DEMO = "https://cv2x-ids.vercel.app/booth/"
 
 # The report's own text, where it exists on this machine. Every figure in it
 # is pinned to a log by the report build, so a poster number found there is

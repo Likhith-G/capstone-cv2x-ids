@@ -42,12 +42,12 @@ This project builds the data to answer that, and then answers it.
 |---|---|
 | **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md). You do not need to reproduce anything |
 | **pick up one of the open pieces of work** | [`HANDOFF.md`](HANDOFF.md) |
-| see the idea in a few minutes | the [booth website](https://catch-me-lying.vercel.app/): a walkthrough and a [live highway monitor](https://catch-me-lying.vercel.app/live/), or clone and open `web/index.html` locally |
+| see the idea in a few minutes | the [booth website](https://cv2x-ids.vercel.app/): a walkthrough and a [live highway monitor](https://cv2x-ids.vercel.app/live/), or clone and open `web/index.html` locally |
 | know what every class and column means | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) |
 | rebuild the dataset from the simulator, which almost nobody needs | [`REPRODUCING.md`](REPRODUCING.md) |
 | understand the detection pipeline | [`analysis/README.md`](analysis/README.md) |
 
-*Catch Me Lying* is the booth website in `web/`: a walkthrough of the project
+The booth website in `web/` has a walkthrough of the project
 for one screen and a live highway monitor for another, which replays recorded
 traffic with every car judged by a detector that never saw it. There is no
 server and no build step, so cloning the repository and opening `web/index.html`
