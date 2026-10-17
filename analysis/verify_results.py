@@ -1550,6 +1550,10 @@ CHECKS = [
     ('5m shift phy_neighbours', 'phy_neighbours 1.78', 'campaign_lowpower/logs/feature_shift', '  phy_neighbours                 1.78'),
     ('5m shift pool_claim_exp', 'no pooled consensus feature moves more than 0.31', 'campaign_lowpower/logs/feature_shift', '  pool_claim_exp                 0.31'),
     ('5m shift median', 'the median over all\n61 features is 0.08', 'campaign_lowpower/logs/feature_shift', 'median over all features 0.08'),
+    ('7d out of fold', '**Out of fold over every car: macro F1 0.5144, MCC 0.6618**', 'campaign_gnss/logs/live_export', 'out of fold over every car: macro F1 0.5144, MCC 0.6618'),
+    ('7d windows', 'over 1,641,002\nreceiver windows', 'campaign_gnss/logs/live_export', '1,641,002 receiver windows, 8 drives'),
+    ('7d alert 25', '| at least 25% of receivers flag | 0.0033 | 0.5819 |', 'campaign_gnss/logs/live_export', 'at least 25% of receivers flag: honest station seconds alerted 0.0033, attacker station seconds alerted 0.5819'),
+    ('7d alert 50', '| at least 50% of receivers flag (the monitor\'s rule) | 0.0008 | 0.5517 |', 'campaign_gnss/logs/live_export', 'at least 50% of receivers flag: honest station seconds alerted 0.0008, attacker station seconds alerted 0.5517'),
 ]
 
 # Files whose contents must be no older than the artefact they describe. The
