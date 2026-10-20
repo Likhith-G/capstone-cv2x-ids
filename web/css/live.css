@@ -16,7 +16,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .title{display:flex;align-items:center;gap:22px}
 .live{display:inline-flex;align-items:center;gap:10px;font-size:22px;color:var(--ink-2);
   border:1px solid var(--line-2);border-radius:8px;padding:8px 14px}
-.live i{width:10px;height:10px;border-radius:50%;background:var(--teal)}
+.live i{width:10px;height:10px;border-radius:50%;background:var(--teal);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.25}}
 h1{margin:0;font-size:40px;letter-spacing:-.03em;font-weight:700}
 .sub{font-size:23px;color:var(--ink-3);margin-top:6px}
@@ -51,8 +51,9 @@ h1{margin:0;font-size:40px;letter-spacing:-.03em;font-weight:700}
 .feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;overflow:hidden;flex:1;min-height:0;
   -webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
 .feed li{display:grid;grid-template-columns:62px 92px 1fr auto;gap:14px;align-items:center;padding:10px 4px;
-  border-bottom:1px solid #1f3245;font-size:21px;animation:drop .4s ease}
+  border-bottom:1px solid #1f3245;font-size:21px;border-radius:6px;animation:drop .4s ease,lit 2.4s ease}
 @keyframes drop{from{opacity:0;transform:translateY(-14px)}}
+@keyframes lit{0%,25%{background:rgba(150,185,215,.14)}100%{background:rgba(150,185,215,0)}}
 .feed .tm,.feed .km{font-size:19px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .feed .cls{display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .feed .cls i{flex:none;width:12px;height:12px;border-radius:50%}
@@ -63,7 +64,8 @@ h1{margin:0;font-size:40px;letter-spacing:-.03em;font-weight:700}
 .tag.fa{color:var(--rust);border-color:rgba(238,109,61,.5)}
 
 .score{display:flex;flex-direction:column;justify-content:space-between;gap:5px;flex:1;padding-bottom:6px}
-.score .row{display:grid;grid-template-columns:262px 1fr 74px;gap:12px;align-items:center;font-size:19px;color:var(--ink-2)}
+.score .row .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px;vertical-align:1px}
+.score .row{display:grid;grid-template-columns:280px 1fr 70px;gap:12px;align-items:center;font-size:19px;color:var(--ink-2)}
 .score .bar{height:10px;border-radius:10px;background:var(--line);overflow:hidden}
 .score .bar i{display:block;height:100%;width:0;border-radius:10px;transition:width .6s}
 .score .pct{font-size:18px;text-align:right;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}

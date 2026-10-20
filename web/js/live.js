@@ -47,9 +47,9 @@
   [...ORDER, 0].forEach((c) => {
     const row = D.createElement("div");
     row.className = "row" + (c === 0 ? " honest" : "");
-    row.innerHTML = `<span>${c === 0 ? "Honest cars, wrongly alerted" : NAME[c]}</span><div class="bar"><i style="background:${c === 0 ? "#6a8199" : COL[c]}"></i></div><span class="pct">0%</span>`;
+    row.innerHTML = `<span><i class="sw" style="background:${c === 0 ? "#6a8199" : COL[c]}"></i>${c === 0 ? "Honest cars, wrongly alerted" : NAME[c]}</span><div class="bar"><i style="background:${c === 0 ? "#6a8199" : COL[c]}"></i></div><span class="pct">0%</span>`;
     score.appendChild(row);
-    bars[c] = { bar: row.querySelector("i"), pct: row.querySelector(".pct") };
+    bars[c] = { bar: row.querySelector(".bar i"), pct: row.querySelector(".pct") };
   });
 
   /* state */
@@ -141,6 +141,19 @@
     return { f1: labels ? f1 / labels : 0, mcc: den ? (c * s - pt) / den : 0 };
   }
 
+  function glide(el, to) {
+    const from = el.dataset.v != null ? +el.dataset.v : to, t0 = performance.now();
+    el.dataset.v = to;
+    if (still || from === to) { el.textContent = fmt(to, 3); return; }
+    const run = (now) => {
+      if (+el.dataset.v !== to) return; // a newer value took over
+      const u = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - u, 3);
+      el.textContent = fmt(from + (to - from) * e, 3);
+      if (u < 1) requestAnimationFrame(run);
+    };
+    requestAnimationFrame(run);
+  }
+
   function second(w) {
     const list = seconds.get(w) || [];
     const now = new Map();
@@ -159,7 +172,7 @@
     for (const [i, j, n] of drive.conf[w] || []) conf[i][j] += n;
     const sc = scores();
     if (list.length) { spark.push(sc.f1); if (spark.length > 240) spark.shift(); }
-    $("f1").textContent = fmt(sc.f1, 3); $("mcc").textContent = fmt(sc.mcc, 3);
+    glide($("f1"), sc.f1); glide($("mcc"), sc.mcc);
     $("dps").textContent = fmt(dec, 0); $("aps").textContent = fmt(al, 0);
     $("us").textContent = drive.us[w] != null ? fmt(drive.us[w], 1) : "?";
     $("fa").textContent = fmt(100 * (alerted[0] || 0) / Math.max(1, seen[0] || 0), 2) + "%";
@@ -265,6 +278,13 @@
         const a = Math.min(1, (time - (alertSince.get(s.id) || time)) / 0.35);
         ctx.strokeStyle = COL[cls]; ctx.globalAlpha = 0.9 * a; ctx.lineWidth = 2.4;
         ctx.beginPath(); ctx.arc(rx, ry, 12, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+        const age = time - (alertSince.get(s.id) || time);
+        if (age < 1.4) for (const lag of [0, 0.35]) {
+          const u = (age - lag) / 1.05;
+          if (u <= 0 || u >= 1) continue;
+          ctx.strokeStyle = COL[cls]; ctx.globalAlpha = 0.85 * (1 - u); ctx.lineWidth = 2.2 * (1 - u) + 0.6;
+          ctx.beginPath(); ctx.arc(rx, ry, 12 + u * 44, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+        }
       }
     }
   }
