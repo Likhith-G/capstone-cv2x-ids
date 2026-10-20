@@ -28,14 +28,14 @@ its own package with its own licence rather than annotating this one.
 ## Data products
 
 The dataset is **not** in this repository and is not covered by `LICENSE`.
-Software licences are the wrong instrument for data. When the corpus, the raw
-simulator output and the generator artefact are released, the data records are
-intended to be **CC BY 4.0**, which is what VeReMi NextGen uses and what permits
+Software licences are the wrong instrument for data. The data records are
+released under **CC BY 4.0**, which is what VeReMi NextGen uses and what permits
 training and redistribution with attribution. The generator artefact carries the
 GPL-2.0-only terms above, because it contains the ns-3 module.
 
-Nothing is released yet. Until a record exists with a DOI, this section is a
-statement of intent rather than a grant.
+Release 1.1.0 is archived on Zenodo at
+[doi.org/10.5281/zenodo.23487554](https://doi.org/10.5281/zenodo.23487554), and
+the licence recorded on that record is the grant.
 
 ## Third-party components
 
