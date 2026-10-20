@@ -36,10 +36,8 @@ partitions/
 checkpoints/
 runs/
 
-# Internal working documents. These carry the full defect analysis of the
-# Part A pipeline, the running build log with every wrong turn, and the
-# planning notes. They are working material for the rewrite rather than
-# deliverables, and they are deliberately not published to the shared repo.
+# Internal working documents: build logs, planning notes and drafts. They are
+# working material rather than deliverables, so they are not published.
 docs/BUILD_LOG_V2.md
 docs/DEFECT_SCOPE.md
 docs/DEFECTS_V2.md
@@ -58,10 +56,8 @@ docs/AT2_OUTLINE.md
 docs/PLAN.md
 docs/CAPSTONE_PLAN.md
 docs/PARTA_CORRECTIONS.md
-# The paper draft is working material, not a deliverable. It weighs venue and
-# title options, carries an appendix of pre-submission checks, and cites four
-# documents that are not published, so every one of those references is dead for
-# a reader. Publication is deferred; this file goes public when there is a paper.
+# The paper draft. It cites working documents that are not published, so it
+# stays private until there is a paper.
 docs/PAPER_DRAFT.md
 docs/archive/
 docs/research/
@@ -72,23 +68,21 @@ docs/research/
 # `git checkout part-a-archived -- capstone`.
 capstone/
 
-# Session state files. Volatile status and durable lessons; both name defects
-# and open decisions the team has not seen.
+# Session notes, kept on the working machine.
 docs/STATUS.md
 docs/SESSION_LOG.md
 docs/LESSONS.md
 
 
-# Booth design notes: working material, and it reasons about a supervisor suggestion
+# Booth design notes and drafts: working material.
 docs/BOOTH.md
 docs/CRITIQUE_3.md
 docs/AT2_SECTION3_PACK.md
 docs/AT2_METHODOLOGY_DRAFT.md
 docs/AUDIT_26SEP.md
 
-# Private bookkeeping, kept on the working machine only. session_check.py reads
-# the assistant memory and the internal docs above; upload_zenodo.py belongs to
-# the deferred publication track.
+# Local helper scripts and the deployed site folder, kept on the working
+# machine only.
 analysis/session_check.py
 analysis/upload_zenodo.py
 docs/REVIEW_FIX_PLAN.md
