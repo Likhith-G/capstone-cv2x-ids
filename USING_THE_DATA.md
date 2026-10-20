@@ -15,10 +15,12 @@ not the data.
     git clone https://github.com/Likhith-G/capstone-cv2x-ids.git
     cd capstone-cv2x-ids
 
-**2. Ask Likhith for the dataset.** It is **not in the repository**, because it is
-1.7 GB and GitHub is the wrong place for it. It arrives as a directory called
-`release/`, over a shared drive. Put it wherever you like and pass its path to the
-scripts below.
+**2. Download the dataset from Zenodo.** It is **not in the repository**, because
+it is 1.7 GB and GitHub is the wrong place for it. Release 1.1.0 is archived at
+[doi.org/10.5281/zenodo.23487554](https://doi.org/10.5281/zenodo.23487554). Download `cv2x-ids-1.1.0.zip` for all five
+scenarios, or `cv2x-ids-1.1.0-highway_sparse.zip` for the reference scenario only,
+and unzip it to get a directory called `release/`. Put it wherever you like and
+pass its path to the scripts below.
 
 **3. Install what the scripts need**, if you do not already have it.
 
@@ -28,15 +30,15 @@ That is all. **You do not need ns-3, and you do not need to reproduce anything.*
 If you are wondering whether you should be following
 [`REPRODUCING.md`](REPRODUCING.md), the answer is no. That document is for
 rebuilding the dataset from the simulator, which takes hours across two different
-Python versions and produces the same data you were handed.
+Python versions and produces the same data you downloaded.
 
 Then, from the repository directory:
 
     python3 analysis/check_release.py /path/to/release      # confirm it arrived intact
     python3 analysis/baseline_starter.py /path/to/release   # train the baseline
 
-If you were sent the single-scenario package, the 377 MB one holding only
-`highway_sparse`, add `--subset` to the first command. Without it the check looks
+If you downloaded the single-scenario package, `cv2x-ids-1.1.0-highway_sparse.zip`,
+which holds only `highway_sparse`, add `--subset` to the first command. Without it the check looks
 for the four scenarios you were not sent and reports the bundle as incomplete.
 
 ---

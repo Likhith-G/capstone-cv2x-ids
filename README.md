@@ -6,7 +6,8 @@ that the receivers' geometry is what puts it there.**
 
 The dataset is the instrument that makes the question measurable, not the claim.
 It is released, documented and free to use for anything, and
-[`USING_THE_DATA.md`](USING_THE_DATA.md) is where that starts.
+[`USING_THE_DATA.md`](USING_THE_DATA.md) is where that starts. Release 1.1.0 is
+archived on Zenodo at [doi.org/10.5281/zenodo.23487554](https://doi.org/10.5281/zenodo.23487554).
 
 RMIT engineering capstone, project P003859Eng, courses OENG1167 and OENG1168.
 Supervisor A/Prof Ke (Desmond) Wang, research mentor Mr Kanwardeep Singh Gahlot.

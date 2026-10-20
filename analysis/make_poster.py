@@ -11,6 +11,10 @@ make_figures.py reads.
 
     make_poster.py              figures, QR, PDF, checks
     make_poster.py --check      checks only, against the current poster.html
+    make_poster.py --pdf        reprint poster.pdf from poster.html as it is, then
+                                check; the figures are left alone (they need the run logs)
+
+Set CHROME to the browser binary where Chrome is not at its macOS path.
 
 The checks render the page in headless Chrome and read back what it drew:
   - no visible text below 18 pt
@@ -21,6 +25,7 @@ The checks render the page in headless Chrome and read back what it drew:
 """
 import argparse
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -39,7 +44,7 @@ BOOTH = ROOT / "docs" / "booth"
 FIGS = BOOTH / "figures"
 POSTER = BOOTH / "poster.html"
 PDF = BOOTH / "poster.pdf"
-CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 DEMO = "https://cv2x-ids.vercel.app/booth/"
 
 # The report's own text, where it exists on this machine. Every figure in it
@@ -340,8 +345,11 @@ def check(a):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--pdf", action="store_true")
     args = ap.parse_args()
-    if not args.check:
+    if args.pdf:
+        render_pdf()
+    elif not args.check:
         fig_attacks(385, 170)
         fig_floor(385, 185)
         fig_direction(385, 105)

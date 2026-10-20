@@ -49,6 +49,7 @@ for page in pages:
     body = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.S)
     body = re.sub(r"<!--.*?-->", " ", body, flags=re.S)
     visible = re.sub(r"<[^>]+>", " ", body)
+    visible = re.sub(r"\b10\.\d{4,}/[\w.]+", " ", visible)   # a DOI is an identifier, not a result
     for n in re.findall(r"(?<![\w.])\d[\d,.]*\d|(?<![\w.])\d(?![\w])", visible):
         if n not in ALLOW:
             problems.append(f"{page.relative_to(WEB)}: typed number {n} (take it from web/data)")
@@ -75,7 +76,7 @@ live = (WEB / "live" / "index.html").read_text() if (WEB / "live" / "index.html"
 for src in re.findall(r'src="\.\./(data/[^"]+)"', live):
     if not (WEB / src).exists():
         problems.append(f"live/index.html loads {src}, which is missing")
-if "available from the authors on request" not in (WEB / "index.html").read_text().lower():
+if "10.5281/zenodo.23487554" not in (WEB / "index.html").read_text():
     problems.append("index.html: the dataset access line is missing")
 
 for p in problems:

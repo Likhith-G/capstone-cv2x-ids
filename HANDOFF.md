@@ -19,11 +19,10 @@ You both get the same thing, and you both have to use it unchanged:
 
 ### Getting it
 
-The full bundle is 1.7 GB, which is more than most ways of sending a file will
-take. Two options.
+Both forms are on Zenodo at [doi.org/10.5281/zenodo.23487554](https://doi.org/10.5281/zenodo.23487554).
 
-**The whole thing**, 1.7 GB, over OneDrive or a shared drive. Preferred, because
-it is the only form the acceptance test covers completely.
+**The whole thing**, 1.7 GB, `cv2x-ids-1.1.0.zip`. Preferred, because it is the
+only form the acceptance test covers completely.
 
 **One scenario**, if that is impractical. `highway_sparse` plus the nine small
 files beside it is **377 MB**, `cv2x-ids-1.1.0-highway_sparse.zip`, and is enough for everything in section A, because
