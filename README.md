@@ -47,7 +47,7 @@ This project builds the data to answer that, and then answers it.
 | If you want to | Read |
 |---|---|
 | **train something on this data** | [`USING_THE_DATA.md`](USING_THE_DATA.md). You do not need to reproduce anything |
-| **pick up one of the open pieces of work** | [`HANDOFF.md`](HANDOFF.md) |
+| **pick up the handed-over work** | [`HANDOFF.md`](HANDOFF.md), with where each piece stands |
 | see the idea in a few minutes | the [booth website](https://cv2x-ids.vercel.app/): a walkthrough and a [live highway monitor](https://cv2x-ids.vercel.app/live/), or clone and open `web/index.html` locally |
 | know what every class and column means | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) |
 | rebuild the dataset from the simulator, which almost nobody needs | [`REPRODUCING.md`](REPRODUCING.md) |
@@ -360,7 +360,7 @@ Traces are not held in the repository. They are regenerated from source.
 ```
 capstone-cv2x-ids/
 ├── USING_THE_DATA.md            # start here to train something
-├── HANDOFF.md                   # the two open pieces of work
+├── HANDOFF.md                   # the handed-over work and where it stands
 ├── REPRODUCING.md               # rebuilding the data from the simulator
 │
 ├── simulation/                  # ns-3 contrib module

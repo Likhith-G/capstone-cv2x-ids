@@ -1,9 +1,10 @@
 # Handoff
 
-Two pieces of work are open and neither of them belongs to the person who built
-the pipeline. This document is what each pair needs to start: why the work
-matters, what "done" looks like, what you are given, and the one rule that
-decides whether your result can be believed.
+Two pieces of work were handed over, and neither of them belongs to the person
+who built the pipeline. This document is what each pair needs to start: why the
+work matters, what "done" looks like, what you are given, and the one rule that
+decides whether your result can be believed. Each section opens with where it
+stands.
 
 Read [`USING_THE_DATA.md`](USING_THE_DATA.md) first. Everything below assumes it.
 
@@ -58,6 +59,11 @@ across train and test.
 ## A. The fifth learner family
 
 **Verna Nakhla and Ken Navarro.**
+
+> **Status: done.** The fifth family is a tabular transformer,
+> [`analysis/tabular_transformer.py`](analysis/tabular_transformer.py), run
+> through `model_independence.py --transformer`. The README's first result
+> reports all five families. The brief below is kept as it was written.
 
 ### Why this is not a side project
 
@@ -193,6 +199,10 @@ will save yourselves a fortnight.
 
 **Andrew Ng and Joshua Wong, with Likhith.**
 
+> **Status: partly done.** The cost comparison in item 2 of "Done looks like"
+> is measured by [`analysis/fed_cost.py`](analysis/fed_cost.py). Item 1, the
+> window recommendation, is not recorded in this repository yet.
+
 ### Why the old question was the wrong question
 
 The plan asked whether inference can meet a 100 ms deadline on edge hardware, and
@@ -269,7 +279,7 @@ comparison below, which are yours.
 ### No hardware board, decided 1 Oct
 
 The board measurement is dropped. Bringing up firmware on the ZCU106 or any
-other board before the 18 Oct report is not realistic, and the result it was
+other board before the report is not realistic, and the result it was
 meant to produce does not need it.
 
 Inference is already measured on the development laptop at 3.085 ms, 0.31
