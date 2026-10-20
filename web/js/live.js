@@ -147,7 +147,7 @@
     if (still || from === to) { el.textContent = fmt(to, 3); return; }
     const run = (now) => {
       if (+el.dataset.v !== to) return; // a newer value took over
-      const u = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - u, 3);
+      const u = Math.max(0, Math.min(1, (now - t0) / 600)), e = 1 - Math.pow(1 - u, 3);
       el.textContent = fmt(from + (to - from) * e, 3);
       if (u < 1) requestAnimationFrame(run);
     };
