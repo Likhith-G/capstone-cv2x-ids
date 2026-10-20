@@ -78,7 +78,7 @@
       enter() { t = K.still ? 9 : 0; },
       tick(dt) {
         t += dt;
-        const W = C.w, H = C.h, cols = 36, gap = W / cols, r = gap * 0.32, top = 30;
+        const W = C.w, H = C.h, cols = 36, gap = W / cols, r = gap * 0.32, top = 52;
         ctx.clearRect(0, 0, W, H);
         const shown = K.reduced ? dots.length : Math.floor(dots.length * K.ease(t / 2.4));
         for (let i = 0; i < dots.length; i++) {
@@ -97,7 +97,7 @@
           lx += w;
         });
         ctx.fillStyle = INK3; ctx.font = font(22, 400);
-        ctx.fillText("Each dot is 10,000 windows", 0, top - 4);
+        ctx.fillText("Each dot is 10,000 windows", 0, top - 30);
       },
     };
   });
@@ -252,7 +252,7 @@
       enter() { t = K.still ? 9 : 0; },
       tick(dt) {
         t += dt;
-        const W = C.w, H = C.h, L = 92, R = 30, T = 90, B = 110, pw = W - L - R, ph = H - T - B;
+        const W = C.w, H = C.h, L = 112, R = 30, T = 90, B = 110, pw = W - L - R, ph = H - T - B;
         const X = (m) => L + (Math.min(m, XMAX) / XMAX) * pw, Y = (v) => T + (1 - v) * ph;
         ctx.clearRect(0, 0, W, H);
         // grid and axes
@@ -265,7 +265,7 @@
         for (const m of [0, 50, 100, 150, 200, 250]) ctx.fillText(String(m), X(m), H - B + 36);
         ctx.fillStyle = INK2; ctx.font = font(22);
         ctx.fillText("size of the lie, metres", L + pw / 2, H - B + 78);
-        ctx.save(); ctx.translate(26, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("lying cars caught", 0, 0); ctx.restore();
+        ctx.save(); ctx.translate(22, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("lying cars caught", 0, 0); ctx.restore();
         // honest GPS error, 95th percentile
         ctx.fillStyle = "rgba(150,185,215,.10)"; ctx.fillRect(L, T, X(+F.benign95) - L, ph);
         // the crossing and its interval
@@ -407,9 +407,14 @@
         ctx.strokeStyle = TEAL; ctx.lineWidth = 3.5; ctx.beginPath();
         pts.forEach(([c, v], i) => (i ? ctx.lineTo(X(c), Y(v)) : ctx.moveTo(X(c), Y(v)))); ctx.stroke();
         pts.forEach(([c, v]) => { ctx.beginPath(); ctx.arc(X(c), Y(v), 7, 0, 7); ctx.fillStyle = TEAL; ctx.fill(); });
-        ctx.textAlign = "left"; ctx.font = font(20); ctx.fillStyle = INK2;
-        ctx.fillText("central training", L + 12, Y(lo) - 10);
-        ctx.fillStyle = TEAL; ctx.fillText("federated", L + 210, Y(lo) - 10);
+        ctx.textAlign = "left"; ctx.font = font(21); ctx.lineCap = "round";
+        const ly = T - 24;
+        ctx.strokeStyle = INK3; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(L, ly); ctx.lineTo(L + 30, ly); ctx.stroke();
+        ctx.fillStyle = INK2; ctx.fillText("central training", L + 42, ly + 7);
+        const fx = L + 64 + ctx.measureText("central training").width;
+        ctx.strokeStyle = TEAL; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(fx, ly); ctx.lineTo(fx + 30, ly); ctx.stroke();
+        ctx.beginPath(); ctx.arc(fx + 15, ly, 6, 0, 7); ctx.fillStyle = TEAL; ctx.fill();
+        ctx.fillText("federated", fx + 42, ly + 7); ctx.lineCap = "butt";
         ctx.textAlign = "right"; ctx.font = font(26, 600); ctx.fillStyle = INK;
         ctx.fillText(`Round ${roundShown}`, W - R, T - 18);
         ctx.font = font(20, 400); ctx.fillStyle = INK3; ctx.fillText("Validation macro F1", W - R, T - 44);

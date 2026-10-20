@@ -19,7 +19,7 @@
   <div class="copy">
     <h1 data-in>Detecting connected cars that send false messages</h1>
     <p class="lede" data-in="1">Connected cars broadcast their position several times a second, and the cars around them act on it. Each message is signed, which proves which car sent it but says nothing about whether the position is true.</p>
-    <p class="who" data-in="2">Cybersecurity for Connected Cars: Edge-Based Federated Intrusion Detection. RMIT University engineering capstone, 2026.</p>
+    <p class="who" data-in="2">Cybersecurity for Connected Cars: Edge-Based Federated Intrusion Detection. <span class="nw">RMIT University engineering capstone, 2026.</span></p>
   </div>
 </section>
 
@@ -60,7 +60,7 @@
 <!-- Part 2: what we built -->
 <section class="slide" data-part="2">
   <div>
-    <h2 data-in>We simulated a <span data-n="facts.road_km" data-d="0"></span> km highway over the 5G sidelink</h2>
+    <h2 data-in>We simulated a <span class="nw"><span data-n="facts.road_km" data-d="0"></span> km</span> highway over the 5G sidelink</h2>
     <p class="lede" data-in="1">Every car broadcasts standard messages and listens to the others. Every receiver logs what it heard and what its radio measured.</p>
   </div>
   <table class="spec" data-in="1">
@@ -141,7 +141,7 @@
 </section>
 
 <!-- Part 4: deployment -->
-<section class="slide" data-part="4">
+<section class="slide dense" data-part="4">
   <div>
     <h2 data-in>Roadside units can train the detector without sharing data</h2>
     <p class="lede" data-in="1">Each of the <span data-n="fed.clients"></span> units trains on its own traffic and sends only model updates. The result was scored on cars that no unit had heard.</p>
@@ -169,7 +169,7 @@
       <div class="stat"><span data-n="shifts.radio.label-free.recovered"></span><small>% of the loss recovered</small></div>
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
       <div class="gcap"><span>unchanged <span data-n="shifts.radio.transfer.f1"></span></span><span>refitted <span data-n="shifts.radio.label-free.f1"></span></span><span>retrained <span data-n="shifts.radio.in-dist.f1"></span></span></div>
-      <p class="note">With transmit power cut from 23 to 14 dBm, honest tracks flagged fell from <span data-n="shifts.radio.transfer.flagged" data-x="100" data-d="0"></span>% to <span data-n="shifts.radio.label-free.flagged" data-x="100" data-d="0"></span>%.</p></div></div>
+      <p class="note">With transmit power cut from 23 to <span class="nw">14 dBm</span>, honest tracks flagged fell from <span data-n="shifts.radio.transfer.flagged" data-x="100" data-d="0"></span>% to <span data-n="shifts.radio.label-free.flagged" data-x="100" data-d="0"></span>%.</p></div></div>
     <div class="card" data-in="2"><canvas data-k="bursts"></canvas><div class="body">
       <h3>Attackers lying in bursts</h3>
       <div class="stat"><span data-n="facts.bursty_cost"></span><small>macro F1 lost</small></div>
@@ -205,7 +205,7 @@
   <div>
     <h2 data-in>Limitations and next steps</h2>
     <p class="lede" data-in="1">Every result here comes from a simulation of one straight highway. The next steps test it against real measurements and other road layouts.</p>
-    <p class="team" data-in="2">Likhith Lokesh Gowda, Verna Nakhla, Joshua Wong, Ken Navarro and Andrew Ng.<br>Supervised by A/Prof Ke (Desmond) Wang, with Mr Kanwardeep Singh Gahlot as research mentor, RMIT University.</p>
+    <p class="team" data-in="2"><span class="nw">Likhith Lokesh Gowda</span>, <span class="nw">Verna Nakhla</span>, <span class="nw">Joshua Wong</span>, <span class="nw">Ken Navarro</span> and <span class="nw">Andrew Ng</span>.<br>Supervised by A/Prof Ke (Desmond) Wang, with <span class="nw">Mr Kanwardeep Singh Gahlot</span> as research mentor, RMIT University.</p>
   </div>
   <div>
     <ol class="next" data-in="1">
@@ -213,7 +213,7 @@
       <li>Test the detection threshold at a junction and on a curve, where the receivers no longer sit in a line.</li>
       <li>Test roadside units that send poisoned updates while secure aggregation is in use.</li>
     </ol>
-    <p class="links" data-in="2"><a href="live/">Live highway monitor</a><a href="https://github.com/Likhith-G/capstone-cv2x-ids">Code on GitHub</a><a href="booth/poster.pdf">Poster (PDF)</a></p>
+    <p class="links" data-in="2"><a href="live/index.html">Live highway monitor</a><a href="https://github.com/Likhith-G/capstone-cv2x-ids">Code on GitHub</a><a href="booth/poster.pdf">Poster (PDF)</a></p>
     <p class="cap" data-in="2">The dataset is on Zenodo: <a href="https://doi.org/10.5281/zenodo.23487554">doi.org/10.5281/zenodo.23487554</a></p>
   </div>
 </section>
