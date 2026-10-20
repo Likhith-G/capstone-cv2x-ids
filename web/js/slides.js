@@ -33,6 +33,7 @@
     const E = D.example, px = box.querySelector(".px"), pos = box.querySelector(".pos");
     const real = box.querySelector(".carbox.real"), gh = box.querySelector(".carbox.ghost");
     const tr = box.querySelector(".t-real"), tg = box.querySelector(".t-ghost");
+    const span = box.querySelector(".span"), seal = box.querySelector(".seal");
     const lo = Math.min(E.true.x, E.claimed.x), hi = Math.max(E.true.x, E.claimed.x), pad = (hi - lo) * 0.45;
     const at = (x) => (8 + 84 * (x - (lo - pad)) / (hi - lo + 2 * pad)) + "%";
     let timers = [];
@@ -41,6 +42,10 @@
       px.textContent = K.fmt(E.true.x, 1); pos.classList.remove("lie");
       real.style.left = gh.style.left = tr.style.left = tg.style.left = at(E.true.x);
       gh.classList.remove("on"); tg.style.opacity = 0;
+      span.classList.remove("on"); seal.classList.remove("ping");
+      const a = parseFloat(at(lo)), b = parseFloat(at(hi));
+      span.style.left = a + "%"; span.style.width = b - a + "%";
+      if (E.claimed.x < E.true.x) span.style.transformOrigin = "right center";
     }
     reset();
     return {
@@ -50,6 +55,7 @@
           // the position field rolls to the false value; the seal does not change
           const t0 = performance.now(), from = E.true.x, to = E.claimed.x;
           pos.classList.add("lie"); gh.classList.add("on");
+          span.classList.add("on"); seal.classList.add("ping"); // the lie opens; the seal still passes
           gh.style.left = tg.style.left = at(to); tg.style.opacity = 1;
           const roll = (now) => {
             const u = K.ease((now - t0) / 1400);
@@ -180,6 +186,7 @@
         const u = (t % 1.6) / 1.2;
         fill.style.width = Math.min(100, u * 100) + "%";
         inf.style.opacity = u >= 1 ? 1 : 0.35;
+        inf.classList.toggle("fire", u >= 1);
       },
     };
   });
@@ -281,6 +288,15 @@
           const x0 = X(a) + 4, x1 = X(b == null ? XMAX : b) - 4, gv = v * K.ease((t - i * 0.08) / 1.2);
           rr(ctx, x0, Y(gv), x1 - x0, Y(0) - Y(gv), 8); ctx.fillStyle = rgba(TEAL, 0.78); ctx.fill();
         });
+        // what the crossing means: half of lying cars caught, read across from 50 percent
+        const gg = K.ease((t - 1.8) / 0.9);
+        if (gg > 0) {
+          const gx = X(+F.cross), gy = Y(0.5);
+          ctx.globalAlpha = gg; ctx.setLineDash([3, 7]); ctx.strokeStyle = rgba(INK, 0.75); ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(L, gy); ctx.lineTo(L + (gx - L) * gg, gy); ctx.stroke(); ctx.setLineDash([]);
+          if (gg >= 1) { const u = (t * 0.7) % 1; ringAt(ctx, gx, gy, 8 + u * 22, (1 - u) * 0.8, INK, 2); }
+          ctx.beginPath(); ctx.arc(gx, gy, 7, 0, 7); ctx.fillStyle = INK; ctx.fill(); ctx.globalAlpha = 1;
+        }
         // one receiver: zero at every size
         ctx.strokeStyle = RUST; ctx.lineWidth = 5; ctx.lineCap = "round";
         ctx.beginPath(); ctx.moveTo(X(F.single[0][0]), Y(0)); ctx.lineTo(X(F.single[0][0]) + (X(XMAX) - X(F.single[0][0])) * grow, Y(0)); ctx.stroke();
@@ -350,6 +366,15 @@
           ctx.textAlign = "left";
         }
         ctx.font = font(22, 400); ctx.fillStyle = INK3; ctx.fillText("Receivers along the road", 24, ry1 + 34);
+        // the three steps of the story, the current one lit and filling as it plays
+        const STEPS = ["Lie along the road", "Lie across the road", "Map check on"], gap = 16, sw = (W - gap * 2) / 3, sy = H - 66;
+        STEPS.forEach((label, k) => {
+          const x = k * (sw + gap), on = k === phase, done = k < phase;
+          rr(ctx, x, sy, sw, 54, 12); ctx.fillStyle = on ? "rgba(150,185,215,.10)" : "rgba(150,185,215,.04)"; ctx.fill();
+          if (on) { ctx.save(); rr(ctx, x, sy, sw, 54, 12); ctx.clip(); ctx.fillStyle = rgba(k === 2 ? RUST : TEAL, 0.9); ctx.fillRect(x, sy + 50, sw * ((cyc % 4) / 4), 4); ctx.restore(); }
+          ctx.font = font(21, on ? 600 : 400); ctx.fillStyle = on ? INK : done ? INK2 : INK3; ctx.textAlign = "left";
+          ctx.fillText(`${k + 1}  ${label}`, x + 18, sy + 34);
+        });
       },
     };
   });

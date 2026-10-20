@@ -27,6 +27,23 @@ a{color:inherit}
 .slide.on{visibility:visible;opacity:1;transition:opacity .5s ease,visibility 0s}
 .slide.wide{grid-template-columns:1fr;grid-template-rows:auto 1fr;align-items:start;row-gap:48px;padding-top:110px}
 
+/* ---------- entrances ----------
+   Each slide builds in reading order: the heading, then the text, then the
+   visual and the number. data-in="" goes first, data-in="1" to "8" follow in
+   steps; the slide's own fade carries everything out again. */
+.slide [data-in]{opacity:0;transform:translateY(22px);transition:opacity .3s ease,transform .3s ease}
+.slide.on [data-in],.slide[data-shown] [data-in]{opacity:1;transform:none;
+  transition:opacity .7s cubic-bezier(.2,.7,.2,1) var(--d,0s),transform .9s cubic-bezier(.2,.7,.2,1) var(--d,0s)}
+.slide [data-in="1"]{--d:.18s}.slide [data-in="2"]{--d:.42s}.slide [data-in="3"]{--d:.6s}.slide [data-in="4"]{--d:.72s}
+.slide [data-in="5"]{--d:.84s}.slide [data-in="6"]{--d:.96s}.slide [data-in="7"]{--d:1.08s}.slide [data-in="8"]{--d:1.2s}
+/* rows of a table arrive one after another */
+.slide .lit tbody tr,.slide .spec tr{opacity:0;transform:translateX(-16px);transition:opacity .3s,transform .3s}
+.slide.on .lit tbody tr,.slide.on .spec tr,.slide[data-shown] .lit tbody tr,.slide[data-shown] .spec tr{opacity:1;transform:none;
+  transition:opacity .6s ease calc(.5s + var(--r,0) * .12s),transform .8s cubic-bezier(.2,.7,.2,1) calc(.5s + var(--r,0) * .12s)}
+.lit tbody tr:nth-child(2),.spec tr:nth-child(2){--r:1}.lit tbody tr:nth-child(3),.spec tr:nth-child(3){--r:2}
+.lit tbody tr:nth-child(4),.spec tr:nth-child(4){--r:3}.lit tbody tr:nth-child(5),.spec tr:nth-child(5){--r:4}
+.lit tbody tr:nth-child(6),.spec tr:nth-child(6){--r:5}
+
 /* ---------- type ---------- */
 h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
 h2{font-size:68px;line-height:1.05}
@@ -86,6 +103,15 @@ h2{font-size:68px;line-height:1.05}
 .carbox.real{background:#d8e2ec}
 .carbox.ghost{border:2px dashed var(--rust);background:rgba(224,112,63,.14);opacity:0;transition:left 1.6s ease,opacity .6s}
 .carbox.ghost.on{opacity:1}
+/* the size of the lie, measured between the real car and the claim */
+.msg .span{position:absolute;top:10px;height:26px;border-left:2px solid var(--rust);border-right:2px solid var(--rust);opacity:0;
+  transform:scaleX(0);transform-origin:left center;transition:opacity .5s,transform 1.4s cubic-bezier(.3,.7,.2,1)}
+.msg .span::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px solid rgba(224,112,63,.7)}
+.msg .span b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:0 12px;background:#0a1622;
+  color:var(--rust);font-size:21px;font-weight:600;white-space:nowrap}
+.msg .span.on{opacity:1;transform:none}
+@keyframes seal{0%{box-shadow:0 0 0 0 rgba(76,181,172,.6)}100%{box-shadow:0 0 0 18px rgba(76,181,172,0)}}
+.msg .seal.ping{animation:seal 1.1s ease-out 2}
 .road .tag{position:absolute;bottom:10px;font-size:20px;color:var(--ink-3);transform:translateX(-50%);white-space:nowrap;transition:left 1.6s ease,opacity .6s}
 
 /* slides 3 and 4: tables */
@@ -118,7 +144,8 @@ table{border-collapse:collapse;width:100%}
 .second{width:100%}
 .sec-bar{position:relative;height:140px;border-radius:12px;background:#12322f;border:1px solid #2b6660;overflow:hidden}
 .sec-bar .fill{position:absolute;inset:0 auto 0 0;width:0;background:#1d5550}
-.sec-bar .inf{position:absolute;top:0;bottom:0;right:0;width:6px;background:var(--rust)}
+.sec-bar .inf{position:absolute;top:0;bottom:0;right:0;width:6px;background:var(--rust);transition:box-shadow .25s}
+.sec-bar .inf.fire{box-shadow:0 0 26px 8px rgba(224,112,63,.8)}
 .sec-lab{display:flex;justify-content:space-between;gap:30px;margin-top:20px;font-size:24px;color:var(--ink-2);white-space:nowrap}
 .sec-lab .r{color:var(--rust);text-align:right}
 .aside{margin-top:70px;font-size:28px;line-height:1.4;color:var(--ink-2);border-left:4px solid var(--teal);padding-left:24px}
@@ -184,7 +211,7 @@ table{border-collapse:collapse;width:100%}
   .chrome,.bar{display:none}
 }
 @media (prefers-reduced-motion:reduce){
-  .slide,.carbox,.road .tag{transition:none}
+  .slide,.carbox,.road .tag,.slide [data-in],.slide tr{transition:none!important;transform:none!important}
 }
 /* ?still: screenshots and print, every entrance finished at once */
 .still *,.still *::before{transition:none!important;animation:none!important}

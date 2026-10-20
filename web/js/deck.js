@@ -196,6 +196,7 @@
     const io = new IntersectionObserver((es) => es.forEach((e) => {
       if (!Deck.portrait()) return;
       e.target.dataset.vis = e.isIntersecting ? "1" : "0";
+      if (e.isIntersecting) e.target.dataset.shown = "1"; // on a phone a slide builds once and stays built
       const c = ctl.get(e.target);
       if (e.isIntersecting && c && c.enter && !e.target.dataset.seen) { e.target.dataset.seen = "1"; c.enter(); }
     }), { threshold: 0.25 });
@@ -205,7 +206,7 @@
     if (Deck.portrait() && h > 1 && h <= slides.length) slides[h - 1].scrollIntoView();
     // ?solo=n shows only slide n on a phone (headless screenshots do not keep a scroll position)
     const solo = +(location.search.match(/[?&]solo=(\d+)/) || [])[1];
-    if (solo && Deck.portrait()) slides.forEach((s, i) => { if (i !== solo - 1) s.style.display = "none"; else { s.dataset.vis = "1"; const c = ctl.get(s); c && c.enter && c.enter(); } });
+    if (solo && Deck.portrait()) slides.forEach((s, i) => { if (i !== solo - 1) s.style.display = "none"; else { s.dataset.vis = s.dataset.shown = "1"; const c = ctl.get(s); c && c.enter && c.enter(); } });
     wake();
     requestAnimationFrame(loop);
   });
