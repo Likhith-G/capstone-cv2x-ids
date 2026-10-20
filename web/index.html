@@ -35,7 +35,7 @@
       <dt>Speed</dt><dd><span data-n="example.claimed.kmh"></span> km/h</dd>
       <dt>Heading</dt><dd><span data-n="example.claimed.heading"></span> degrees</dd>
     </dl>
-    <div class="road"><div class="carbox real"></div><div class="carbox ghost"></div><span class="tag t-real">where the car is</span><span class="tag t-ghost rust">where it says it is</span></div>
+    <div class="road"><div class="span"><b><span data-n="example.offset_m" data-d="0"></span> m</b></div><div class="carbox real"></div><div class="carbox ghost"></div><span class="tag t-real">where the car is</span><span class="tag t-ghost rust">where it says it is</span></div>
   </div>
 </section>
 
@@ -164,13 +164,13 @@
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
       <div class="gcap"><span>unchanged <span data-n="shifts.density.transfer.f1"></span></span><span>refitted <span data-n="shifts.density.label-free.f1"></span></span><span>retrained <span data-n="shifts.density.in-dist.f1"></span></span></div>
       <p class="note">Measured on attackers the refit never saw.</p></div></div>
-    <div class="card" data-in="2"><canvas data-k="radio"></canvas><div class="body">
+    <div class="card" data-in="3"><canvas data-k="radio"></canvas><div class="body">
       <h3>Weaker radio</h3>
       <div class="stat"><span data-n="shifts.radio.label-free.recovered"></span><small>% of the loss recovered</small></div>
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
       <div class="gcap"><span>unchanged <span data-n="shifts.radio.transfer.f1"></span></span><span>refitted <span data-n="shifts.radio.label-free.f1"></span></span><span>retrained <span data-n="shifts.radio.in-dist.f1"></span></span></div>
       <p class="note">With transmit power cut from 23 to <span class="nw">14 dBm</span>, honest tracks flagged fell from <span data-n="shifts.radio.transfer.flagged" data-x="100" data-d="0"></span>% to <span data-n="shifts.radio.label-free.flagged" data-x="100" data-d="0"></span>%.</p></div></div>
-    <div class="card" data-in="2"><canvas data-k="bursts"></canvas><div class="body">
+    <div class="card" data-in="4"><canvas data-k="bursts"></canvas><div class="body">
       <h3>Attackers lying in bursts</h3>
       <div class="stat"><span data-n="facts.bursty_cost"></span><small>macro F1 lost</small></div>
       <div class="gauge"><i class="g-before"></i><b class="g-ceil"></b></div>
@@ -188,16 +188,16 @@
   <div class="tiles four">
     <div class="tile" data-in="2"><h3>A sidelink dataset with radio measurements</h3>
       <p>We found no earlier misbehaviour dataset recorded over a 5G sidelink with per-message radio measurements.</p>
-      <div class="stat"><span data-n="facts.windows"></span> <small>windows</small></div></div>
-    <div class="tile" data-in="2"><h3>The detectable size of a lie, in metres</h3>
+      <div class="stat"><span data-n="facts.windows" data-d="0" data-count></span> <small>windows</small></div></div>
+    <div class="tile" data-in="3"><h3>The detectable size of a lie, in metres</h3>
       <p>Where one receiver stops working and pooled receivers start, measured with a confidence interval.</p>
-      <div class="stat"><span data-n="floor.cross"></span> <small>m</small></div></div>
-    <div class="tile" data-in="2"><h3>Geometry predicts the attacker</h3>
+      <div class="stat"><span data-n="floor.cross" data-d="1" data-count></span> <small>m</small></div></div>
+    <div class="tile" data-in="4"><h3>Geometry predicts the attacker</h3>
       <p>The layout of the receivers shows which way an informed attacker would lie, and a map check covers that direction.</p>
-      <div class="stat"><span data-n="facts.weak_axis_deg"></span> <small>degrees</small></div></div>
-    <div class="tile" data-in="2"><h3>A federated detector, tested on unseen cars</h3>
+      <div class="stat"><span data-n="facts.weak_axis_deg" data-d="1" data-count></span> <small>degrees</small></div></div>
+    <div class="tile" data-in="5"><h3>A federated detector, tested on unseen cars</h3>
       <p>Trained across roadside units, run without a server, and tested under three changes of road conditions.</p>
-      <div class="stat"><span data-n="fed.share_val"></span> to <span data-n="fed.share_test"></span> <small>of central</small></div></div>
+      <div class="stat"><span data-n="fed.share_val" data-d="3" data-count></span> to <span data-n="fed.share_test" data-d="3" data-count></span> <small>of central</small></div></div>
   </div>
 </section>
 
