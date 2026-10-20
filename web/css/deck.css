@@ -16,6 +16,7 @@
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
 body{overflow:hidden}
 a{color:inherit}
+.nw{white-space:nowrap}
 
 /* ---------- the stage ---------- */
 .viewport{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
@@ -41,6 +42,8 @@ h2{font-size:68px;line-height:1.05}
 .wide .head.split{display:grid;grid-template-columns:1fr auto;align-items:end;column-gap:80px}
 .wide .head .big{margin:0;font-size:120px}
 .wide .head .cap{max-width:16em}
+.slide.dense .big{font-size:130px;margin-top:40px}
+.slide.dense .note{margin-top:26px}
 
 /* ---------- footer ---------- */
 .chrome{position:absolute;left:128px;right:128px;bottom:48px;display:flex;align-items:center;justify-content:space-between;
@@ -58,7 +61,9 @@ h2{font-size:68px;line-height:1.05}
 
 /* slide 1 */
 .slide.hero{padding:0;display:block}
-.hero .vis{position:absolute;inset:0;min-height:0}
+/* the scene is drawn 560px wider than the stage and cropped on the right, which moves
+   its vanishing point, and the lying car's labels, clear of the title */
+.hero .vis{position:absolute;top:0;bottom:0;left:0;width:calc(100% + 560px);min-height:0}
 .hero .scrim{position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,19,31,.96) 0,rgba(8,19,31,.7) 34%,rgba(8,19,31,0) 62%);pointer-events:none}
 .hero .copy{position:absolute;left:128px;bottom:130px;max-width:1240px}
 .hero h1{font-size:104px;line-height:1.0;letter-spacing:-.03em}
@@ -87,7 +92,7 @@ h2{font-size:68px;line-height:1.05}
 table{border-collapse:collapse;width:100%}
 .lit{font-size:25px;line-height:1.35}
 .lit th{text-align:left;font-weight:600;color:var(--ink-3);font-size:22px;padding:0 24px 14px 0;border-bottom:2px solid var(--line-2)}
-.lit td{padding:18px 28px 18px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+.lit td{padding:15px 28px 15px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
 .lit td:first-child{color:var(--ink);font-weight:600;width:30%}
 .lit td:first-child span{display:block;font-weight:400;font-size:20px;color:var(--ink-3);margin-top:4px}
 .lit td:last-child{color:var(--ink)}
@@ -114,7 +119,7 @@ table{border-collapse:collapse;width:100%}
 .sec-bar{position:relative;height:140px;border-radius:12px;background:#12322f;border:1px solid #2b6660;overflow:hidden}
 .sec-bar .fill{position:absolute;inset:0 auto 0 0;width:0;background:#1d5550}
 .sec-bar .inf{position:absolute;top:0;bottom:0;right:0;width:6px;background:var(--rust)}
-.sec-lab{display:flex;justify-content:space-between;gap:30px;margin-top:20px;font-size:26px;color:var(--ink-2)}
+.sec-lab{display:flex;justify-content:space-between;gap:30px;margin-top:20px;font-size:24px;color:var(--ink-2);white-space:nowrap}
 .sec-lab .r{color:var(--rust);text-align:right}
 .aside{margin-top:70px;font-size:28px;line-height:1.4;color:var(--ink-2);border-left:4px solid var(--teal);padding-left:24px}
 
@@ -130,16 +135,16 @@ table{border-collapse:collapse;width:100%}
 .gauge{position:relative;height:14px;border-radius:7px;background:var(--line)}
 .gauge i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;width:0;transition:width 1.4s ease}
 .gauge b{position:absolute;top:-8px;bottom:-8px;width:3px;border-radius:2px;background:var(--ink)}
-.gcap{display:flex;justify-content:space-between;font-size:20px;color:var(--ink-3)}
+.gcap{display:flex;justify-content:space-between;font-size:22px;line-height:1.3;color:var(--ink-3)}
 
 /* slide 13: tiles */
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 .tiles.four{grid-template-columns:repeat(4,minmax(0,1fr))}
 .tile{border-radius:14px;border:1px solid var(--line);background:var(--surface);padding:34px 34px 36px;display:flex;flex-direction:column;gap:18px;min-height:430px}
-.tile h3{font-size:34px;line-height:1.12}
+.tile h3{font-size:34px;line-height:1.12;min-height:3.36em}
 .tile p{margin:0;font-size:25px;line-height:1.42;color:var(--ink-2)}
-.tile .stat{font-weight:300;font-size:50px;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums;margin-top:auto}
-.tile .stat small{font-size:.42em;color:var(--ink-3);letter-spacing:0}
+.tile .stat{font-weight:300;font-size:46px;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums;margin-top:auto;white-space:nowrap}
+.tile .stat small{display:block;font-size:22px;line-height:1.3;margin-top:8px;color:var(--ink-3);letter-spacing:0}
 
 /* slide 14 */
 .next{margin:0;padding:0 0 0 1.3em;font-size:32px;line-height:1.4;color:var(--ink-2)}
@@ -156,7 +161,7 @@ table{border-collapse:collapse;width:100%}
   .deck{position:static;width:auto;height:auto;transform:none!important}
   .slide{position:relative;visibility:visible;opacity:1;padding:56px 20px 40px;display:block;min-height:0;border-bottom:1px solid var(--line)}
   .slide.hero{min-height:100svh;padding:0}
-  .slide.hero .vis{position:absolute;inset:0;height:auto;min-height:0;margin:0}
+  .slide.hero .vis{position:absolute;inset:0;width:auto;height:auto;min-height:0;margin:0}
   .hero .copy{left:20px;right:20px;bottom:48px}
   .hero h1{font-size:40px}.hero .lede{font-size:18px}.hero .who{font-size:14px}
   h2,.wide h2{font-size:32px}
@@ -167,7 +172,7 @@ table{border-collapse:collapse;width:100%}
   .vis{min-height:340px;height:340px;margin-top:24px}
   .tiles,.tiles.four,.attacks,.cards3{grid-template-columns:1fr;gap:12px;margin-top:22px}
   .attacks{grid-template-columns:1fr 1fr}
-  .tile{min-height:0;padding:18px;gap:10px}.tile h3{font-size:21px}.tile p{font-size:15px}.tile .stat{font-size:34px}
+  .tile{min-height:0;padding:18px;gap:10px}.tile h3{font-size:21px;min-height:0}.tile p{font-size:15px}.tile .stat{font-size:34px}.tile .stat small{font-size:15px;margin-top:4px}
   .atk-t{padding:14px}.atk-t h3{font-size:16px}.atk-t .pct{font-size:32px}.atk-t canvas{height:50px}
   .lit{font-size:14px}.lit th{font-size:13px}.lit td{padding:10px 10px 10px 0}.lit td:first-child span{font-size:12px}
   .spec{font-size:16px;margin-top:20px}.spec th{width:100px;padding:12px 12px 12px 0}.spec td{padding:12px 0}
