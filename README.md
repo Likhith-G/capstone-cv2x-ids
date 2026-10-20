@@ -1,5 +1,10 @@
 # CV2X-IDS
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23487554.svg)](https://doi.org/10.5281/zenodo.23487554)
+[![Data: CC BY 4.0](https://img.shields.io/badge/data-CC%20BY%204.0-2e7d7d)](LICENSES.md)
+[![Code: GPL-2.0-only](https://img.shields.io/badge/code-GPL--2.0--only-1b3a5c)](LICENSES.md)
+[![Booth website](https://img.shields.io/badge/booth-cv2x--ids.vercel.app-b4532a)](https://cv2x-ids.vercel.app)
+
 **A vehicle lying about its position is invisible to any single receiver and
 visible to several. This project measures where that boundary sits, and shows
 that the receivers' geometry is what puts it there.**
@@ -356,6 +361,7 @@ Traces are not held in the repository. They are regenerated from source.
 capstone-cv2x-ids/
 ├── USING_THE_DATA.md            # start here to train something
 ├── HANDOFF.md                   # the two open pieces of work
+├── REPRODUCING.md               # rebuilding the data from the simulator
 │
 ├── simulation/                  # ns-3 contrib module
 │   └── cv2xids/                 # ITS messaging, DCC, car following, attacks, traces
@@ -379,6 +385,7 @@ capstone-cv2x-ids/
 │   └── patches/                 # additive patch to 5G-LENA, required to build
 │
 ├── CITATION.cff                 # how to cite the dataset
+├── LICENSE                      # the GPL-2.0-only text
 └── LICENSES.md                  # GPL-2.0-only code, CC BY 4.0 data, and why
 ```
 
