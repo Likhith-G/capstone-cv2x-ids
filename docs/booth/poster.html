@@ -21,33 +21,43 @@
   html,body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans)}
   @media screen{ html:not(.audit) body{background:#c9cfd4;padding:20px}
                  html:not(.audit) .sheet{zoom:.3;margin:0 auto;box-shadow:0 0 0 1px #aab}}
-  .sheet{width:841mm;height:1189mm;background:#fff;padding:22mm 28mm 16mm;
-         display:flex;flex-direction:column;gap:8mm;overflow:hidden}
+  /* Sections are spread over the full height, so whatever room the fonts on
+     the printing machine leave goes evenly between them, not into one band. */
+  .sheet{width:841mm;height:1189mm;background:#fff;padding:22mm 28mm 18mm;
+         display:flex;flex-direction:column;justify-content:space-between;gap:8mm;overflow:hidden}
   p{margin:0;font-size:var(--body);line-height:1.36}
   p + p{margin-top:3mm}
   b{font-weight:700}
 
-  header{display:grid;grid-template-columns:1fr 66mm;gap:12mm;align-items:start;
-         border-bottom:1.6mm solid var(--navy);padding-bottom:6mm}
-  h1{font-size:30mm;line-height:1.03;margin:0 0 4mm;color:var(--navy);letter-spacing:-.01em;font-weight:700}
+  header{display:grid;grid-template-columns:1fr 84mm;gap:16mm;align-items:start;
+         border-bottom:1.6mm solid var(--navy);padding-bottom:7mm}
+  h1{font-size:30mm;line-height:1.03;margin:0 0 5mm;color:var(--navy);letter-spacing:-.01em;font-weight:700;
+     text-wrap:balance}
   .subtitle{font-size:9.4mm;line-height:1.25;margin:0 0 5mm;color:var(--ink)}
   .authors{font-size:8mm;line-height:1.35}
   .affil{font-size:var(--small);line-height:1.4;color:var(--dim);margin-top:1.5mm}
-  .logo{border:0.6mm solid var(--navy);color:var(--navy);text-align:center;
+  .logo{border:0.6mm solid var(--navy);color:var(--navy);text-align:center;margin-top:3mm;
         padding:6mm 3mm;font-size:9mm;font-weight:700;line-height:1.1}
   .logo img{width:100%;display:block}
 
-  h2{font-size:var(--h2);line-height:1.12;margin:0 0 3.5mm;color:var(--navy);font-weight:700}
+  h2{font-size:var(--h2);line-height:1.12;margin:0 0 4mm;color:var(--navy);font-weight:700}
   ul,ol{margin:0;padding-left:8mm}
   li{font-size:var(--body);line-height:1.36}
   li + li{margin-top:2mm}
+  li::marker{color:var(--navy);font-weight:700}
   figure{margin:0}
   figure img{display:block}
   figcaption{font-size:var(--small);line-height:1.36;color:var(--dim);margin-top:2.5mm}
   figcaption b{color:var(--ink)}
 
   .cols{display:grid;grid-template-columns:385mm 385mm;column-gap:15mm}
-  .rule{border-top:0.5mm solid var(--line);padding-top:6mm}
+  .rule{border-top:0.5mm solid var(--line);padding-top:7mm}
+  /* Figure rows share one grid: headings, drawings and captions line up across
+     the two columns, and a shorter drawing is centred in its space. */
+  .figs{grid-template-rows:auto 1fr auto}
+  .figs figure{display:grid;grid-row:span 3;grid-template-rows:subgrid}
+  .figs figure img{align-self:center}
+  .figs figcaption{margin-top:4mm}
 
   table{border-collapse:collapse;width:100%;font-size:var(--small)}
   caption{caption-side:top;text-align:left;font-size:var(--small);color:var(--dim);line-height:1.36;margin-bottom:2.5mm}
@@ -56,21 +66,30 @@
   th{font-weight:700;border-bottom:0.7mm solid var(--navy)}
   td.num,th.num{text-align:right}
   td:first-child{font-weight:700}
-  .aims li b{color:var(--navy)}
-  .concl li{margin-top:2.2mm}
+  .aims li b,.concl li b{color:var(--navy)}
+  .concl li + li{margin-top:3mm}
 
-  .numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin-top:4mm}
-  .numbers div{border-top:1mm solid var(--navy);padding-top:2mm;font-size:var(--small);line-height:1.3;color:var(--dim)}
-  .numbers b{display:block;font-size:12mm;line-height:1.1;color:var(--navy)}
+  .numbers{display:grid;grid-template-columns:1fr 1.15fr 1fr 1.35fr;margin-top:6mm;
+           background:var(--panel);border-top:1.2mm solid var(--navy)}
+  .numbers div{padding:4.5mm 7mm 5mm;font-size:var(--small);line-height:1.3;color:var(--dim)}
+  .numbers div + div{border-left:0.5mm solid var(--line)}
+  .numbers b{display:block;font-size:17mm;line-height:1.05;margin-bottom:1.5mm;color:var(--navy);
+             letter-spacing:-.01em}
 
-  .qrbox{display:grid;grid-template-columns:58mm 1fr;gap:7mm;align-items:center;margin-top:5mm}
-  .qrbox img{width:58mm;height:58mm}
+  .qrbox{display:grid;grid-template-columns:70mm 1fr;gap:9mm;align-items:center;margin-top:7mm;
+         background:var(--panel);border-left:1.6mm solid var(--navy);padding:5mm 8mm 5mm 5mm}
+  .qrbox img{width:70mm;height:70mm;background:#fff;display:block}
+  .qrbox .url{display:block;margin-top:3mm;font-size:10mm;line-height:1.2;color:var(--navy)}
 
-  footer{margin-top:auto;border-top:0.5mm solid var(--line);padding-top:3.5mm}
+  footer{border-top:0.5mm solid var(--line);padding-top:4mm}
   footer h3{font-size:var(--small);margin:0 0 1.5mm;color:var(--navy)}
   footer ol{padding-left:9mm;columns:2;column-gap:12mm}
   footer li{font-size:6.4mm;line-height:1.28;color:var(--dim)}
   footer li + li{margin-top:0.8mm}
+  /* A reference never splits across the two columns: a split one used to push
+     its last line into a third column, off the page. */
+  footer li{break-inside:avoid}
+  footer li::marker{color:var(--dim);font-weight:400}
 
   #audit{display:none}
 </style>
@@ -98,23 +117,25 @@
         valid credentials can sign a false position and every cryptographic check still passes.</p>
       <p>A receiver has one independent piece of evidence: how strongly the signal arrived, which
         depends on where the sender really is.</p>
-      <figure style="margin-top:4mm">
-        <svg id="schematic" width="385mm" height="62mm" viewBox="0 0 385 62"
+      <figure style="margin-top:6mm">
+        <svg id="schematic" width="385mm" height="80mm" viewBox="0 8 385 80"
              font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
-          <rect x="0" y="22" width="385" height="26" fill="#e3e7ea"/>
-          <line x1="0" y1="35" x2="385" y2="35" stroke="#9aa4ac" stroke-width="0.6" stroke-dasharray="5 5"/>
-          <g fill="#2e7d7d"><circle cx="22" cy="26" r="3.2"/><circle cx="70" cy="44" r="3.2"/>
-            <circle cx="300" cy="44" r="3.2"/><circle cx="365" cy="26" r="3.2"/></g>
-          <g stroke="#2e7d7d" stroke-width="0.7" stroke-dasharray="2 2">
-            <line x1="140" y1="35" x2="22" y2="26"/><line x1="140" y1="35" x2="70" y2="44"/>
-            <line x1="140" y1="35" x2="300" y2="44"/><line x1="140" y1="35" x2="365" y2="26"/></g>
-          <rect x="129" y="29.5" width="22" height="11" rx="2.5" fill="#1b3a5c"/>
-          <rect x="230" y="29.5" width="22" height="11" rx="2.5" fill="none" stroke="#b4532a"
-                stroke-width="1.2" stroke-dasharray="3 2"/>
-          <line x1="155" y1="35" x2="224" y2="35" stroke="#b4532a" stroke-width="1.2"/>
-          <path d="M224 31.8 L230 35 L224 38.2 Z" fill="#b4532a"/>
-          <text x="140" y="15" text-anchor="middle" font-size="6.6" fill="#1b3a5c" font-weight="700">where the car is</text>
-          <text x="241" y="15" text-anchor="middle" font-size="6.6" fill="#b4532a" font-weight="700">where its signed message says it is</text>
+          <rect x="0" y="38" width="385" height="38" fill="#e3e7ea"/>
+          <line x1="0" y1="57" x2="385" y2="57" stroke="#9aa4ac" stroke-width="0.8" stroke-dasharray="6 6"/>
+          <g stroke="#2e7d7d" stroke-width="1" stroke-dasharray="2.5 2.5">
+            <line x1="112" y1="57" x2="20" y2="45"/><line x1="112" y1="57" x2="62" y2="69"/>
+            <line x1="112" y1="57" x2="318" y2="69"/><line x1="112" y1="57" x2="366" y2="45"/></g>
+          <g fill="#2e7d7d" stroke="#fff" stroke-width="1"><circle cx="20" cy="45" r="4.6"/><circle cx="62" cy="69" r="4.6"/>
+            <circle cx="318" cy="69" r="4.6"/><circle cx="366" cy="45" r="4.6"/></g>
+          <rect x="96" y="49" width="32" height="16" rx="3.5" fill="#1b3a5c"/>
+          <rect x="250" y="49" width="32" height="16" rx="3.5" fill="#fff" fill-opacity=".55" stroke="#b4532a"
+                stroke-width="1.5" stroke-dasharray="4 2.5"/>
+          <line x1="132" y1="57" x2="240" y2="57" stroke="#b4532a" stroke-width="1.8"/>
+          <path d="M240 52.5 L249 57 L240 61.5 Z" fill="#b4532a"/>
+          <line x1="112" y1="27" x2="112" y2="46" stroke="#1b3a5c" stroke-width="0.8"/>
+          <line x1="266" y1="27" x2="266" y2="46" stroke="#b4532a" stroke-width="0.8"/>
+          <text x="112" y="21" text-anchor="middle" font-size="8.2" fill="#1b3a5c" font-weight="700">where the car is</text>
+          <text x="266" y="21" text-anchor="middle" font-size="8.2" fill="#b4532a" font-weight="700">where its signed message says it is</text>
         </svg>
         <figcaption><b>Figure 1.</b> The attack. Receivers along the road (teal) measure how strongly
           each message arrives, which points back to the real car.</figcaption>
@@ -156,7 +177,7 @@
     </div>
   </section>
 
-  <section class="cols rule">
+  <section class="cols figs rule">
     <figure>
       <h2>How often each attack is caught</h2>
       <img src="figures/attacks.svg" style="width:385mm;height:170mm" alt="Share of each attack's
@@ -179,7 +200,7 @@
     </figure>
   </section>
 
-  <section class="cols rule">
+  <section class="cols figs rule">
     <figure>
       <h2>The weak direction and the map check</h2>
       <img src="figures/direction.svg" style="width:385mm;height:105mm" alt="Predicted weak direction
@@ -224,7 +245,7 @@
       <div class="qrbox">
         <img src="figures/qr.svg" alt="QR code to the project website">
         <p><b>Scan for the walkthrough and a live highway monitor</b>, where every car is judged by a
-          detector that never saw it. <b>cv2x-ids.vercel.app</b></p>
+          detector that never saw it. <b class="url">cv2x-ids.vercel.app</b></p>
       </div>
     </div>
   </section>
